@@ -25,54 +25,32 @@ import pandas as pd
 import numpy as np
 
 
-def file_stream():
-    return BytesIO()
-
-
-def in_notebook():
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == 'ZMQInteractiveShell':
-            # from IPython.core.display import display, HTML, Image
-            return True  # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
-            return False  # Terminal running IPython
-        return False  # Other type (?)
-    except NameError:
-        return False  # Probably standard Python interpreter
-
-
-def count_consecutive(data):
-    return data * (data.groupby(
-        (data != data.shift(1)).cumsum()).cumcount() + 1)
-
-
-def score_str(i):
-    return ("" if "-" in i else "+") + str(i)
-
-
 def compsum(df):
     return df.add(1).cumprod()
 
 
-def returns(prices, rf=0.):
+def comp(df):
+    return df.add(1).prod()
+
+
+def to_returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series.
     Formula is: (t1 / t0) - 1
     Args:
         * prices: Expects a price series/dataframe
     """
-    return cleanup_returns(prices)
+    return _cleanup_returns(prices)
 
 
-def to_price_series(returns):
+def to_prices(returns):
     returns = returns.copy().fillna(0).replace([np.inf, -np.inf], float('NaN'))
     return returns.add(1).cumprod().subtract(1)
 
 
 def log_returns(returns):
     """ Returns pandas Series representing period log returns """
-    returns = cleanup_returns(returns)
+    returns = _cleanup_returns(returns)
     try:
         return np.log(returns+1).replace([np.inf, -np.inf], float('NaN'))
     except Exception:
@@ -81,7 +59,7 @@ def log_returns(returns):
 
 def exponential_stdev(returns, window=30, is_halflife=False):
     """ Returns pandas Series representing volatility of prices """
-    returns = cleanup_returns(returns)
+    returns = _cleanup_returns(returns)
     halflife = window if is_halflife else None
     return returns.ewm(com=None, span=window,
                        halflife=halflife, min_periods=window).std()
@@ -99,41 +77,42 @@ def rebase(prices, value=100):
     return prices.dropna() / prices.dropna().ix[0] * value
 
 
-def cleanup_returns(data, rf=0., nperiods=None):
-    # data is prices? convert to returns
-    if data.dropna().min() >= 0 or data.dropna().max() > 1:
-        data = data.pct_change()
-
-    data = data.fillna(0).replace([np.inf, -np.inf], float('NaN'))
-
-    if rf > 0:
-        return to_excess_returns(data, rf, nperiods)
-    return data
-
-
 def aggregate_returns(returns, period=None, compounded=True):
     """ shortcut to aggregate """
+
+    def _aggregate(returns, groupby, compounded=False):
+        """ summarize returns
+        _aggregate(df, df.index.year)
+        _aggregate(df, [df.index.year, df.index.month])
+        """
+        if compounded:
+            return returns.groupby(groupby).apply(comp)
+        return returns.groupby(groupby).sum()
+
+    if period is None or 'day' in period:
+        return returns
     index = returns.index
-    if 'oem' in period or 'month' in period:
-        returns = aggregate(returns, index.month, compounded=compounded)
-    elif 'eoy' in period or 'yoy' in period:
-        returns = aggregate(returns, index.year, compounded=compounded)
-    elif 'year' in period:
-        returns = aggregate(returns, [index.year, index.month],
-                            compounded=compounded)
+    if 'month' in period:
+        returns = _aggregate(returns, index.month, compounded=compounded)
+    if 'quarter' in period:
+        returns = _aggregate(returns, index.quarter, compounded=compounded)
+    elif 'year' in period or 'eoy' in period or 'yoy' in period:
+        returns = _aggregate(returns, index.year, compounded=compounded)
+    elif 'week' in period:
+        returns = _aggregate(returns, index.week, compounded=compounded)
+    elif 'eow' in period:
+        returns = _aggregate(returns, [index.year, index.week],
+                             compounded=compounded)
+    elif 'eom' in period:
+        returns = _aggregate(returns, [index.year, index.month],
+                             compounded=compounded)
+    elif 'eoq' in period:
+        returns = _aggregate(returns, [index.year, index.quarter],
+                             compounded=compounded)
+    elif not isinstance(period, str):
+        return _aggregate(returns, period, compounded)
+
     return returns
-
-
-def aggregate(returns, groupby, compounded=False):
-    """ summarize returns
-    aggregate(df, df.index.year)
-    aggregate(df, [df.index.year, df.index.month])
-    """
-    def returns_prod(data):
-        return (data + 1).prod() - 1
-    if compounded:
-        return returns.groupby(groupby).apply(returns_prod)
-    return returns.groupby(groupby).sum()
 
 
 def to_excess_returns(returns, rf, nperiods=None):
@@ -157,6 +136,68 @@ def to_excess_returns(returns, rf, nperiods=None):
         rf = np.power(1 + returns, 1. / nperiods) - 1.
 
     return returns - rf
+
+
+def _cleanup_prices(data):
+    # data is returns? convert to prices
+    if isinstance(data, pd.DataFrame):
+        for col in data.columns:
+            if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
+                data[col] = to_prices(data[col])
+
+    elif data.dropna().min() <= 0 or data.dropna().max() < 1:
+        data = to_prices(data)
+
+    return data.dropna()
+
+
+def _cleanup_returns(data, rf=0., nperiods=None):
+    # data is prices? convert to returns
+    if isinstance(data, pd.DataFrame):
+        for col in data.columns:
+            if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
+                data[col] = data[col].pct_change()
+    elif data.dropna().min() >= 0 or data.dropna().max() > 1:
+        data = data.pct_change()
+
+    data = data.fillna(0).replace([np.inf, -np.inf], float('NaN'))
+
+    if rf > 0:
+        return to_excess_returns(data, rf, nperiods)
+    return data
+
+
+def _file_stream():
+    return BytesIO()
+
+
+def _in_notebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            # from IPython.core.display import display, HTML, Image
+            return True  # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
+
+
+def _count_consecutive(data):
+    def _count(data):
+        return data * (data.groupby(
+            (data != data.shift(1)).cumsum()).cumcount() + 1)
+
+    if isinstance(data, pd.DataFrame):
+        for col in data.columns:
+            data[col] = _count(data[col])
+        return data
+    return _count(data)
+
+
+def _score_str(i):
+    return ("" if "-" in i else "+") + str(i)
 
 
 def _inspect_portfolio(returns, start_balance=1):
@@ -199,13 +240,18 @@ def _make_portfolio(returns, start_balance=1e5):
     comp_rev = (start_balance + start_balance *
                 returns.shift(1)).fillna(start_balance) * returns
     port = np.round(start_balance + comp_rev.cumsum(), 2)
-    port2 = pd.Series(
-        index=(port.index + pd.Timedelta(days=-1)),
-        data=start_balance)[:1]
-    return pd.concat([port2, port])
+    port2 = pd.Series(data=start_balance,
+                      index=(port.index + pd.Timedelta(days=-1)))[:1]
+    data = pd.concat([port2, port])
+
+    if isinstance(returns, pd.DataFrame):
+        data.loc[:1, :] = start_balance
+        data.drop(columns=[0], inplace=True)
+
+    return data
 
 
-def flatten_dataframe(df, set_index=None):
+def _flatten_dataframe(df, set_index=None):
     """ flatten multi-index dataframe """
     s_buf = StringIO()
     df.to_csv(s_buf)
