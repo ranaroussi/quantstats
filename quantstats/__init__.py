@@ -21,4 +21,4 @@
 __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
-__all__ = []
+__all__ = ['stats', 'tools', 'optimize']
