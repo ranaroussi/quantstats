@@ -25,31 +25,39 @@ import pandas as pd
 import numpy as np
 
 
-def compsum(df):
-    return df.add(1).cumprod()
+def compsum(returns):
+    """
+    Calculates rolling compounded returns
+    """
+    return returns.add(1).cumprod()
 
 
-def comp(df):
-    return df.add(1).prod()
+def comp(returns):
+    """
+    Calculates total compounded returns
+    """
+    return returns.add(1).prod()
 
 
 def to_returns(prices, rf=0.):
     """
-    Calculates the simple arithmetic returns of a price series.
-    Formula is: (t1 / t0) - 1
-    Args:
-        * prices: Expects a price series/dataframe
+    Calculates the simple arithmetic returns of a price series
     """
     return _cleanup_returns(prices)
 
 
-def to_prices(returns):
+def to_prices(returns, base=1e5):
+    """
+    Converts returns series to price data
+    """
     returns = returns.copy().fillna(0).replace([np.inf, -np.inf], float('NaN'))
-    return returns.add(1).cumprod().subtract(1)
+    return returns.add(base).cumprod().subtract(base)
 
 
 def log_returns(returns):
-    """ Returns pandas Series representing period log returns """
+    """
+    Converts returns series to log returns
+    """
     returns = _cleanup_returns(returns)
     try:
         return np.log(returns+1).replace([np.inf, -np.inf], float('NaN'))
@@ -58,27 +66,30 @@ def log_returns(returns):
 
 
 def exponential_stdev(returns, window=30, is_halflife=False):
-    """ Returns pandas Series representing volatility of prices """
+    """
+    Returns series representing exponential volatility of returns
+    """
     returns = _cleanup_returns(returns)
     halflife = window if is_halflife else None
     return returns.ewm(com=None, span=window,
                        halflife=halflife, min_periods=window).std()
 
 
-def rebase(prices, value=100):
+def rebase(prices, base=100.):
     """
-    Rebase all series to a given intial value.
-    This makes comparing/plotting different series
-    together easier.
+    Rebase all series to a given intial base.
+    This makes comparing/plotting different series together easier.
     Args:
         * prices: Expects a price series/dataframe
-        * value (number): starting value for all series.
+        * base (number): starting value for all series.
     """
-    return prices.dropna() / prices.dropna().ix[0] * value
+    return prices.dropna() / prices.dropna().ix[0] * base
 
 
 def aggregate_returns(returns, period=None, compounded=True):
-    """ shortcut to aggregate """
+    """
+    Aggregates returns based on date periods
+    """
 
     def _aggregate(returns, groupby, compounded=False):
         """ summarize returns
@@ -117,7 +128,8 @@ def aggregate_returns(returns, period=None, compounded=True):
 
 def to_excess_returns(returns, rf, nperiods=None):
     """
-    Given a series of returns, it will return the excess returns over rf.
+    Calculates excess returns by subtracting
+    risk-free returns from total returns
 
     Args:
         * returns (Series, DataFrame): Returns
@@ -126,7 +138,6 @@ def to_excess_returns(returns, rf, nperiods=None):
             frequency using deannualize
     Returns:
         * excess_returns (Series, DataFrame): Returns - rf
-
     """
     if not isinstance(rf, float):
         rf = rf[rf.index.isin(returns.index)]
@@ -139,7 +150,9 @@ def to_excess_returns(returns, rf, nperiods=None):
 
 
 def _cleanup_prices(data):
-    # data is returns? convert to prices
+    """
+    Converts return data into prices + cleanup
+    """
     if isinstance(data, pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
@@ -152,7 +165,9 @@ def _cleanup_prices(data):
 
 
 def _cleanup_returns(data, rf=0., nperiods=None):
-    # data is prices? convert to returns
+    """
+    Converts price data into returns + cleanup
+    """
     if isinstance(data, pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
@@ -168,10 +183,14 @@ def _cleanup_returns(data, rf=0., nperiods=None):
 
 
 def _file_stream():
+    """ Returns a file stream """
     return BytesIO()
 
 
 def _in_notebook():
+    """
+    Identify enviroment (notebook, terminal, etc)
+    """
     try:
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
@@ -185,6 +204,10 @@ def _in_notebook():
 
 
 def _count_consecutive(data):
+    """
+    Counts consecutive data (like cumsum() with reset on zeroes)
+    """
+
     def _count(data):
         return data * (data.groupby(
             (data != data.shift(1)).cumsum()).cumcount() + 1)
@@ -196,63 +219,41 @@ def _count_consecutive(data):
     return _count(data)
 
 
-def _score_str(i):
-    return ("" if "-" in i else "+") + str(i)
+def _score_str(val):
+    """
+    Returns + sign for positive values (used in plots)
+    """
+    return ("" if "-" in val else "+") + str(val)
 
 
-def _inspect_portfolio(returns, start_balance=1):
-
-    stats = pd.DataFrame(returns)
-    stats.columns = ['abs_ret']
-    stats['sum_ret'] = stats['abs_ret'].cumsum()
-    stats['comp_ret'] = stats['abs_ret'].compsum()
-
-    stats['naive_rev'] = start_balance * stats['abs_ret']
-    stats['total_naive_rev'] = start_balance + stats['naive_rev'].cumsum()
-
-    # invest compounded amount
-    stats['comp_rev'] = (start_balance + start_balance *
-                         stats['abs_ret'].shift(1)
-                         ).fillna(start_balance) * stats['abs_ret']
-    stats['total_comp_rev'] = start_balance + stats['comp_rev'].cumsum()
-
-    # invest same amount (of less after down days)
-    stats['down_comp_rev'] = np.where(stats['abs_ret'].shift(
-        1) < 0, stats['comp_rev'], stats['naive_rev'])
-    stats['total_down_comp_rev'] = start_balance + \
-        stats['down_comp_rev'].cumsum()
-
-    stats['adj_ret'] = stats['total_comp_rev'].pct_change().fillna(
-        stats['sum_ret'])
-    stats['adj_down_ret'] = stats['total_down_comp_rev'].pct_change().fillna(
-        stats['sum_ret'])
-
-    stats['adj_comp_ret'] = stats['adj_ret'].cumsum().fillna(stats['sum_ret'])
-    stats['adj_down_comp_ret'] = stats['adj_down_ret'].cumsum().fillna(
-        stats['sum_ret'])
-
-    stats['pnl'] = stats['total_comp_rev'] - start_balance
-    return stats["abs_ret comp_rev total_comp_rev adj_ret pnl".split()]
-
-
-def _make_portfolio(returns, start_balance=1e5):
-    # invest compounded amount
+def _make_portfolio(returns, start_balance=1e5, round_to=None):
+    """
+    Calculates compounded value of portfolio
+    """
     comp_rev = (start_balance + start_balance *
                 returns.shift(1)).fillna(start_balance) * returns
-    port = np.round(start_balance + comp_rev.cumsum(), 2)
-    port2 = pd.Series(data=start_balance,
-                      index=(port.index + pd.Timedelta(days=-1)))[:1]
-    data = pd.concat([port2, port])
+    p1 = start_balance + comp_rev.cumsum()
+
+    # add day before with starting balance
+    p0 = pd.Series(data=start_balance,
+                   index=p1.index + pd.Timedelta(days=-1))[:1]
+
+    portfolio = pd.concat([p0, p1])
 
     if isinstance(returns, pd.DataFrame):
-        data.loc[:1, :] = start_balance
-        data.drop(columns=[0], inplace=True)
+        portfolio.loc[:1, :] = start_balance
+        portfolio.drop(columns=[0], inplace=True)
 
-    return data
+    if round_to:
+        portfolio = np.round(portfolio, round_to)
+
+    return portfolio
 
 
 def _flatten_dataframe(df, set_index=None):
-    """ flatten multi-index dataframe """
+    """
+    Dirty method for flattening multi-index dataframe
+    """
     s_buf = StringIO()
     df.to_csv(s_buf)
     s_buf.seek(0)
