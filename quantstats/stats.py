@@ -612,7 +612,8 @@ def rolling_greeks(returns, benchmark, periods=252):
     })
 
 
-def compare(returns, benchmark, aggregate=None, compounded=True, round_vals=2):
+def compare(returns, benchmark, aggregate=None, compounded=True,
+            round_vals=None):
     """
     compare returns to benchmark on a day/week/month/quarter/year basis
     """
@@ -620,8 +621,8 @@ def compare(returns, benchmark, aggregate=None, compounded=True, round_vals=2):
     returns = tools._cleanup_returns(returns)
 
     data = pd.DataFrame(data={
-        'Benchmark': tools.aggregate_returns(benchmark, aggregate)*100,
-        'Returns': tools.aggregate_returns(returns, aggregate)*100
+        'Benchmark': tools.aggregate_returns(benchmark, aggregate) * 100,
+        'Returns': tools.aggregate_returns(returns, aggregate) * 100
     })
 
     data['Diff'] = data['Returns'] / data['Benchmark']
@@ -629,4 +630,5 @@ def compare(returns, benchmark, aggregate=None, compounded=True, round_vals=2):
 
     if round_vals is not None:
         return np.round(data, round_vals)
+
     return data
