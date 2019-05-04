@@ -51,6 +51,10 @@ def score_str(i):
     return ("" if "-" in i else "+") + str(i)
 
 
+def compsum(df):
+    return df.add(1).cumprod()
+
+
 def returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series.
