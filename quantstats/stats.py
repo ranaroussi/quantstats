@@ -34,7 +34,7 @@ def expected_return(returns, aggregate=None, compounded=True):
     returns the expected return for a given period
     by calculating the geometric holding period return
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     returns = tools.aggregate_returns(returns, aggregate, compounded)
     return np.product(1 + returns) ** (1 / len(returns)) - 1
 
@@ -67,7 +67,7 @@ def best(returns, aggregate=None, compounded=True):
     """
     returns the best day/month/week/quarter/year's return
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return tools.aggregate_returns(returns, aggregate, compounded).max()
 
 
@@ -75,7 +75,7 @@ def worst(returns, aggregate=None, compounded=True):
     """
     returns the worst day/month/week/quarter/year's return
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return tools.aggregate_returns(returns, aggregate, compounded).min()
 
 
@@ -83,7 +83,7 @@ def consecutive_wins(returns, aggregate=None, compounded=True):
     """
     returns the maximum consecutive wins by day/month/week/quarter/year
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     returns = 0 < tools.aggregate_returns(returns, aggregate, compounded)
     return tools.count_consecutive(returns).max()
 
@@ -92,7 +92,7 @@ def consecutive_losses(returns, aggregate=None, compounded=True):
     """
     returns the maximum consecutive losses by day/month/week/quarter/year
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     returns = 0 > tools.aggregate_returns(returns, aggregate, compounded)
     return tools.count_consecutive(returns).max()
 
@@ -101,7 +101,7 @@ def exposure(returns):
     """
     returns the market exposure time (returns != 0)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return len(returns[(~np.isnan(returns)) & (returns != 0)]) / len(returns)
 
 
@@ -115,7 +115,7 @@ def win_rate(returns, aggregate=None, compounded=True):
         except Exception:
             return 0.
 
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     if aggregate:
         returns = tools.aggregate_returns(returns, aggregate, compounded)
 
@@ -133,7 +133,7 @@ def avg_return(returns):
     """
     calculates the average return/trade return for a period
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns[returns != 0].fillna(0).mean()
 
 
@@ -141,7 +141,7 @@ def avg_win(returns):
     """
     calculates the average winning return/trade return for a period
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns[returns >= 0].fillna(0).mean()
 
 
@@ -149,7 +149,7 @@ def avg_loss(returns):
     """
     calculates the average lowinf return/trade return for a period
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns[returns < 0].fillna(0).mean()
 
 
@@ -157,7 +157,7 @@ def volatility(returns, periods=252, annualize=True):
     """
     calculates the volatility of returns for a period
     """
-    std = tools._cleanup_returns(returns).std()
+    std = tools._prepare_returns(returns).std()
     if annualize:
         return std * np.sqrt(1 if periods is None else periods)
 
@@ -193,7 +193,7 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
-    returns = tools._cleanup_returns(returns, rf, periods)
+    returns = tools._prepare_returns(returns, rf, periods)
     res = returns.mean() / returns.std()
 
     if annualize:
@@ -213,7 +213,7 @@ def sortino(returns, rf=0, periods=252, annualize=True):
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
-    returns = tools._cleanup_returns(returns, rf, periods)
+    returns = tools._prepare_returns(returns, rf, periods)
     res = returns.mean() / returns[returns < 0].std()
 
     if annualize:
@@ -231,7 +231,7 @@ def cagr(returns, rf=0.):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
 
-    returns = tools.compsum(tools._cleanup_returns(returns, rf))
+    returns = tools.compsum(tools._prepare_returns(returns, rf))
     years = len(returns) / 252
 
     res = (returns.values[-1] / 1.0) ** (1.0 / years) - 1
@@ -251,7 +251,7 @@ def rar(returns, rf=0.):
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
-    returns = tools._cleanup_returns(returns, rf)
+    returns = tools._prepare_returns(returns, rf)
     return cagr(returns) / exposure(returns)
 
 
@@ -260,7 +260,7 @@ def skew(returns):
     calculates returns' skewness
     (the degree of asymmetry of a distribution around its mean)
     """
-    return tools._cleanup_returns(returns).skew()
+    return tools._prepare_returns(returns).skew()
 
 
 def kurtosis(returns):
@@ -268,14 +268,14 @@ def kurtosis(returns):
     calculates returns' kurtosis
     (the degree to which a distribution peak compared to a normal distribution)
     """
-    return tools._cleanup_returns(returns).kurtosis()
+    return tools._prepare_returns(returns).kurtosis()
 
 
 def calmar(returns):
     """
     calculates the calmar ratio (CAGR% / MaxDD%)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     cagr_ratio = cagr(returns)
     max_dd = max_drawdown(returns)
     return cagr_ratio / abs(max_dd)
@@ -285,7 +285,7 @@ def ulcer(returns):
     """
     calculates the ulcer index score (downside risk measurment)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     dd = max_drawdown(returns) * 100
     return np.sqrt(np.divide((dd**2).sum(), sharpe(returns) - 1))
 
@@ -295,7 +295,7 @@ def risk_of_ruin(returns):
     calculates the risk of ruin
     (the likelihood of losing all one's investment capital)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     wins = win_rate(returns)
     return ((1 - wins) / (1 + wins)) ** len(returns)
 
@@ -310,7 +310,7 @@ def value_at_risk(returns, sigma=1, confidence=0.99):
     calculats the daily value-at-risk
     (variance-covariance calculation with confidence n)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     mu = returns.mean()
     sigma *= returns.std()
 
@@ -331,7 +331,7 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.99):
     calculats the conditional daily value-at-risk (aka expected shortfall)
     quantifies the amount of tail risk an investment
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     mu = returns.mean()
     sigma *= returns.std()
 
@@ -356,7 +356,7 @@ def tail_ratio(returns, cutoff=0.95):
     """
     measures the ratio between the right (95%) and left tail (5%).
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return abs(returns.quantile(cutoff) / returns.quantile(1-cutoff))
 
 
@@ -364,7 +364,7 @@ def payoff_ratio(returns):
     """
     measures the payoff ratio (average win/average loss)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return avg_win(returns) / avg_loss(returns)
 
 
@@ -377,7 +377,7 @@ def profit_ratio(returns):
     """
     measures the profit ratio (win ratio / loss ratio)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     wins = returns[returns >= 0]
     loss = returns[returns < 0]
 
@@ -393,7 +393,7 @@ def profit_factor(returns):
     """
     measures the profit ratio (wins/loss)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return abs(returns.sum() / returns[returns < 0].sum())
 
 
@@ -406,7 +406,7 @@ def cpc_index(returns):
     """
     measures the cpc ratio (profit factor * win % * win loss ratio)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return profit_factor(returns) * win_rate(returns) * \
         win_loss_ratio(returns)
 
@@ -415,7 +415,7 @@ def common_sense_ratio(returns):
     """
     measures the common sense ratio (profit factor * tail ratio)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return profit_factor(returns) * tail_ratio(returns)
 
 
@@ -424,7 +424,7 @@ def outlier_win_ratio(returns, quantile=.99):
     calculates the outlier winners ratio
     99th percentile of returns / mean positive return
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns.quantile(quantile).mean() / returns[returns >= 0].mean()
 
 
@@ -433,7 +433,7 @@ def outlier_loss_ratio(returns, quantile=.01):
     calculates the outlier losers ratio
     1st percentile of returns / mean negative return
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns.quantile(quantile).mean() / returns[returns < 0].mean()
 
 
@@ -441,7 +441,7 @@ def recovery_factor(returns):
     """
     measures how fast the strategy recovers from drawdowns
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     total_returns = returns.compound()
     max_dd = max_drawdown(returns)
     return total_returns / abs(max_dd)
@@ -452,7 +452,7 @@ def risk_return_ratio(returns):
     calculates the return / risk ratio
     (sharpe ratio without factoring in the risk-free rate)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     return returns.mean() / returns.std()
 
 
@@ -460,7 +460,7 @@ def max_drawdown(prices):
     """
     calculates the maximum drawdown
     """
-    prices = tools._cleanup_prices(prices)
+    prices = tools._prepare_prices(prices)
     return (prices / prices.expanding(min_periods=0).max()).min() - 1
 
 
@@ -468,7 +468,7 @@ def to_drawdown_series(prices):
     """
     convert price series to drawdown series
     """
-    prices = tools._cleanup_prices(prices)
+    prices = tools._prepare_prices(prices)
     return prices.add(1).div(prices.cummax().add(1)).subtract(1)
 
 
@@ -525,7 +525,7 @@ def kelly_criterion(returns):
     should be allocated to the given strategy, based on the
     Kelly Criterion (http://en.wikipedia.org/wiki/Kelly_criterion)
     """
-    returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
     win_loss_ratio = payoff_ratio(returns)
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
@@ -540,8 +540,8 @@ def r_squared(returns, benchmark):
     measures the straight line fit of the equity curve
     """
     slope, intercept, r_val, p_val, std_err = linregress(
-        tools._cleanup_returns(returns),
-        tools._cleanup_returns(benchmark))
+        tools._prepare_returns(returns),
+        tools._prepare_benchmark(benchmark))
     return r_val**2
 
 
@@ -555,8 +555,8 @@ def information_ratio(returns, benchmark):
     calculates the information ratio
     (basically the risk return ratio of the net profits)
     """
-    diff_rets = tools._cleanup_returns(returns) - \
-        tools._cleanup_returns(benchmark)
+    diff_rets = tools._prepare_returns(returns) - \
+        tools._prepare_benchmark(benchmark)
 
     return diff_rets.mean() / diff_rets.std()
 
@@ -568,8 +568,8 @@ def greeks(returns, benchmark, periods=252.):
 
     # ----------------------------
     # data cleanup
-    returns = tools._cleanup_returns(returns)
-    benchmark = tools._cleanup_returns(benchmark)
+    returns = tools._prepare_returns(returns)
+    benchmark = tools._prepare_benchmark(benchmark)
     # ----------------------------
 
     # find covariance
@@ -592,8 +592,8 @@ def rolling_greeks(returns, benchmark, periods=252):
     calculates rolling alpha and beta of the portfolio
     """
     df = pd.DataFrame(data={
-        "returns": tools._cleanup_returns(returns),
         "benchmark": tools._cleanup_returns(benchmark)
+        "returns": tools._prepare_returns(returns),
     })
     corr = df.rolling(int(periods)).corr().unstack()['returns']['benchmark']
     std = df.rolling(int(periods)).std()
@@ -617,8 +617,8 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     """
     compare returns to benchmark on a day/week/month/quarter/year basis
     """
-    benchmark = tools._cleanup_returns(benchmark)
     returns = tools._cleanup_returns(returns)
+    returns = tools._prepare_returns(returns)
 
     data = pd.DataFrame(data={
         'Benchmark': tools.aggregate_returns(benchmark, aggregate) * 100,

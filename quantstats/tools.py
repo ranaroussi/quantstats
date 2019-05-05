@@ -43,7 +43,7 @@ def to_returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series
     """
-    return _cleanup_returns(prices)
+    return _prepare_returns(prices)
 
 
 def to_prices(returns, base=1e5):
@@ -58,7 +58,7 @@ def log_returns(returns):
     """
     Converts returns series to log returns
     """
-    returns = _cleanup_returns(returns)
+    returns = _prepare_returns(returns)
     try:
         return np.log(returns+1).replace([np.inf, -np.inf], float('NaN'))
     except Exception:
@@ -69,7 +69,7 @@ def exponential_stdev(returns, window=30, is_halflife=False):
     """
     Returns series representing exponential volatility of returns
     """
-    returns = _cleanup_returns(returns)
+    returns = _prepare_returns(returns)
     halflife = window if is_halflife else None
     return returns.ewm(com=None, span=window,
                        halflife=halflife, min_periods=window).std()
@@ -149,7 +149,7 @@ def to_excess_returns(returns, rf, nperiods=None):
     return returns - rf
 
 
-def _cleanup_prices(data):
+def _prepare_prices(data):
     """
     Converts return data into prices + cleanup
     """
@@ -164,7 +164,7 @@ def _cleanup_prices(data):
     return data.dropna()
 
 
-def _cleanup_returns(data, rf=0., nperiods=None):
+def _prepare_returns(data, rf=0., nperiods=None):
     """
     Converts price data into returns + cleanup
     """
