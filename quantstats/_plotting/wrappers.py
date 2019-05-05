@@ -77,15 +77,18 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[0].axhline(0, color='silver', lw=1, zorder=0)
 
     dd = _stats.to_drawdown_series(returns) * 100
-    ddmin = abs(dd.min())
-    if ddmin > 60:
-        ddmin /= 4
+    ddmin = _utils._round_to_closest(abs(dd.min()), 5)
+    ddmin_ticks = 5
+    if ddmin > 50:
+        ddmin_ticks = ddmin / 5
     elif ddmin > 30:
-        ddmin /= 3
-    ddmin_ticks = _utils._round_to_closest(ddmin, 5)
+        ddmin_ticks = ddmin / 4
+    ddmin_ticks = int(_utils._round_to_closest(ddmin_ticks, 5))
+
+    # ddmin_ticks = int(_utils._round_to_closest(ddmin, 5))
     axes[1].set_ylabel('Drawdown', fontname=fontname,
                        fontweight='bold', fontsize=12)
-    axes[1].set_yticks(_np.arange(dd.min(), 0, step=int(ddmin_ticks)))
+    axes[1].set_yticks(_np.arange(-ddmin, 0, step=ddmin_ticks))
     axes[1].plot(dd, color=colors[2], lw=1 if grayscale else 1, zorder=1)
     axes[1].axhline(0, color='silver', lw=1, zorder=0)
     if not grayscale:
@@ -96,6 +99,17 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[2].plot(returns * 100, color=colors[0], lw=0.5, zorder=1)
     axes[2].axhline(0, color='silver', lw=1, zorder=0)
     axes[2].axhline(0, color=colors[-1], linestyle='--', lw=1, zorder=2)
+
+    retmax = _utils._round_to_closest(returns.max() * 100, 5)
+    retmin = _utils._round_to_closest(returns.min() * 100, 5)
+    retdiff = (retmax - retmin)
+    steps = 5
+    if retdiff > 50:
+        steps = retdiff / 5
+    elif retdiff > 30:
+        steps = retdiff / 4
+    steps = int(_utils._round_to_closest(steps, 5))
+    axes[2].set_yticks(_np.arange(retmin, retmax, step=steps))
 
     for ax in axes:
         ax.set_facecolor('white')
