@@ -464,7 +464,7 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
 
 
 def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
-                    cbar=False, square=False,
+                    cbar=True, square=False,
                     compounded=True, eoy=False,
                     grayscale=False, fontname='Arial',
                     savefig=None, show=True):
