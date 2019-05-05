@@ -22,6 +22,7 @@ import io as _io
 import pandas as _pd
 import numpy as _np
 import fix_yahoo_finance as _yf
+import quantstats.stats as _stats
 
 
 def to_returns(prices, rf=0.):
@@ -72,42 +73,43 @@ def rebase(prices, base=100.):
     return prices.dropna() / prices.dropna().ix[0] * base
 
 
+def group_returns(returns, groupby, compounded=False):
+        """ summarize returns
+        group_returns(df, df.index.year)
+        group_returns(df, [df.index.year, df.index.month])
+        """
+        if compounded:
+            return returns.groupby(groupby).apply(_stats.comp)
+        return returns.groupby(groupby).sum()
+
+
 def aggregate_returns(returns, period=None, compounded=True):
     """
     Aggregates returns based on date periods
     """
 
-    def _aggregate(returns, groupby, compounded=False):
-        """ summarize returns
-        _aggregate(df, df.index.year)
-        _aggregate(df, [df.index.year, df.index.month])
-        """
-        if compounded:
-            return returns.groupby(groupby).apply(comp)
-        return returns.groupby(groupby).sum()
-
     if period is None or 'day' in period:
         return returns
     index = returns.index
     if 'month' in period:
-        returns = _aggregate(returns, index.month, compounded=compounded)
+        returns = group_returns(returns, index.month, compounded=compounded)
     if 'quarter' in period:
-        returns = _aggregate(returns, index.quarter, compounded=compounded)
+        returns = group_returns(returns, index.quarter, compounded=compounded)
     elif 'year' in period or 'eoy' in period or 'yoy' in period:
-        returns = _aggregate(returns, index.year, compounded=compounded)
+        returns = group_returns(returns, index.year, compounded=compounded)
     elif 'week' in period:
-        returns = _aggregate(returns, index.week, compounded=compounded)
+        returns = group_returns(returns, index.week, compounded=compounded)
     elif 'eow' in period:
-        returns = _aggregate(returns, [index.year, index.week],
+        returns = group_returns(returns, [index.year, index.week],
                              compounded=compounded)
     elif 'eom' in period:
-        returns = _aggregate(returns, [index.year, index.month],
+        returns = group_returns(returns, [index.year, index.month],
                              compounded=compounded)
     elif 'eoq' in period:
-        returns = _aggregate(returns, [index.year, index.quarter],
+        returns = group_returns(returns, [index.year, index.quarter],
                              compounded=compounded)
     elif not isinstance(period, str):
-        return _aggregate(returns, period, compounded)
+        return group_returns(returns, period, compounded)
 
     return returns
 
