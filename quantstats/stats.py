@@ -622,8 +622,8 @@ def rolling_greeks(returns, benchmark, periods=252):
     alpha = df['returns'].mean() - beta * df['benchmark'].mean()
 
     # limit beta to -1/1
-    beta = _pd.Series(index=returns.index, data=_np.where(beta > 1, 1, beta))
-    beta = _pd.Series(index=returns.index, data=_np.where(beta < -1, -1, beta))
+    # beta = _pd.Series(index=returns.index, data=_np.where(beta > 1, 1, beta))
+    # beta = _pd.Series(index=returns.index, data=_np.where(beta < -1, -1, beta))
 
     # alpha = alpha * periods
     return _pd.DataFrame(index=returns.index, data={
