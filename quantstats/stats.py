@@ -474,8 +474,9 @@ def to_drawdown_series(prices):
 
 def drawdown_details(drawdown):
     """
-    calculates drawdown details, including start/end dates,
-    duration and max drawdown for every drawdown period
+    calculates drawdown details, including start/end/valley dates,
+    duration, max drawdown and max dd for 99% of the dd period
+    for every drawdown period
     """
     def _drawdown_details(drawdown):
         # mark no drawdown
