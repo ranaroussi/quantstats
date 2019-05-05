@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
@@ -85,6 +84,8 @@ def plot_returns_bars(returns, benchmark=None,
             df.index.date[-1:][0].strftime('%Y')
         ), fontsize=12, color='gray')
 
+    if benchmark is None:
+        colors = colors[1:]
     df.plot(kind='bar', ax=ax, color=colors)
 
     fig.set_facecolor('white')
@@ -196,7 +197,9 @@ def plot_timeseries(returns, benchmark=None,
 
     if isinstance(benchmark, _pd.Series):
         ax.plot(benchmark, lw=lw, ls=ls, label="Benchmark", color=colors[0])
-    ax.plot(returns, lw=lw, label=returns_label, color=colors[1])
+
+    alpha = .25 if grayscale else 1
+    ax.plot(returns, lw=lw, label=returns_label, color=colors[1], alpha=alpha)
 
     if fill:
         ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=.25)
@@ -415,15 +418,19 @@ def plot_rolling_beta(returns, benchmark,
         ), fontsize=12, color='gray')
 
     beta = _stats.rolling_greeks(returns, benchmark, window1)['beta']
-    ax.plot(beta, lw=lw, label=window1_label, color=colors[0])
+    ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
 
     if window2:
         ax.plot(_stats.rolling_greeks(returns, benchmark, window2)['beta'],
-                lw=lw, label=window2_label, color="#cccccc", alpha=0.8)
+                lw=lw, label=window2_label, color="gray", alpha=0.8)
+    mmin = min([-100, int(beta.min()*100)])
+    mmax = max([100, int(beta.max()*100)])
+    step = 50 if (mmax-mmin) >= 200 else 100
+    ax.set_yticks([x / 100 for x in list(range(mmin, mmax, step))])
 
-    ax.set_yticks([x / 100 for x in list(range(-100, 150, 50))])
+    hlcolor = 'black' if grayscale else hlcolor
     ax.axhline(beta.mean(), ls="--", lw=1.5,
-               color=hlcolor, zorder=2, label="Average")
+               color=hlcolor, zorder=2)
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
@@ -464,6 +471,8 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
                            subtitle=True, savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
+    if grayscale:
+        colors = ['#000000'] * 3
 
     dd = _stats.to_drawdown_series(returns.fillna(0))
     dddf = _stats.drawdown_details(dd)
@@ -484,9 +493,10 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     ax.set_facecolor('white')
     ax.plot(_stats.compsum(returns), lw=lw, label="Backtest", color=colors[0])
 
+    highlight = 'black' if grayscale else 'red'
     for idx, row in longest_dd.iterrows():
         ax.axvspan(*_mdates.datestr2num([str(row['start']), str(row['end'])]),
-                   color='#fede82', alpha=.5)
+                   color=highlight, alpha=.1)
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()

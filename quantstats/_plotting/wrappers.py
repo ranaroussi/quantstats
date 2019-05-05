@@ -295,7 +295,9 @@ def yearly_returns(returns, benchmark=None,
                    log_scale=False, figsize=(10, 5),
                    subtitle=True, savefig=None, show=True):
 
+    title = 'EOY Returns'
     if benchmark is not None:
+        title += '  vs Benchmark'
         benchmark = _utils._prepare_benchmark(
             benchmark, returns.index).resample('A').apply(
                 _stats.compsum).resample('A').last()
@@ -306,12 +308,13 @@ def yearly_returns(returns, benchmark=None,
     _core.plot_returns_bars(returns, benchmark,
                             hline=returns.mean(),
                             hlw=1.5,
-                            hllabel="Average",
+                            hllabel="",
                             match_volatility=False,
                             log_scale=False,
                             resample=None,
-                            title='EOY Returns vs Benchmark',
+                            title=title,
                             figsize=figsize,
+                            grayscale=grayscale,
                             subtitle=subtitle, savefig=savefig, show=show)
 
 
@@ -489,7 +492,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     returns = _stats.monthly_returns(returns, eoy=eoy,
                                      compounded=compounded) * 100
 
-    fig_height = len(returns) // 3
+    fig_height = len(returns) / 2.25
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
@@ -498,7 +501,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     figsize = (figsize[0], max([fig_height, figsize[1]]))
 
     if cbar:
-        figsize = (figsize[0]*1.1, max([fig_height, figsize[1]]))
+        figsize = (figsize[0]*1.04, max([fig_height, figsize[1]]))
 
     fig, ax = _plt.subplots(figsize=figsize)
     fig.set_facecolor('white')
@@ -514,7 +517,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
                       cbar_kws={'format': '%.0f%%'})
 
     # align plot to match other
-    ax.set_ylabel('\n', fontname=fontname, fontweight='bold', fontsize=9)
+    ax.set_ylabel('Years', fontname=fontname, fontweight='bold', fontsize=12)
     ax.yaxis.set_label_coords(-.1, .5)
 
     ax.tick_params(colors="#808080")
