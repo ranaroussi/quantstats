@@ -139,55 +139,68 @@ def _prepare_prices(data, base=1.):
     """
     Converts return data into prices + cleanup
     """
+    data = data.copy()
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
                 data[col] = to_prices(data[col], base)
 
-    elif data.dropna().min() <= 0 or data.dropna().max() < 1:
+    elif data.min() <= 0 or data.max() < 1:
         data = to_prices(data, base)
 
-    return data.dropna()
+    return _pd.Series(data).dropna()
 
 
 def _prepare_returns(data, rf=0., nperiods=None):
     """
     Converts price data into returns + cleanup
     """
+    data = data.copy()
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
-    elif data.dropna().min() >= 0 or data.dropna().max() > 1:
+    elif data.min() >= 0 or data.max() > 1:
         data = data.pct_change()
 
-    data = data.fillna(0).replace([_np.inf, -_np.inf], float('NaN'))
+    data = _pd.Series(data).fillna(0).replace([_np.inf, -_np.inf], float('NaN'))
 
     if rf > 0:
         return to_excess_returns(data, rf, nperiods)
     return data
 
 
-def _prepare_benchmark(benchmark, period="max"):
+def _prepare_benchmark(benchmark=None, period="max", rf=0.):
     """
     fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
 
     period can be options or (expected) _pd.DatetimeIndex range
     """
+    if benchmark is None:
+        return None
+
     if isinstance(benchmark, str):
         if isinstance(period, _pd.DatetimeIndex):
             p = {"start": period[0]}
         else:
             p = {"period": "max"}
         benchmark = _yf.Ticker(benchmark).history(**p)['Close'].pct_change()
-        if isinstance(period, _pd.DatetimeIndex):
-            benchmark = benchmark[benchmark.index.isin(period)]
 
     elif isinstance(benchmark, _pd.DataFrame):
-        benchmark = benchmark[benchmark.columns[0]]
+        benchmark = benchmark[benchmark.columns[0]].copy()
 
-    return _prepare_returns(benchmark.dropna())
+    if isinstance(period, _pd.DatetimeIndex):
+        benchmark = benchmark[benchmark.index.isin(period)]
+
+    return _prepare_returns(benchmark.dropna(), rf=rf)
+
+
+def _round_to_closest(val, res, decimals=None):
+    """ round to closest resolution """
+    if decimals is None and "." in str(res):
+        decimals = len(str(res).split('.')[1])
+    return round(round(val / res) * res, decimals)
 
 
 def _file_stream():
