@@ -654,7 +654,7 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     return data
 
 
-def monthly_returns(returns, eoy=False, compounded=True):
+def monthly_returns(returns, eoy=True, compounded=True):
 
     if isinstance(returns, _pd.DataFrame):
         returns.columns = map(str.lower, returns.columns)
