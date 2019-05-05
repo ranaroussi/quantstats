@@ -25,7 +25,6 @@ from matplotlib.ticker import FormatStrFormatter as _FormatStrFormatter
 
 import pandas as _pd
 import numpy as _np
-# import monthly_returns_heatmap as mrh
 import seaborn as _sns
 
 import quantstats.stats as _stats

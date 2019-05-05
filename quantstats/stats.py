@@ -652,3 +652,49 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
         return _np.round(data, round_vals)
 
     return data
+
+
+def monthly_returns(returns, eoy=False, compounded=True):
+
+    if isinstance(returns, _pd.DataFrame):
+        returns.columns = map(str.lower, returns.columns)
+        if len(returns.columns) > 1 and 'close' in returns.columns:
+            returns = returns['close']
+        else:
+            returns = returns[returns.columns[0]]
+
+    returns = utils._prepare_returns(returns)
+    original_returns = returns.copy()
+
+    returns = _pd.DataFrame(
+        utils.group_returns(returns,
+                            returns.index.strftime('%Y-%m-01'),
+                            compounded))
+
+    returns.columns = ['Returns']
+    returns.index = _pd.to_datetime(returns.index)
+
+    # get returnsframe
+    returns['Year'] = returns.index.strftime('%Y')
+    returns['Month'] = returns.index.strftime('%b')
+
+    # make pivot table
+    returns = returns.pivot('Year', 'Month', 'Returns').fillna(0)
+
+    # handle missing months
+    for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']:
+        if month not in returns.columns:
+            returns.loc[:, month] = 0
+
+    # order columns by month
+    returns = returns[['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']]
+
+    if eoy:
+        returns['eoy'] = utils.group_returns(original_returns,
+                                             original_returns.index.year).values
+
+    returns.columns = map(lambda x: str(x).upper(), returns.columns)
+
+    return returns

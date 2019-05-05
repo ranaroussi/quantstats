@@ -83,6 +83,7 @@ def extend_pandas():
     _po.max_drawdown = stats.max_drawdown
     _po.to_drawdown_series = stats.to_drawdown_series
     _po.kelly_criterion = stats.kelly_criterion
+    _po.monthly_returns = stats.monthly_returns
 
     # methods from utils
     _po.to_returns = utils.to_returns
@@ -116,5 +117,6 @@ def extend_pandas():
     _po.plot_rolling_sortino = plot.rolling_sortino
     _po.plot_rolling_volatility = plot.rolling_volatility
     _po.plot_yearly_returns = plot.yearly_returns
+    _po.plot_monthly_heatmap = plot.monthly_heatmap
 
 # extend_pandas()

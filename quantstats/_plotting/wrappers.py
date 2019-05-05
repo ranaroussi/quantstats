@@ -25,6 +25,8 @@ from matplotlib.ticker import (
 )
 
 import numpy as _np
+import seaborn as _sns
+
 import quantstats.utils as _utils
 import quantstats.stats as _stats
 import quantstats._plotting.core as _core
@@ -459,3 +461,61 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
                              lw=lw,
                              figsize=figsize,
                              subtitle=subtitle, savefig=savefig, show=show)
+
+
+def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
+                    cbar=False, square=False,
+                    compounded=True, eoy=False,
+                    grayscale=False, fontname='Arial',
+                    savefig=None, show=True):
+
+    colors, ls, alpha = _core._get_colors(grayscale)
+    cmap = 'gray' if grayscale else 'RdYlGn'
+
+    returns = _stats.monthly_returns(returns, eoy=eoy,
+                                     compounded=compounded) * 100
+
+    fig_height = len(returns) // 3
+
+    if figsize is None:
+        size = list(_plt.gcf().get_size_inches())
+        figsize = (size[0], size[1])
+
+    figsize = (figsize[0], max([fig_height, figsize[1]]))
+
+    if cbar:
+        figsize = (figsize[0]*1.1, max([fig_height, figsize[1]]))
+
+    fig, ax = _plt.subplots(figsize=figsize)
+    fig.set_facecolor('white')
+    ax.set_facecolor('white')
+
+    ax.set_title('      Monthly Returns (%)\n', fontsize=14, y=.995,
+                 fontname=fontname, fontweight='bold', color='black')
+
+    ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
+                      annot_kws={"size": annot_size},
+                      fmt="0.2f", linewidths=0.5,
+                      square=square, cbar=cbar, cmap=cmap,
+                      cbar_kws={'format': '%.0f%%'})
+
+    # align plot to match other
+    ax.set_ylabel('\n', fontname=fontname, fontweight='bold', fontsize=9)
+    ax.yaxis.set_label_coords(-.1, .5)
+
+    ax.tick_params(colors="#808080")
+    _plt.xticks(rotation=0, fontsize=annot_size*1.2)
+    _plt.yticks(rotation=0, fontsize=annot_size*1.2)
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
+
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(fig)
+
+    _plt.show()
