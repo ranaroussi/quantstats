@@ -21,10 +21,13 @@
 __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
-from pandas.core.base import PandasObject
-from . import stats, utils, optimize
+from pandas.core.base import PandasObject as _po
+from . import stats, utils, plot
 
-__all__ = ['stats', 'utils', 'optimize', 'extend_pandas']
+from pandas.plotting import register_matplotlib_converters as _rmc
+_rmc()
+
+__all__ = ['stats', 'plot', 'utils', 'extend_pandas']
 
 
 def extend_pandas():
@@ -32,68 +35,86 @@ def extend_pandas():
     extends pandas by exposing methods to be used like:
     df.sharpe(), df.best('day'), ...
     """
-    PandasObject.expected_return = stats.expected_return
-    PandasObject.geometric_mean = stats.geometric_mean
-    PandasObject.ghpr = stats.ghpr
-    PandasObject.outliers = stats.outliers
-    PandasObject.remove_outliers = stats.remove_outliers
-    PandasObject.best = stats.best
-    PandasObject.worst = stats.worst
-    PandasObject.consecutive_wins = stats.consecutive_wins
-    PandasObject.consecutive_losses = stats.consecutive_losses
-    PandasObject.exposure = stats.exposure
-    PandasObject.win_rate = stats.win_rate
-    PandasObject.avg_return = stats.avg_return
-    PandasObject.avg_win = stats.avg_win
-    PandasObject.avg_loss = stats.avg_loss
-    PandasObject.volatility = stats.volatility
-    PandasObject.implied_volatility = stats.implied_volatility
-    PandasObject.sharpe = stats.sharpe
-    PandasObject.sortino = stats.sortino
-    PandasObject.cagr = stats.cagr
-    PandasObject.rar = stats.rar
-    PandasObject.skew = stats.skew
-    PandasObject.kurtosis = stats.kurtosis
-    PandasObject.calmar = stats.calmar
-    PandasObject.ulcer = stats.ulcer
-    PandasObject.risk_of_ruin = stats.risk_of_ruin
-    PandasObject.ror = stats.ror
-    PandasObject.value_at_risk = stats.value_at_risk
-    PandasObject.var = stats.var
-    PandasObject.conditional_value_at_risk = stats.conditional_value_at_risk
-    PandasObject.cvar = stats.cvar
-    PandasObject.expected_shortfall = stats.expected_shortfall
-    PandasObject.tail_ratio = stats.tail_ratio
-    PandasObject.payoff_ratio = stats.payoff_ratio
-    PandasObject.win_loss_ratio = stats.win_loss_ratio
-    PandasObject.profit_ratio = stats.profit_ratio
-    PandasObject.profit_factor = stats.profit_factor
-    PandasObject.gain_to_pain_ratio = stats.gain_to_pain_ratio
-    PandasObject.cpc_index = stats.cpc_index
-    PandasObject.common_sense_ratio = stats.common_sense_ratio
-    PandasObject.outlier_win_ratio = stats.outlier_win_ratio
-    PandasObject.outlier_loss_ratio = stats.outlier_loss_ratio
-    PandasObject.recovery_factor = stats.recovery_factor
-    PandasObject.risk_return_ratio = stats.risk_return_ratio
-    PandasObject.max_drawdown = stats.max_drawdown
-    PandasObject.to_drawdown_series = stats.to_drawdown_series
-    PandasObject.kelly_criterion = stats.kelly_criterion
+    _po.compsum = stats.compsum
+    _po.comp = stats.comp
+    _po.expected_return = stats.expected_return
+    _po.geometric_mean = stats.geometric_mean
+    _po.ghpr = stats.ghpr
+    _po.outliers = stats.outliers
+    _po.remove_outliers = stats.remove_outliers
+    _po.best = stats.best
+    _po.worst = stats.worst
+    _po.consecutive_wins = stats.consecutive_wins
+    _po.consecutive_losses = stats.consecutive_losses
+    _po.exposure = stats.exposure
+    _po.win_rate = stats.win_rate
+    _po.avg_return = stats.avg_return
+    _po.avg_win = stats.avg_win
+    _po.avg_loss = stats.avg_loss
+    _po.volatility = stats.volatility
+    _po.implied_volatility = stats.implied_volatility
+    _po.sharpe = stats.sharpe
+    _po.sortino = stats.sortino
+    _po.cagr = stats.cagr
+    _po.rar = stats.rar
+    _po.skew = stats.skew
+    _po.kurtosis = stats.kurtosis
+    _po.calmar = stats.calmar
+    _po.ulcer = stats.ulcer
+    _po.risk_of_ruin = stats.risk_of_ruin
+    _po.ror = stats.ror
+    _po.value_at_risk = stats.value_at_risk
+    _po.var = stats.var
+    _po.conditional_value_at_risk = stats.conditional_value_at_risk
+    _po.cvar = stats.cvar
+    _po.expected_shortfall = stats.expected_shortfall
+    _po.tail_ratio = stats.tail_ratio
+    _po.payoff_ratio = stats.payoff_ratio
+    _po.win_loss_ratio = stats.win_loss_ratio
+    _po.profit_ratio = stats.profit_ratio
+    _po.profit_factor = stats.profit_factor
+    _po.gain_to_pain_ratio = stats.gain_to_pain_ratio
+    _po.cpc_index = stats.cpc_index
+    _po.common_sense_ratio = stats.common_sense_ratio
+    _po.outlier_win_ratio = stats.outlier_win_ratio
+    _po.outlier_loss_ratio = stats.outlier_loss_ratio
+    _po.recovery_factor = stats.recovery_factor
+    _po.risk_return_ratio = stats.risk_return_ratio
+    _po.max_drawdown = stats.max_drawdown
+    _po.to_drawdown_series = stats.to_drawdown_series
+    _po.kelly_criterion = stats.kelly_criterion
 
     # methods from utils
-    PandasObject.compsum = utils.compsum
-    PandasObject.comp = utils.comp
-    PandasObject.to_returns = utils.to_returns
-    PandasObject.to_prices = utils.to_prices
-    PandasObject.log_returns = utils.log_returns
-    PandasObject.exponential_stdev = utils.exponential_stdev
-    PandasObject.rebase = utils.rebase
-    PandasObject.aggregate_returns = utils.aggregate_returns
-    PandasObject.to_excess_returns = utils.to_excess_returns
+    _po.to_returns = utils.to_returns
+    _po.to_prices = utils.to_prices
+    _po.log_returns = utils.log_returns
+    _po.exponential_stdev = utils.exponential_stdev
+    _po.rebase = utils.rebase
+    _po.aggregate_returns = utils.aggregate_returns
+    _po.to_excess_returns = utils.to_excess_returns
 
     # methods that requires benchmark stats
-    PandasObject.r_squared = stats.r_squared
-    PandasObject.r2 = stats.r2
-    PandasObject.information_ratio = stats.information_ratio
-    PandasObject.greeks = stats.greeks
-    PandasObject.rolling_greeks = stats.rolling_greeks
-    PandasObject.compare = stats.compare
+    _po.r_squared = stats.r_squared
+    _po.r2 = stats.r2
+    _po.information_ratio = stats.information_ratio
+    _po.greeks = stats.greeks
+    _po.rolling_greeks = stats.rolling_greeks
+    _po.compare = stats.compare
+
+    # plotting methods
+    _po.plot_snapshot = plot.snapshot
+    _po.plot_earnings = plot.earnings
+    _po.plot_daily_returns = plot.daily_returns
+    _po.plot_distribution = plot.distribution
+    _po.plot_drawdown = plot.drawdown
+    _po.plot_drawdowns_periods = plot.drawdowns_periods
+    _po.plot_histogram = plot.histogram
+    _po.plot_log_returns = plot.log_returns
+    _po.plot_returns = plot.returns
+    _po.plot_rolling_beta = plot.rolling_beta
+    _po.plot_rolling_sharpe = plot.rolling_sharpe
+    _po.plot_rolling_sortino = plot.rolling_sortino
+    _po.plot_rolling_volatility = plot.rolling_volatility
+    _po.plot_yearly_returns = plot.yearly_returns
+
+# extend_pandas()
