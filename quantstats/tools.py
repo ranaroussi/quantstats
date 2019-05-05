@@ -23,6 +23,7 @@ from __future__ import division, print_function
 from io import BytesIO, StringIO
 import pandas as pd
 import numpy as np
+import fix_yahoo_finance as yf
 
 
 def compsum(returns):
@@ -180,6 +181,25 @@ def _prepare_returns(data, rf=0., nperiods=None):
     if rf > 0:
         return to_excess_returns(data, rf, nperiods)
     return data
+
+
+def _prepare_benchmark(benchmark, start=None, end=None):
+    """
+    fetch benchmark if ticker is provided, and pass through
+    _prepare_returns()
+    """
+    if isinstance(benchmark, str):
+        p = {"start": start, "end": end}
+        if start is None and end is None:
+            p = {"period": "max"}
+        else:
+            p = {"start": start, "end": end}
+        benchmark = yf.Ticker(benchmark).history(**p)['Close'].pct_change()
+
+    elif isinstance(benchmark, pd.DataFrame):
+        benchmark = benchmark[benchmark.columns[0]]
+
+    return _prepare_returns(benchmark)
 
 
 def _file_stream():

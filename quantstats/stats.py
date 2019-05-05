@@ -592,8 +592,8 @@ def rolling_greeks(returns, benchmark, periods=252):
     calculates rolling alpha and beta of the portfolio
     """
     df = pd.DataFrame(data={
-        "benchmark": tools._cleanup_returns(benchmark)
         "returns": tools._prepare_returns(returns),
+        "benchmark": tools._prepare_benchmark(benchmark)
     })
     corr = df.rolling(int(periods)).corr().unstack()['returns']['benchmark']
     std = df.rolling(int(periods)).std()
@@ -617,8 +617,8 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     """
     compare returns to benchmark on a day/week/month/quarter/year basis
     """
-    returns = tools._cleanup_returns(returns)
     returns = tools._prepare_returns(returns)
+    benchmark = tools._prepare_benchmark(benchmark)
 
     data = pd.DataFrame(data={
         'Benchmark': tools.aggregate_returns(benchmark, aggregate) * 100,
