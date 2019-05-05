@@ -504,11 +504,16 @@ def drawdown_details(drawdown):
         # build dataframe from results
         data = []
         for i in range(len(starts)):
-            data.append((starts[i], ends[i], (ends[i] - starts[i]).days,
-                         drawdown[starts[i]:ends[i]].min()))
+            dd = drawdown[starts[i]:ends[i]]
+            clean_dd = -remove_outliers(-dd, .99)
+            data.append((starts[i], dd.idxmin(), ends[i],
+                         (ends[i] - starts[i]).days,
+                         dd.min() * 100, clean_dd.min() * 100))
 
-        return _pd.DataFrame(columns=('start', 'end', 'days', 'drawdown'),
-                             data=data)
+        return _pd.DataFrame(data=data,
+                             columns=('start', 'valley', 'end', 'days',
+                                      'max drawdown',
+                                      '99% max drawdown'))
 
     if isinstance(drawdown, _pd.DataFrame):
         _dfs = {}
