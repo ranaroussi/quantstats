@@ -29,6 +29,20 @@ import quantstats.utils as utils
 
 # ======== STATS ========
 
+def compsum(returns):
+    """
+    Calculates rolling compounded returns
+    """
+    return returns.add(1).cumprod() - 1
+
+
+def comp(returns):
+    """
+    Calculates total compounded returns
+    """
+    return returns.add(1).prod() - 1
+
+
 def expected_return(returns, aggregate=None, compounded=True):
     """
     returns the expected return for a given period
@@ -231,7 +245,7 @@ def cagr(returns, rf=0.):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
 
-    returns = utils.compsum(utils._prepare_returns(returns, rf))
+    returns = compsum(utils._prepare_returns(returns, rf))
     years = len(returns) / 252
 
     res = (returns.values[-1] / 1.0) ** (1.0 / years) - 1

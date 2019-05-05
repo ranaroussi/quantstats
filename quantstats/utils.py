@@ -24,20 +24,6 @@ import numpy as _np
 import fix_yahoo_finance as _yf
 
 
-def compsum(returns):
-    """
-    Calculates rolling compounded returns
-    """
-    return returns.add(1).cumprod()
-
-
-def comp(returns):
-    """
-    Calculates total compounded returns
-    """
-    return returns.add(1).prod()
-
-
 def to_returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series
