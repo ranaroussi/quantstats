@@ -51,7 +51,7 @@ def to_prices(returns, base=1e5):
     """
     returns = returns.copy().fillna(0).replace(
         [_np.inf, -_np.inf], float('NaN'))
-    return returns.add(base).cumprod().subtract(base)
+    return base * returns.add(1).cumprod()
 
 
 def log_returns(returns):
@@ -149,17 +149,17 @@ def to_excess_returns(returns, rf, nperiods=None):
     return returns - rf
 
 
-def _prepare_prices(data):
+def _prepare_prices(data, base=1.):
     """
     Converts return data into prices + cleanup
     """
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
-                data[col] = to_prices(data[col])
+                data[col] = to_prices(data[col], base)
 
     elif data.dropna().min() <= 0 or data.dropna().max() < 1:
-        data = to_prices(data)
+        data = to_prices(data, base)
 
     return data.dropna()
 
