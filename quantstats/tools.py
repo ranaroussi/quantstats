@@ -183,23 +183,26 @@ def _prepare_returns(data, rf=0., nperiods=None):
     return data
 
 
-def _prepare_benchmark(benchmark, start=None, end=None):
+def _prepare_benchmark(benchmark, period="max"):
     """
     fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
+
+    period can be options or (expected) pd.DatetimeIndex range
     """
     if isinstance(benchmark, str):
-        p = {"start": start, "end": end}
-        if start is None and end is None:
-            p = {"period": "max"}
+        if isinstance(period, pd.DatetimeIndex):
+            p = {"start": period[0]}
         else:
-            p = {"start": start, "end": end}
+            p = {"period": "max"}
         benchmark = yf.Ticker(benchmark).history(**p)['Close'].pct_change()
+        if isinstance(period, pd.DatetimeIndex):
+            benchmark = benchmark[benchmark.index.isin(period)]
 
     elif isinstance(benchmark, pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]]
 
-    return _prepare_returns(benchmark)
+    return _prepare_returns(benchmark.dropna())
 
 
 def _file_stream():
