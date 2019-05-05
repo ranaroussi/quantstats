@@ -22,12 +22,12 @@ __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
 from pandas.core.base import PandasObject as _po
-from . import stats, utils, plot
+from . import stats, utils, plot, tearsheets
 
 from pandas.plotting import register_matplotlib_converters as _rmc
 _rmc()
 
-__all__ = ['stats', 'plot', 'utils', 'extend_pandas']
+__all__ = ['stats', 'plot', 'tearsheets', 'utils', 'extend_pandas']
 
 
 def extend_pandas():
