@@ -541,7 +541,7 @@ def r_squared(returns, benchmark):
     """
     slope, intercept, r_val, p_val, std_err = linregress(
         tools._prepare_returns(returns),
-        tools._prepare_benchmark(benchmark))
+        tools._prepare_benchmark(benchmark, returns.index))
     return r_val**2
 
 
@@ -556,7 +556,7 @@ def information_ratio(returns, benchmark):
     (basically the risk return ratio of the net profits)
     """
     diff_rets = tools._prepare_returns(returns) - \
-        tools._prepare_benchmark(benchmark)
+        tools._prepare_benchmark(benchmark, returns.index)
 
     return diff_rets.mean() / diff_rets.std()
 
@@ -569,7 +569,7 @@ def greeks(returns, benchmark, periods=252.):
     # ----------------------------
     # data cleanup
     returns = tools._prepare_returns(returns)
-    benchmark = tools._prepare_benchmark(benchmark)
+    benchmark = tools._prepare_benchmark(benchmark, returns.index)
     # ----------------------------
 
     # find covariance
@@ -593,7 +593,7 @@ def rolling_greeks(returns, benchmark, periods=252):
     """
     df = pd.DataFrame(data={
         "returns": tools._prepare_returns(returns),
-        "benchmark": tools._prepare_benchmark(benchmark)
+        "benchmark": tools._prepare_benchmark(benchmark, returns.index)
     })
     corr = df.rolling(int(periods)).corr().unstack()['returns']['benchmark']
     std = df.rolling(int(periods)).std()
@@ -618,7 +618,7 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     compare returns to benchmark on a day/week/month/quarter/year basis
     """
     returns = tools._prepare_returns(returns)
-    benchmark = tools._prepare_benchmark(benchmark)
+    benchmark = tools._prepare_benchmark(benchmark, returns.index)
 
     data = pd.DataFrame(data={
         'Benchmark': tools.aggregate_returns(benchmark, aggregate) * 100,
