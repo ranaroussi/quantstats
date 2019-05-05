@@ -22,9 +22,9 @@ __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
 from pandas.core.base import PandasObject
-from . import stats, tools, optimize
+from . import stats, utils, optimize
 
-__all__ = ['stats', 'tools', 'optimize', 'extend_pandas']
+__all__ = ['stats', 'utils', 'optimize', 'extend_pandas']
 
 
 def extend_pandas():
@@ -79,16 +79,16 @@ def extend_pandas():
     PandasObject.to_drawdown_series = stats.to_drawdown_series
     PandasObject.kelly_criterion = stats.kelly_criterion
 
-    # methods from tools
-    PandasObject.compsum = tools.compsum
-    PandasObject.comp = tools.comp
-    PandasObject.to_returns = tools.to_returns
-    PandasObject.to_prices = tools.to_prices
-    PandasObject.log_returns = tools.log_returns
-    PandasObject.exponential_stdev = tools.exponential_stdev
-    PandasObject.rebase = tools.rebase
-    PandasObject.aggregate_returns = tools.aggregate_returns
-    PandasObject.to_excess_returns = tools.to_excess_returns
+    # methods from utils
+    PandasObject.compsum = utils.compsum
+    PandasObject.comp = utils.comp
+    PandasObject.to_returns = utils.to_returns
+    PandasObject.to_prices = utils.to_prices
+    PandasObject.log_returns = utils.log_returns
+    PandasObject.exponential_stdev = utils.exponential_stdev
+    PandasObject.rebase = utils.rebase
+    PandasObject.aggregate_returns = utils.aggregate_returns
+    PandasObject.to_excess_returns = utils.to_excess_returns
 
     # methods that requires benchmark stats
     PandasObject.r_squared = stats.r_squared
@@ -97,4 +97,3 @@ def extend_pandas():
     PandasObject.greeks = stats.greeks
     PandasObject.rolling_greeks = stats.rolling_greeks
     PandasObject.compare = stats.compare
-

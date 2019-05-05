@@ -18,12 +18,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import division, print_function
-
-from io import BytesIO, StringIO
-import pandas as pd
-import numpy as np
-import fix_yahoo_finance as yf
+import io as _io
+import pandas as _pd
+import numpy as _np
+import fix_yahoo_finance as _yf
 
 
 def compsum(returns):
@@ -51,7 +49,8 @@ def to_prices(returns, base=1e5):
     """
     Converts returns series to price data
     """
-    returns = returns.copy().fillna(0).replace([np.inf, -np.inf], float('NaN'))
+    returns = returns.copy().fillna(0).replace(
+        [_np.inf, -_np.inf], float('NaN'))
     return returns.add(base).cumprod().subtract(base)
 
 
@@ -61,7 +60,7 @@ def log_returns(returns):
     """
     returns = _prepare_returns(returns)
     try:
-        return np.log(returns+1).replace([np.inf, -np.inf], float('NaN'))
+        return _np.log(returns+1).replace([_np.inf, -_np.inf], float('NaN'))
     except Exception:
         return 0.
 
@@ -145,7 +144,7 @@ def to_excess_returns(returns, rf, nperiods=None):
 
     if nperiods is not None:
         # deannualize
-        rf = np.power(1 + returns, 1. / nperiods) - 1.
+        rf = _np.power(1 + returns, 1. / nperiods) - 1.
 
     return returns - rf
 
@@ -154,7 +153,7 @@ def _prepare_prices(data):
     """
     Converts return data into prices + cleanup
     """
-    if isinstance(data, pd.DataFrame):
+    if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
                 data[col] = to_prices(data[col])
@@ -169,14 +168,14 @@ def _prepare_returns(data, rf=0., nperiods=None):
     """
     Converts price data into returns + cleanup
     """
-    if isinstance(data, pd.DataFrame):
+    if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
     elif data.dropna().min() >= 0 or data.dropna().max() > 1:
         data = data.pct_change()
 
-    data = data.fillna(0).replace([np.inf, -np.inf], float('NaN'))
+    data = data.fillna(0).replace([_np.inf, -_np.inf], float('NaN'))
 
     if rf > 0:
         return to_excess_returns(data, rf, nperiods)
@@ -188,18 +187,18 @@ def _prepare_benchmark(benchmark, period="max"):
     fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
 
-    period can be options or (expected) pd.DatetimeIndex range
+    period can be options or (expected) _pd.DatetimeIndex range
     """
     if isinstance(benchmark, str):
-        if isinstance(period, pd.DatetimeIndex):
+        if isinstance(period, _pd.DatetimeIndex):
             p = {"start": period[0]}
         else:
             p = {"period": "max"}
-        benchmark = yf.Ticker(benchmark).history(**p)['Close'].pct_change()
-        if isinstance(period, pd.DatetimeIndex):
+        benchmark = _yf.Ticker(benchmark).history(**p)['Close'].pct_change()
+        if isinstance(period, _pd.DatetimeIndex):
             benchmark = benchmark[benchmark.index.isin(period)]
 
-    elif isinstance(benchmark, pd.DataFrame):
+    elif isinstance(benchmark, _pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]]
 
     return _prepare_returns(benchmark.dropna())
@@ -207,7 +206,7 @@ def _prepare_benchmark(benchmark, period="max"):
 
 def _file_stream():
     """ Returns a file stream """
-    return BytesIO()
+    return _io.BytesIO()
 
 
 def _in_notebook():
@@ -235,7 +234,7 @@ def _count_consecutive(data):
         return data * (data.groupby(
             (data != data.shift(1)).cumsum()).cumcount() + 1)
 
-    if isinstance(data, pd.DataFrame):
+    if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             data[col] = _count(data[col])
         return data
@@ -258,17 +257,17 @@ def _make_portfolio(returns, start_balance=1e5, round_to=None):
     p1 = start_balance + comp_rev.cumsum()
 
     # add day before with starting balance
-    p0 = pd.Series(data=start_balance,
-                   index=p1.index + pd.Timedelta(days=-1))[:1]
+    p0 = _pd.Series(data=start_balance,
+                    index=p1.index + _pd.Timedelta(days=-1))[:1]
 
-    portfolio = pd.concat([p0, p1])
+    portfolio = _pd.concat([p0, p1])
 
-    if isinstance(returns, pd.DataFrame):
+    if isinstance(returns, _pd.DataFrame):
         portfolio.loc[:1, :] = start_balance
         portfolio.drop(columns=[0], inplace=True)
 
     if round_to:
-        portfolio = np.round(portfolio, round_to)
+        portfolio = _np.round(portfolio, round_to)
 
     return portfolio
 
@@ -277,11 +276,11 @@ def _flatten_dataframe(df, set_index=None):
     """
     Dirty method for flattening multi-index dataframe
     """
-    s_buf = StringIO()
+    s_buf = _io.StringIO()
     df.to_csv(s_buf)
     s_buf.seek(0)
 
-    df = pd.read_csv(s_buf)
+    df = _pd.read_csv(s_buf)
     if set_index is not None:
         df.set_index(set_index, inplace=True)
 
