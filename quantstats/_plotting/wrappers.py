@@ -80,9 +80,9 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     ddmin = _utils._round_to_closest(abs(dd.min()), 5)
     ddmin_ticks = 5
     if ddmin > 50:
-        ddmin_ticks = ddmin / 5
-    elif ddmin > 30:
         ddmin_ticks = ddmin / 4
+    elif ddmin > 20:
+        ddmin_ticks = ddmin / 3
     ddmin_ticks = int(_utils._round_to_closest(ddmin_ticks, 5))
 
     # ddmin_ticks = int(_utils._round_to_closest(ddmin, 5))
@@ -128,8 +128,6 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
 
     if show:
         _plt.show(fig)
-
-    _plt.show()
 
 
 def earnings(returns, start_balance=1e5,
@@ -199,7 +197,6 @@ def earnings(returns, start_balance=1e5,
     if show:
         _plt.show(fig)
 
-    _plt.show()
 
 
 def returns(returns, benchmark=None,
@@ -368,6 +365,7 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
                           fill=True, lw=lw, figsize=figsize,
                           ylabel="Drawdown",
                           fontname=fontname, grayscale=grayscale,
+                          subtitle=subtitle,
                           savefig=savefig, show=show)
 
 
@@ -492,7 +490,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     returns = _stats.monthly_returns(returns, eoy=eoy,
                                      compounded=compounded) * 100
 
-    fig_height = len(returns) / 2.25
+    fig_height = len(returns) / 3
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
@@ -510,11 +508,13 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     ax.set_title('      Monthly Returns (%)\n', fontsize=14, y=.995,
                  fontname=fontname, fontweight='bold', color='black')
 
+    # _sns.set(font_scale=.9)
     ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
                       annot_kws={"size": annot_size},
                       fmt="0.2f", linewidths=0.5,
                       square=square, cbar=cbar, cmap=cmap,
                       cbar_kws={'format': '%.0f%%'})
+    # _sns.set(font_scale=1)
 
     # align plot to match other
     ax.set_ylabel('Years', fontname=fontname, fontweight='bold', fontsize=12)
@@ -535,4 +535,3 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     if show:
         _plt.show(fig)
 
-    _plt.show()

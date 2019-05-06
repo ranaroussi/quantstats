@@ -74,13 +74,13 @@ def rebase(prices, base=100.):
 
 
 def group_returns(returns, groupby, compounded=False):
-        """ summarize returns
-        group_returns(df, df.index.year)
-        group_returns(df, [df.index.year, df.index.month])
-        """
-        if compounded:
-            return returns.groupby(groupby).apply(_stats.comp)
-        return returns.groupby(groupby).sum()
+    """ summarize returns
+    group_returns(df, df.index.year)
+    group_returns(df, [df.index.year, df.index.month])
+    """
+    if compounded:
+        return returns.groupby(groupby).apply(_stats.comp)
+    return returns.groupby(groupby).sum()
 
 
 def aggregate_returns(returns, period=None, compounded=True):
@@ -95,19 +95,19 @@ def aggregate_returns(returns, period=None, compounded=True):
         returns = group_returns(returns, index.month, compounded=compounded)
     if 'quarter' in period:
         returns = group_returns(returns, index.quarter, compounded=compounded)
-    elif 'year' in period or 'eoy' in period or 'yoy' in period:
+    elif 'year' in period or 'eoy' in period or 'yoy' in period or "A" == period:
         returns = group_returns(returns, index.year, compounded=compounded)
     elif 'week' in period:
         returns = group_returns(returns, index.week, compounded=compounded)
-    elif 'eow' in period:
+    elif 'eow' in period or "W" == period:
         returns = group_returns(returns, [index.year, index.week],
-                             compounded=compounded)
-    elif 'eom' in period:
+                                compounded=compounded)
+    elif 'eom' in period or "M" == period:
         returns = group_returns(returns, [index.year, index.month],
-                             compounded=compounded)
-    elif 'eoq' in period:
+                                compounded=compounded)
+    elif 'eoq' in period or "Q" == period:
         returns = group_returns(returns, [index.year, index.quarter],
-                             compounded=compounded)
+                                compounded=compounded)
     elif not isinstance(period, str):
         return group_returns(returns, period, compounded)
 
@@ -150,7 +150,11 @@ def _prepare_prices(data, base=1.):
     elif data.min() <= 0 or data.max() < 1:
         data = to_prices(data, base)
 
-    return _pd.Series(data).dropna()
+    if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
+        data = data.fillna(0).replace(
+            [_np.inf, -_np.inf], float('NaN'))
+
+    return data
 
 
 def _prepare_returns(data, rf=0., nperiods=None):
@@ -165,7 +169,9 @@ def _prepare_returns(data, rf=0., nperiods=None):
     elif data.min() >= 0 or data.max() > 1:
         data = data.pct_change()
 
-    data = _pd.Series(data).fillna(0).replace([_np.inf, -_np.inf], float('NaN'))
+    if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
+        data = data.fillna(0).replace(
+            [_np.inf, -_np.inf], float('NaN'))
 
     if rf > 0:
         return to_excess_returns(data, rf, nperiods)

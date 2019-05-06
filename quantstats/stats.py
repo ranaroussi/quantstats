@@ -55,12 +55,12 @@ def expected_return(returns, aggregate=None, compounded=True):
 
 def geometric_mean(retruns, aggregate=None, compounded=True):
     """ shorthand for expected_return() """
-    return expected_return(retruns)
+    return expected_return(retruns, aggregate, compounded)
 
 
 def ghpr(retruns, aggregate=None, compounded=True):
     """ shorthand for expected_return() """
-    return expected_return(retruns)
+    return expected_return(retruns, aggregate, compounded)
 
 
 def outliers(returns, quantile=.95):
@@ -143,27 +143,34 @@ def win_rate(returns, aggregate=None, compounded=True):
     return _win_rate(returns)
 
 
-def avg_return(returns):
+def avg_return(returns, aggregate=None, compounded=True):
     """
     calculates the average return/trade return for a period
+    returns = utils._prepare_returns(returns)
     """
     returns = utils._prepare_returns(returns)
+    if aggregate:
+        returns = utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns != 0].fillna(0).mean()
 
 
-def avg_win(returns):
+def avg_win(returns, aggregate=None, compounded=True):
     """
     calculates the average winning return/trade return for a period
     """
     returns = utils._prepare_returns(returns)
+    if aggregate:
+        returns = utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns >= 0].fillna(0).mean()
 
 
-def avg_loss(returns):
+def avg_loss(returns, aggregate=None, compounded=True):
     """
     calculates the average lowinf return/trade return for a period
     """
     returns = utils._prepare_returns(returns)
+    if aggregate:
+        returns = utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns < 0].fillna(0).mean()
 
 
@@ -173,7 +180,7 @@ def volatility(returns, periods=252, annualize=True):
     """
     std = utils._prepare_returns(returns).std()
     if annualize:
-        return std * _np.sqrt(1 if periods is None else periods)
+        return std * _np.sqrt(periods)
 
     return std
 
@@ -525,10 +532,19 @@ def drawdown_details(drawdown):
                          (ends[i] - starts[i]).days,
                          dd.min() * 100, clean_dd.min() * 100))
 
-        return _pd.DataFrame(data=data,
+        df = _pd.DataFrame(data=data,
                              columns=('start', 'valley', 'end', 'days',
                                       'max drawdown',
                                       '99% max drawdown'))
+        df['days'] = df['days'].astype(int)
+        df['max drawdown'] = df['max drawdown'].astype(float)
+        df['99% max drawdown'] = df['99% max drawdown'].astype(float)
+
+        df['start'] = df['start'].dt.strftime('%Y-%m-%d')
+        df['end'] = df['end'].dt.strftime('%Y-%m-%d')
+        df['valley'] = df['valley'].dt.strftime('%Y-%m-%d')
+
+        return df
 
     if isinstance(drawdown, _pd.DataFrame):
         _dfs = {}
@@ -645,8 +661,8 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
         'Returns': utils.aggregate_returns(returns, aggregate) * 100
     })
 
-    data['Diff'] = data['Returns'] / data['Benchmark']
-    data['Won'] = (data['Returns'] >= data['Benchmark'])
+    data['Diff%'] = data['Returns'] / data['Benchmark']
+    data['Won'] = _np.where(data['Returns'] >= data['Benchmark'], '+', '-')
 
     if round_vals is not None:
         return _np.round(data, round_vals)

@@ -26,6 +26,18 @@ import pandas as _pd
 import numpy as _np
 import seaborn as _sns
 
+_sns.set(font_scale=1.1, rc={
+    'figure.figsize': (10, 6),
+    'axes.facecolor': 'white',
+    'figure.facecolor': 'white',
+    'grid.color': '#dddddd',
+    'grid.linewidth': 0.5,
+    "lines.linewidth": 1.5,
+    'text.color': '#333333',
+    'xtick.color': '#666666',
+    'ytick.color': '#666666'
+})
+
 import quantstats.stats as _stats
 
 _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",

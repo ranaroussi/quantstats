@@ -22,12 +22,12 @@ __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
 from pandas.core.base import PandasObject as _po
-from . import stats, utils, plot, tearsheets
+from . import stats, utils, plot, tearsheet
 
 from pandas.plotting import register_matplotlib_converters as _rmc
 _rmc()
 
-__all__ = ['stats', 'plot', 'tearsheets', 'utils', 'extend_pandas']
+__all__ = ['stats', 'plot', 'tearsheet', 'utils', 'extend_pandas']
 
 
 def extend_pandas():
@@ -119,4 +119,5 @@ def extend_pandas():
     _po.plot_yearly_returns = plot.yearly_returns
     _po.plot_monthly_heatmap = plot.monthly_heatmap
 
+    _po.metrics = tearsheet.metrics
 # extend_pandas()
