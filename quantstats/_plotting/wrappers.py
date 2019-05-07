@@ -46,7 +46,8 @@ _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
 
 
 def snapshot(returns, grayscale=False, figsize=(10, 8),
-             fontname='Arial', lw=1.5, subtitle=True, savefig=None, show=True):
+             title='Portfolio Summary', fontname='Arial', lw=1.5,
+             subtitle=True, savefig=None, show=True):
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
 
@@ -58,7 +59,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
                               figsize=figsize,
                               gridspec_kw={'height_ratios': [3, 1, 1]})
 
-    fig.suptitle('Portfolio Summary', fontsize=14, y=.995,
+    fig.suptitle(title, fontsize=14, y=.995,
                  fontname=fontname, fontweight='bold', color='black')
 
     fig.set_facecolor('white')
@@ -132,6 +133,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
 
 def earnings(returns, start_balance=1e5,
              grayscale=False, figsize=(10, 6),
+             title='Portfolio Earnings',
              fontname='Arial', lw=1.5,
              subtitle=True, savefig=None, show=True):
 
@@ -145,7 +147,7 @@ def earnings(returns, start_balance=1e5,
         figsize = (size[0], size[0]*.55)
 
     fig, ax = _plt.subplots(figsize=figsize)
-    fig.suptitle('Portfolio Earnings', fontsize=14, y=.995,
+    fig.suptitle(title, fontsize=14, y=.995,
                  fontname=fontname, fontweight='bold', color='black')
 
     if subtitle:
@@ -196,7 +198,6 @@ def earnings(returns, start_balance=1e5,
 
     if show:
         _plt.show(fig)
-
 
 
 def returns(returns, benchmark=None,
