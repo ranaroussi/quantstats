@@ -178,6 +178,14 @@ def _prepare_returns(data, rf=0., nperiods=None):
     return data
 
 
+def download_returns(ticker, period="max"):
+    if isinstance(period, _pd.DatetimeIndex):
+        p = {"start": period[0]}
+    else:
+        p = {"period": period}
+    return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
+
+
 def _prepare_benchmark(benchmark=None, period="max", rf=0.):
     """
     fetch benchmark if ticker is provided, and pass through
@@ -189,11 +197,7 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.):
         return None
 
     if isinstance(benchmark, str):
-        if isinstance(period, _pd.DatetimeIndex):
-            p = {"start": period[0]}
-        else:
-            p = {"period": "max"}
-        benchmark = _yf.Ticker(benchmark).history(**p)['Close'].pct_change()
+        benchmark = download_returns(benchmark)
 
     elif isinstance(benchmark, _pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]].copy()
