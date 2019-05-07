@@ -343,8 +343,7 @@ def value_at_risk(returns, sigma=1, confidence=0.95):
     if confidence > 1:
         confidence = confidence/100
 
-    confidence = 1 - confidence
-    return _norm.ppf(confidence) * sigma - mu
+    return _norm.ppf(1-confidence, mu, sigma)
 
 
 def var(returns, sigma=1, confidence=0.95):
@@ -358,17 +357,10 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.95):
     quantifies the amount of tail risk an investment
     """
     returns = _utils._prepare_returns(returns)
-    mu = returns.mean()
-    sigma *= returns.std()
-
-    if confidence > 1:
-        confidence = confidence/100
-
-    confidence = 1 - confidence
-    return -confidence**-1 * _norm.pdf(_norm.ppf(confidence)) * sigma - mu
+    var = value_at_risk(returns, sigma, confidence)
+    return returns[returns < var].mean()
 
 
-def cvar(returns, sigma=1, confidence=0.99):
 def cvar(returns, sigma=1, confidence=0.95):
     """ shorthand for conditional_value_at_risk() """
     return conditional_value_at_risk(returns, sigma, confidence)
