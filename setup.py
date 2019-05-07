@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-#
-# QuantStats: Portfolio analytics for quants
-# https://github.com/ranaroussi/quantstats
 
 """QuantStats: Portfolio analytics for quants
+https://github.com/ranaroussi/quantstats
 QuantStats performs portfolio profiling, to allow quants and
 portfolio managers to understand their performance better,
 by providing them with in-depth analytics and risk metrics.
@@ -70,7 +68,7 @@ setup(
     },
 
     include_package_data=True,
-    package_data={
-        'static': 'quantstats/report.html'
-    },
+    # package_data={
+    #     'static': 'quantstats/report.html*'
+    # },
 )

@@ -1,5 +1,6 @@
 # Include the license file
 include LICENSE.txt
+include quantstats/report.html
 
 # Include the data files
 recursive-include data *
