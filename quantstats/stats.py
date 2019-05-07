@@ -229,13 +229,18 @@ def sortino(returns, rf=0, periods=252, annualize=True):
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
+
+    Calculation is based on this paper by Red Rock Capital
+    http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
     """
 
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
     returns = _utils._prepare_returns(returns, rf, periods)
-    res = returns.mean() / returns[returns < 0].std()
+
+    downside = (returns[returns<0]**2).sum() / len(returns)
+    res = returns.mean() / _np.sqrt(downside)
 
     if annualize:
         return res * _np.sqrt(1 if periods is None else periods)
