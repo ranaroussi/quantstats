@@ -161,7 +161,7 @@ def html(returns, benchmark=None, rf=0.,
                     figsize=(8, 3), subtitle=False,
                     savefig={'fname': figfile, 'format': 'svg'},
                     show=False)
-    tpl = tpl.replace('{{dd_plots}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{dd_plot}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.monthly_heatmap(returns, grayscale=grayscale,
