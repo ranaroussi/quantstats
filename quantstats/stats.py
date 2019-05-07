@@ -496,7 +496,7 @@ def to_drawdown_series(prices):
     convert price series to drawdown series
     """
     prices = _utils._prepare_prices(prices)
-    return prices.add(1).div(prices.cummax().add(1)).subtract(1)
+    return prices / _np.maximum.accumulate(prices) - 1.
 
 
 def drawdown_details(drawdown):
