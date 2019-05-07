@@ -22,12 +22,15 @@ __version__ = "0.0.01"
 __author__ = "Ran Aroussi"
 
 from pandas.core.base import PandasObject as _po
-from . import stats, utils, plot, tearsheet
+from . import stats, utils, plots, reports
 
-from pandas.plotting import register_matplotlib_converters as _rmc
-_rmc()
+try:
+    from pandas.plotting import register_matplotlib_converters as _rmc
+    _rmc()
+except ImportError:
+    pass
 
-__all__ = ['stats', 'plot', 'tearsheet', 'utils', 'extend_pandas']
+__all__ = ['stats', 'plots', 'reports', 'utils', 'extend_pandas']
 
 
 def extend_pandas():
@@ -103,21 +106,21 @@ def extend_pandas():
     _po.compare = stats.compare
 
     # plotting methods
-    _po.plot_snapshot = plot.snapshot
-    _po.plot_earnings = plot.earnings
-    _po.plot_daily_returns = plot.daily_returns
-    _po.plot_distribution = plot.distribution
-    _po.plot_drawdown = plot.drawdown
-    _po.plot_drawdowns_periods = plot.drawdowns_periods
-    _po.plot_histogram = plot.histogram
-    _po.plot_log_returns = plot.log_returns
-    _po.plot_returns = plot.returns
-    _po.plot_rolling_beta = plot.rolling_beta
-    _po.plot_rolling_sharpe = plot.rolling_sharpe
-    _po.plot_rolling_sortino = plot.rolling_sortino
-    _po.plot_rolling_volatility = plot.rolling_volatility
-    _po.plot_yearly_returns = plot.yearly_returns
-    _po.plot_monthly_heatmap = plot.monthly_heatmap
+    _po.plot_snapshot = plots.snapshot
+    _po.plot_earnings = plots.earnings
+    _po.plot_daily_returns = plots.daily_returns
+    _po.plot_distribution = plots.distribution
+    _po.plot_drawdown = plots.drawdown
+    _po.plot_drawdowns_periods = plots.drawdowns_periods
+    _po.plot_histogram = plots.histogram
+    _po.plot_log_returns = plots.log_returns
+    _po.plot_returns = plots.returns
+    _po.plot_rolling_beta = plots.rolling_beta
+    _po.plot_rolling_sharpe = plots.rolling_sharpe
+    _po.plot_rolling_sortino = plots.rolling_sortino
+    _po.plot_rolling_volatility = plots.rolling_volatility
+    _po.plot_yearly_returns = plots.yearly_returns
+    _po.plot_monthly_heatmap = plots.monthly_heatmap
 
-    _po.metrics = tearsheet.metrics
+    _po.metrics = reports.metrics
 # extend_pandas()
