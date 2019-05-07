@@ -13,6 +13,7 @@ by providing them with in-depth analytics and risk metrics.
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
+from . import quantstats
 
 here = path.abspath(path.dirname(__file__))
 
@@ -22,7 +23,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='QuantStats',
-    version='0.0.02',
+    version=quantstats.__version__,
     description='Portfolio analytics for quants',
     long_description=long_description,
     url='https://github.com/ranaroussi/quantstats',

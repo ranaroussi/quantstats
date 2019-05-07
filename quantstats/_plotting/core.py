@@ -25,7 +25,7 @@ from matplotlib.ticker import FormatStrFormatter as _FormatStrFormatter
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
-import quantstats.stats as _stats
+from .. import stats as _stats
 
 _sns.set(font_scale=1.1, rc={
     'figure.figsize': (10, 6),

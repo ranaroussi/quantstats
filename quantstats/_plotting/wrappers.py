@@ -27,9 +27,11 @@ from matplotlib.ticker import (
 import numpy as _np
 import seaborn as _sns
 
-import quantstats.utils as _utils
-import quantstats.stats as _stats
-import quantstats._plotting.core as _core
+from .. import (
+    stats as _stats, utils as _utils,
+)
+
+from . import core as _core
 
 
 def _format_yaxis(x, pos):

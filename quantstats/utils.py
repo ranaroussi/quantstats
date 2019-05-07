@@ -5,7 +5,6 @@
 # https://github.com/ranaroussi/quantstats
 #
 # Copyright 2019 Ran Aroussi
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,7 +21,7 @@ import io as _io
 import pandas as _pd
 import numpy as _np
 import fix_yahoo_finance as _yf
-import quantstats.stats as _stats
+from . import stats as _stats
 
 
 def to_returns(prices, rf=0.):

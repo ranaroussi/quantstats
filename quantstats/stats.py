@@ -24,7 +24,7 @@ from scipy.stats import (
     norm as _norm, linregress as _linregress
 )
 
-import quantstats.utils as utils
+from . import utils as _utils
 
 
 # ======== STATS ========
@@ -48,8 +48,8 @@ def expected_return(returns, aggregate=None, compounded=True):
     returns the expected return for a given period
     by calculating the geometric holding period return
     """
-    returns = utils._prepare_returns(returns)
-    returns = utils.aggregate_returns(returns, aggregate, compounded)
+    returns = _utils._prepare_returns(returns)
+    returns = _utils.aggregate_returns(returns, aggregate, compounded)
     return _np.product(1 + returns) ** (1 / len(returns)) - 1
 
 
@@ -81,41 +81,41 @@ def best(returns, aggregate=None, compounded=True):
     """
     returns the best day/month/week/quarter/year's return
     """
-    returns = utils._prepare_returns(returns)
-    return utils.aggregate_returns(returns, aggregate, compounded).max()
+    returns = _utils._prepare_returns(returns)
+    return _utils.aggregate_returns(returns, aggregate, compounded).max()
 
 
 def worst(returns, aggregate=None, compounded=True):
     """
     returns the worst day/month/week/quarter/year's return
     """
-    returns = utils._prepare_returns(returns)
-    return utils.aggregate_returns(returns, aggregate, compounded).min()
+    returns = _utils._prepare_returns(returns)
+    return _utils.aggregate_returns(returns, aggregate, compounded).min()
 
 
 def consecutive_wins(returns, aggregate=None, compounded=True):
     """
     returns the maximum consecutive wins by day/month/week/quarter/year
     """
-    returns = utils._prepare_returns(returns)
-    returns = 0 < utils.aggregate_returns(returns, aggregate, compounded)
-    return utils.count_consecutive(returns).max()
+    returns = _utils._prepare_returns(returns)
+    returns = 0 < _utils.aggregate_returns(returns, aggregate, compounded)
+    return _utils.count_consecutive(returns).max()
 
 
 def consecutive_losses(returns, aggregate=None, compounded=True):
     """
     returns the maximum consecutive losses by day/month/week/quarter/year
     """
-    returns = utils._prepare_returns(returns)
-    returns = 0 > utils.aggregate_returns(returns, aggregate, compounded)
-    return utils.count_consecutive(returns).max()
+    returns = _utils._prepare_returns(returns)
+    returns = 0 > _utils.aggregate_returns(returns, aggregate, compounded)
+    return _utils.count_consecutive(returns).max()
 
 
 def exposure(returns):
     """
     returns the market exposure time (returns != 0)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return len(returns[(~_np.isnan(returns)) & (returns != 0)]) / len(returns)
 
 
@@ -129,9 +129,9 @@ def win_rate(returns, aggregate=None, compounded=True):
         except Exception:
             return 0.
 
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     if aggregate:
-        returns = utils.aggregate_returns(returns, aggregate, compounded)
+        returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
     if isinstance(returns, _pd.DataFrame):
         _df = {}
@@ -146,11 +146,11 @@ def win_rate(returns, aggregate=None, compounded=True):
 def avg_return(returns, aggregate=None, compounded=True):
     """
     calculates the average return/trade return for a period
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     if aggregate:
-        returns = utils.aggregate_returns(returns, aggregate, compounded)
+        returns = _utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns != 0].fillna(0).mean()
 
 
@@ -158,9 +158,9 @@ def avg_win(returns, aggregate=None, compounded=True):
     """
     calculates the average winning return/trade return for a period
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     if aggregate:
-        returns = utils.aggregate_returns(returns, aggregate, compounded)
+        returns = _utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns >= 0].fillna(0).mean()
 
 
@@ -168,9 +168,9 @@ def avg_loss(returns, aggregate=None, compounded=True):
     """
     calculates the average lowinf return/trade return for a period
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     if aggregate:
-        returns = utils.aggregate_returns(returns, aggregate, compounded)
+        returns = _utils.aggregate_returns(returns, aggregate, compounded)
     return returns[returns < 0].fillna(0).mean()
 
 
@@ -178,7 +178,7 @@ def volatility(returns, periods=252, annualize=True):
     """
     calculates the volatility of returns for a period
     """
-    std = utils._prepare_returns(returns).std()
+    std = _utils._prepare_returns(returns).std()
     if annualize:
         return std * _np.sqrt(periods)
 
@@ -189,7 +189,7 @@ def implied_volatility(returns, periods=252, annualize=True):
     """
     calculates the implied volatility of returns for a period
     """
-    logret = utils.log_returns(returns)
+    logret = _utils.log_returns(returns)
     if annualize:
         return logret.rolling(periods).std() * _np.sqrt(periods)
     return logret.std()
@@ -214,7 +214,7 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
-    returns = utils._prepare_returns(returns, rf, periods)
+    returns = _utils._prepare_returns(returns, rf, periods)
     res = returns.mean() / returns.std()
 
     if annualize:
@@ -234,7 +234,7 @@ def sortino(returns, rf=0, periods=252, annualize=True):
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
-    returns = utils._prepare_returns(returns, rf, periods)
+    returns = _utils._prepare_returns(returns, rf, periods)
     res = returns.mean() / returns[returns < 0].std()
 
     if annualize:
@@ -252,7 +252,7 @@ def cagr(returns, rf=0.):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
 
-    returns = compsum(utils._prepare_returns(returns, rf))
+    returns = compsum(_utils._prepare_returns(returns, rf))
     years = len(returns) / 252
 
     res = (returns.values[-1] / 1.0) ** (1.0 / years) - 1
@@ -272,7 +272,7 @@ def rar(returns, rf=0.):
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
-    returns = utils._prepare_returns(returns, rf)
+    returns = _utils._prepare_returns(returns, rf)
     return cagr(returns) / exposure(returns)
 
 
@@ -281,7 +281,7 @@ def skew(returns):
     calculates returns' skewness
     (the degree of asymmetry of a distribution around its mean)
     """
-    return utils._prepare_returns(returns).skew()
+    return _utils._prepare_returns(returns).skew()
 
 
 def kurtosis(returns):
@@ -289,14 +289,14 @@ def kurtosis(returns):
     calculates returns' kurtosis
     (the degree to which a distribution peak compared to a normal distribution)
     """
-    return utils._prepare_returns(returns).kurtosis()
+    return _utils._prepare_returns(returns).kurtosis()
 
 
 def calmar(returns):
     """
     calculates the calmar ratio (CAGR% / MaxDD%)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     cagr_ratio = cagr(returns)
     max_dd = max_drawdown(returns)
     return cagr_ratio / abs(max_dd)
@@ -306,7 +306,7 @@ def ulcer(returns):
     """
     calculates the ulcer index score (downside risk measurment)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     dd = max_drawdown(returns) * 100
     return _np.sqrt(_np.divide((dd**2).sum(), sharpe(returns) - 1))
 
@@ -316,7 +316,7 @@ def risk_of_ruin(returns):
     calculates the risk of ruin
     (the likelihood of losing all one's investment capital)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     wins = win_rate(returns)
     return ((1 - wins) / (1 + wins)) ** len(returns)
 
@@ -331,7 +331,7 @@ def value_at_risk(returns, sigma=1, confidence=0.99):
     calculats the daily value-at-risk
     (variance-covariance calculation with confidence n)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     mu = returns.mean()
     sigma *= returns.std()
 
@@ -352,7 +352,7 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.99):
     calculats the conditional daily value-at-risk (aka expected shortfall)
     quantifies the amount of tail risk an investment
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     mu = returns.mean()
     sigma *= returns.std()
 
@@ -377,7 +377,7 @@ def tail_ratio(returns, cutoff=0.95):
     """
     measures the ratio between the right (95%) and left tail (5%).
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return abs(returns.quantile(cutoff) / returns.quantile(1-cutoff))
 
 
@@ -385,7 +385,7 @@ def payoff_ratio(returns):
     """
     measures the payoff ratio (average win/average loss)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return avg_win(returns) / avg_loss(returns)
 
 
@@ -398,7 +398,7 @@ def profit_ratio(returns):
     """
     measures the profit ratio (win ratio / loss ratio)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     wins = returns[returns >= 0]
     loss = returns[returns < 0]
 
@@ -414,7 +414,7 @@ def profit_factor(returns):
     """
     measures the profit ratio (wins/loss)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return abs(returns.sum() / returns[returns < 0].sum())
 
 
@@ -427,7 +427,7 @@ def cpc_index(returns):
     """
     measures the cpc ratio (profit factor * win % * win loss ratio)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return profit_factor(returns) * win_rate(returns) * \
         win_loss_ratio(returns)
 
@@ -436,7 +436,7 @@ def common_sense_ratio(returns):
     """
     measures the common sense ratio (profit factor * tail ratio)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return profit_factor(returns) * tail_ratio(returns)
 
 
@@ -445,7 +445,7 @@ def outlier_win_ratio(returns, quantile=.99):
     calculates the outlier winners ratio
     99th percentile of returns / mean positive return
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return returns.quantile(quantile).mean() / returns[returns >= 0].mean()
 
 
@@ -454,7 +454,7 @@ def outlier_loss_ratio(returns, quantile=.01):
     calculates the outlier losers ratio
     1st percentile of returns / mean negative return
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return returns.quantile(quantile).mean() / returns[returns < 0].mean()
 
 
@@ -462,7 +462,7 @@ def recovery_factor(returns):
     """
     measures how fast the strategy recovers from drawdowns
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     total_returns = returns.compound()
     max_dd = max_drawdown(returns)
     return total_returns / abs(max_dd)
@@ -473,7 +473,7 @@ def risk_return_ratio(returns):
     calculates the return / risk ratio
     (sharpe ratio without factoring in the risk-free rate)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     return returns.mean() / returns.std()
 
 
@@ -481,7 +481,7 @@ def max_drawdown(prices):
     """
     calculates the maximum drawdown
     """
-    prices = utils._prepare_prices(prices)
+    prices = _utils._prepare_prices(prices)
     return (prices / prices.expanding(min_periods=0).max()).min() - 1
 
 
@@ -489,7 +489,7 @@ def to_drawdown_series(prices):
     """
     convert price series to drawdown series
     """
-    prices = utils._prepare_prices(prices)
+    prices = _utils._prepare_prices(prices)
     return prices.add(1).div(prices.cummax().add(1)).subtract(1)
 
 
@@ -533,9 +533,9 @@ def drawdown_details(drawdown):
                          dd.min() * 100, clean_dd.min() * 100))
 
         df = _pd.DataFrame(data=data,
-                             columns=('start', 'valley', 'end', 'days',
-                                      'max drawdown',
-                                      '99% max drawdown'))
+                           columns=('start', 'valley', 'end', 'days',
+                                    'max drawdown',
+                                    '99% max drawdown'))
         df['days'] = df['days'].astype(int)
         df['max drawdown'] = df['max drawdown'].astype(float)
         df['99% max drawdown'] = df['99% max drawdown'].astype(float)
@@ -561,7 +561,7 @@ def kelly_criterion(returns):
     should be allocated to the given strategy, based on the
     Kelly Criterion (http://en.wikipedia.org/wiki/Kelly_criterion)
     """
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     win_loss_ratio = payoff_ratio(returns)
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
@@ -576,8 +576,8 @@ def r_squared(returns, benchmark):
     measures the straight line fit of the equity curve
     """
     slope, intercept, r_val, p_val, std_err = _linregress(
-        utils._prepare_returns(returns),
-        utils._prepare_benchmark(benchmark, returns.index))
+        _utils._prepare_returns(returns),
+        _utils._prepare_benchmark(benchmark, returns.index))
     return r_val**2
 
 
@@ -591,8 +591,8 @@ def information_ratio(returns, benchmark):
     calculates the information ratio
     (basically the risk return ratio of the net profits)
     """
-    diff_rets = utils._prepare_returns(returns) - \
-        utils._prepare_benchmark(benchmark, returns.index)
+    diff_rets = _utils._prepare_returns(returns) - \
+        _utils._prepare_benchmark(benchmark, returns.index)
 
     return diff_rets.mean() / diff_rets.std()
 
@@ -604,8 +604,8 @@ def greeks(returns, benchmark, periods=252.):
 
     # ----------------------------
     # data cleanup
-    returns = utils._prepare_returns(returns)
-    benchmark = utils._prepare_benchmark(benchmark, returns.index)
+    returns = _utils._prepare_returns(returns)
+    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
     # ----------------------------
 
     # find covariance
@@ -628,8 +628,8 @@ def rolling_greeks(returns, benchmark, periods=252):
     calculates rolling alpha and beta of the portfolio
     """
     df = _pd.DataFrame(data={
-        "returns": utils._prepare_returns(returns),
-        "benchmark": utils._prepare_benchmark(benchmark, returns.index)
+        "returns": _utils._prepare_returns(returns),
+        "benchmark": _utils._prepare_benchmark(benchmark, returns.index)
     })
     corr = df.rolling(int(periods)).corr().unstack()['returns']['benchmark']
     std = df.rolling(int(periods)).std()
@@ -653,12 +653,12 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     """
     compare returns to benchmark on a day/week/month/quarter/year basis
     """
-    returns = utils._prepare_returns(returns)
-    benchmark = utils._prepare_benchmark(benchmark, returns.index)
+    returns = _utils._prepare_returns(returns)
+    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
     data = _pd.DataFrame(data={
-        'Benchmark': utils.aggregate_returns(benchmark, aggregate) * 100,
-        'Returns': utils.aggregate_returns(returns, aggregate) * 100
+        'Benchmark': _utils.aggregate_returns(benchmark, aggregate) * 100,
+        'Returns': _utils.aggregate_returns(returns, aggregate) * 100
     })
 
     data['Diff%'] = data['Returns'] / data['Benchmark']
@@ -679,13 +679,13 @@ def monthly_returns(returns, eoy=True, compounded=True):
         else:
             returns = returns[returns.columns[0]]
 
-    returns = utils._prepare_returns(returns)
+    returns = _utils._prepare_returns(returns)
     original_returns = returns.copy()
 
     returns = _pd.DataFrame(
-        utils.group_returns(returns,
-                            returns.index.strftime('%Y-%m-01'),
-                            compounded))
+        _utils.group_returns(returns,
+                             returns.index.strftime('%Y-%m-01'),
+                             compounded))
 
     returns.columns = ['Returns']
     returns.index = _pd.to_datetime(returns.index)
@@ -708,7 +708,7 @@ def monthly_returns(returns, eoy=True, compounded=True):
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']]
 
     if eoy:
-        returns['eoy'] = utils.group_returns(
+        returns['eoy'] = _utils.group_returns(
             original_returns, original_returns.index.year).values
 
     returns.columns = map(lambda x: str(x).upper(), returns.columns)
