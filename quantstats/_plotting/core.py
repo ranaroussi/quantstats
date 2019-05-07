@@ -25,6 +25,7 @@ from matplotlib.ticker import FormatStrFormatter as _FormatStrFormatter
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
+import quantstats.stats as _stats
 
 _sns.set(font_scale=1.1, rc={
     'figure.figsize': (10, 6),
@@ -37,8 +38,6 @@ _sns.set(font_scale=1.1, rc={
     'xtick.color': '#666666',
     'ytick.color': '#666666'
 })
-
-import quantstats.stats as _stats
 
 _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
                   "#4fa487", "#9b59b6", "#808080"]
