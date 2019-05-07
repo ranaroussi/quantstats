@@ -37,7 +37,8 @@ def to_prices(returns, base=1e5):
     """
     returns = returns.copy().fillna(0).replace(
         [_np.inf, -_np.inf], float('NaN'))
-    return base * returns.add(1).cumprod()
+
+    return base + base * _stats.compsum(returns)
 
 
 def log_returns(returns):
