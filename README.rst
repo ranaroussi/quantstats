@@ -225,13 +225,6 @@ Install ``quantstats`` using ``pip``:
     $ pip install quantstats --upgrade --no-cache-dir
 
 
-**Install the development brand using pip:**
-
-.. code:: bash
-
-    $ pip install git+git://github.com/ranaroussi/quantstats@dev
-
-
 Requirements
 ------------
 
