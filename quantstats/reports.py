@@ -29,13 +29,12 @@ from . import (
     utils as _utils, plots as _plots
 )
 
-if _utils._in_notebook():
-    try:
-        from IPython.core.display import (
-            display as iDisplay, HTML as iHTML
-        )
-    except ImportError:
-        pass
+try:
+    from IPython.core.display import (
+        display as iDisplay, HTML as iHTML
+    )
+except ImportError:
+    pass
 
 
 def html(returns, benchmark=None, rf=0.,
@@ -181,7 +180,7 @@ def html(returns, benchmark=None, rf=0.,
     tpl = _regex.sub('\{\{(.*?)\}\} ', '', tpl)
 
     if file is None:
-        _open_html(tpl)
+        # _open_html(tpl)
         _download_html(tpl, 'quantstats-tearsheet.html')
         return
 
