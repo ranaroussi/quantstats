@@ -331,7 +331,7 @@ def ror(returns):
     return risk_of_ruin(returns)
 
 
-def value_at_risk(returns, sigma=1, confidence=0.99):
+def value_at_risk(returns, sigma=1, confidence=0.95):
     """
     calculats the daily value-at-risk
     (variance-covariance calculation with confidence n)
@@ -347,12 +347,12 @@ def value_at_risk(returns, sigma=1, confidence=0.99):
     return _norm.ppf(confidence) * sigma - mu
 
 
-def var(returns, sigma=1, confidence=0.99):
+def var(returns, sigma=1, confidence=0.95):
     """ shorthand for value_at_risk() """
     return value_at_risk(returns, sigma, confidence)
 
 
-def conditional_value_at_risk(returns, sigma=1, confidence=0.99):
+def conditional_value_at_risk(returns, sigma=1, confidence=0.95):
     """
     calculats the conditional daily value-at-risk (aka expected shortfall)
     quantifies the amount of tail risk an investment
@@ -369,11 +369,12 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.99):
 
 
 def cvar(returns, sigma=1, confidence=0.99):
+def cvar(returns, sigma=1, confidence=0.95):
     """ shorthand for conditional_value_at_risk() """
     return conditional_value_at_risk(returns, sigma, confidence)
 
 
-def expected_shortfall(returns, sigma=1, confidence=0.99):
+def expected_shortfall(returns, sigma=1, confidence=0.95):
     """ shorthand for conditional_value_at_risk() """
     return conditional_value_at_risk(returns, sigma, confidence)
 
