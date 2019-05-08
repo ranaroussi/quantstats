@@ -24,6 +24,18 @@ import fix_yahoo_finance as _yf
 from . import stats as _stats
 
 
+def multi_shift(df, shift=3):
+    """
+    get last N rows relative to another row in pandas
+    """
+    if isinstance(df, _pd.Series):
+        df = _pd.DataFrame(df)
+    dfs = [df.shift(i) for i in _np.arange(shift)]
+    for ix, df in enumerate(dfs[1:]):
+        dfs[ix + 1].columns = [str(col) for col in df.columns + str(ix + 1)]
+    return _pd.concat(dfs, 1, sort=True)
+
+
 def to_returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series
