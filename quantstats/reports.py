@@ -177,7 +177,7 @@ def html(returns, benchmark=None, rf=0.,
                         show=False)
     tpl = tpl.replace('{{returns_dist}}', figfile.getvalue().decode())
 
-    tpl = _regex.sub('\{\{(.*?)\}\} ', '', tpl)
+    tpl = _regex.sub('\{\{(.*?)\}\}', '', tpl)
 
     if file is None:
         # _open_html(tpl)
