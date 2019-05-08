@@ -38,6 +38,24 @@ _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
                   "#4fa487", "#9b59b6", "#808080"]
 _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
 
+_HAS_PLOTLY = False
+import warnings
+try:
+    import plotly
+    _HAS_PLOTLY = True
+except ImportError:
+    pass
+
+
+def to_plotly(fig, title=""):
+    if not _HAS_PLOTLY:
+        return fig
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fig = plotly.tools.mpl_to_plotly(fig)
+        return plotly.plotly.iplot(fig, filename='quantstats-plot',
+                                   overwrite=True)
+
 
 def snapshot(returns, grayscale=False, figsize=(10, 8),
              title='Portfolio Summary', fontname='Arial', lw=1.5,
