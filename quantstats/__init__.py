@@ -87,6 +87,7 @@ def extend_pandas():
     _po.to_drawdown_series = stats.to_drawdown_series
     _po.kelly_criterion = stats.kelly_criterion
     _po.monthly_returns = stats.monthly_returns
+    _po.pct_rank = stats.pct_rank
 
     # methods from utils
     _po.to_returns = utils.to_returns
@@ -96,6 +97,7 @@ def extend_pandas():
     _po.rebase = utils.rebase
     _po.aggregate_returns = utils.aggregate_returns
     _po.to_excess_returns = utils.to_excess_returns
+    _po.multi_shift = utils.multi_shift
 
     # methods that requires benchmark stats
     _po.r_squared = stats.r_squared
