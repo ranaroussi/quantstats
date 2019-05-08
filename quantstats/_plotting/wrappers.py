@@ -49,7 +49,9 @@ except ImportError:
 
 def to_plotly(fig, title=""):
     if not _HAS_PLOTLY:
-        return fig
+
+        if not show:
+            return fig
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig = plotly.tools.mpl_to_plotly(fig)
@@ -151,7 +153,9 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
         _plt.show(fig)
 
     _plt.close()
-    return fig
+
+    if not show:
+        return fig
 
 def earnings(returns, start_balance=1e5,
              grayscale=False, figsize=(10, 6),
@@ -221,7 +225,9 @@ def earnings(returns, start_balance=1e5,
         _plt.show(fig)
 
     _plt.close()
-    return fig
+
+    if not show:
+        return fig
 
 
 def returns(returns, benchmark=None,
@@ -569,7 +575,9 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
         _plt.show(fig)
 
     _plt.close()
-    return fig
+
+    if not show:
+        return fig
 
 
 def _format_yaxis(x, pos):

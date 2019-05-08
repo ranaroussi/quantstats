@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.07
+------
+- Plots returns figure if ``show`` is set to False
+
 0.0.06
 ------
 - Minor bug fix
