@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.04
+-------
+- Added ``pct_rank()`` method to stats
+- Added ``multi_shift()`` method to utils
+
 0.0.03
 -------
 - Better VaR/cVaR calculation
