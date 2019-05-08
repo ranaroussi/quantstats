@@ -61,7 +61,7 @@ def plot_returns_bars(returns, benchmark=None,
                       resample="A", title="Returns", match_volatility=False,
                       log_scale=False, figsize=(10, 6),
                       grayscale=False, fontname='Arial',
-                      subtitle=True, savefig=None, show=False):
+                      subtitle=True, savefig=None, show=True):
 
     if match_volatility and benchmark is None:
         raise ValueError('match_volatility requires passing of '
@@ -164,7 +164,7 @@ def plot_timeseries(returns, benchmark=None,
                     percent=True, match_volatility=False, log_scale=False,
                     resample=None, lw=1.5, figsize=(10, 6), ylabel="",
                     grayscale=False, fontname="Arial",
-                    subtitle=True, savefig=None, show=False):
+                    subtitle=True, savefig=None, show=True):
 
     colors, ls, alpha = _get_colors(grayscale)
 
@@ -273,7 +273,7 @@ def plot_timeseries(returns, benchmark=None,
 def plot_histogram(returns, resample="M", bins=20,
                    fontname='Arial', grayscale=False,
                    title="Returns", kde=True, figsize=(10, 6),
-                   subtitle=True, savefig=None, show=False):
+                   subtitle=True, savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
     if grayscale:
@@ -347,7 +347,7 @@ def plot_rolling_stats(returns, benchmark=None, title="",
                        hline=None, hlw=None, hlcolor="red", hllabel="",
                        lw=1.5, figsize=(10, 6), ylabel="",
                        grayscale=False, fontname="Arial", subtitle=True,
-                       savefig=None, show=False):
+                       savefig=None, show=True):
 
     colors, ls, alpha = _get_colors(grayscale)
 
@@ -418,7 +418,7 @@ def plot_rolling_beta(returns, benchmark,
                       window2=None, window2_label="",
                       title="", hlcolor="red", figsize=(10, 6),
                       grayscale=False, fontname="Arial", lw=1.5,
-                      subtitle=True, savefig=None, show=False):
+                      subtitle=True, savefig=None, show=True):
 
     colors, ls, alpha = _get_colors(grayscale)
 
@@ -484,7 +484,7 @@ def plot_rolling_beta(returns, benchmark,
 def plot_longest_drawdowns(returns, periods=5, lw=1.5,
                            fontname='Arial', grayscale=False,
                            log_scale=False, figsize=(10, 6),
-                           subtitle=True, savefig=None, show=False):
+                           subtitle=True, savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
     if grayscale:
@@ -557,7 +557,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
 def plot_distribution(returns, figsize=(10, 6),
                       fontname='Arial', grayscale=False,
-                      subtitle=True, savefig=None, show=False):
+                      subtitle=True, savefig=None, show=True):
 
     colors = _FLATUI_COLORS
     if grayscale:

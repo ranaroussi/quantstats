@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.06
+------
+- Minor bug fix
+
 0.0.05
 ------
 - Added ``plots.to_plotly()`` method
