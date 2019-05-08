@@ -41,7 +41,7 @@ _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
 
 def snapshot(returns, grayscale=False, figsize=(10, 8),
              title='Portfolio Summary', fontname='Arial', lw=1.5,
-             subtitle=True, savefig=None, show=True):
+             subtitle=True, savefig=None, show=False):
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
 
@@ -112,8 +112,16 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
         ax.yaxis.set_major_formatter(_StrMethodFormatter('{x:,.0f}%'))
 
     _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    fig.tight_layout()
     fig.autofmt_xdate()
+
+    try:
+        _plt.subplots_adjust(hspace=0)
+    except Exception:
+        pass
+    try:
+        fig.tight_layout(w_pad=0, h_pad=0)
+    except Exception:
+        pass
 
     if savefig:
         if isinstance(savefig, dict):
@@ -124,12 +132,14 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     if show:
         _plt.show(fig)
 
+    _plt.close()
+    return fig
 
 def earnings(returns, start_balance=1e5,
              grayscale=False, figsize=(10, 6),
              title='Portfolio Earnings',
              fontname='Arial', lw=1.5,
-             subtitle=True, savefig=None, show=True):
+             subtitle=True, savefig=None, show=False):
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     alpha = .5 if grayscale else .8
@@ -172,17 +182,16 @@ def earnings(returns, start_balance=1e5,
 
     fig.set_facecolor('white')
     ax.set_facecolor('white')
-
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
-        fig.tight_layout()
-    except Exception:
-        pass
     fig.autofmt_xdate()
+
+    try:
+        _plt.subplots_adjust(hspace=0)
+    except Exception:
+        pass
+    try:
+        fig.tight_layout(w_pad=0, h_pad=0)
+    except Exception:
+        pass
 
     if savefig:
         if isinstance(savefig, dict):
@@ -193,12 +202,15 @@ def earnings(returns, start_balance=1e5,
     if show:
         _plt.show(fig)
 
+    _plt.close()
+    return fig
+
 
 def returns(returns, benchmark=None,
             grayscale=False, figsize=(10, 6),
             fontname='Arial', lw=1.5,
             match_volatility=False, compound=True,
-            resample=None, subtitle=True, savefig=None, show=True):
+            resample=None, subtitle=True, savefig=None, show=False):
 
     title = 'Cumulative Returns' if compound else 'Returns'
     if benchmark is not None:
@@ -229,7 +241,7 @@ def log_returns(returns, benchmark=None,
                 grayscale=False, figsize=(10, 5),
                 fontname='Arial', lw=1.5,
                 match_volatility=False, compound=True,
-                resample=None, subtitle=True, savefig=None, show=True):
+                resample=None, subtitle=True, savefig=None, show=False):
 
     title = 'Cumulative Returns' if compound else 'Returns'
     if benchmark is not None:
@@ -263,7 +275,7 @@ def daily_returns(returns,
                   grayscale=False, figsize=(10, 4),
                   fontname='Arial', lw=0.5,
                   log_scale=False,
-                  subtitle=True, savefig=None, show=True):
+                  subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns)
     _core.plot_timeseries(returns, None, 'Daily Returns',
@@ -285,7 +297,7 @@ def yearly_returns(returns, benchmark=None,
                    hlcolor="red", hllabel="",
                    match_volatility=False,
                    log_scale=False, figsize=(10, 5),
-                   subtitle=True, savefig=None, show=True):
+                   subtitle=True, savefig=None, show=False):
 
     title = 'EOY Returns'
     if benchmark is not None:
@@ -311,7 +323,7 @@ def yearly_returns(returns, benchmark=None,
 
 
 def distribution(returns, fontname='Arial', grayscale=False,
-                 figsize=(10, 6), subtitle=True, savefig=None, show=True):
+                 figsize=(10, 6), subtitle=True, savefig=None, show=False):
     returns = _utils._prepare_returns(returns)
     _core.plot_distribution(returns,
                             fontname=fontname,
@@ -322,7 +334,7 @@ def distribution(returns, fontname='Arial', grayscale=False,
 
 def histogram(returns, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5),
-              subtitle=True, savefig=None, show=True):
+              subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns)
     if resample == 'W':
@@ -348,7 +360,7 @@ def histogram(returns, resample='M', fontname='Arial',
 def drawdown(returns, grayscale=False, figsize=(10, 5),
              fontname='Arial', lw=1, log_scale=False,
              match_volatility=False, compound=True,
-             resample=None, subtitle=True, savefig=None, show=True):
+             resample=None, subtitle=True, savefig=None, show=False):
 
     dd = _stats.to_drawdown_series(returns)
 
@@ -366,7 +378,7 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
 
 def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                       fontname='Arial', grayscale=False, figsize=(10, 5),
-                      subtitle=True, savefig=None, show=True):
+                      subtitle=True, savefig=None, show=False):
     returns = _utils._prepare_returns(returns)
     _core.plot_longest_drawdowns(returns,
                                  periods=periods,
@@ -381,7 +393,7 @@ def rolling_beta(returns, benchmark,
                  window1=126, window1_label="6-Months",
                  window2=252, window2_label="12-Months",
                  lw=1.5, fontname='Arial', grayscale=False,
-                 figsize=(10, 3), subtitle=True, savefig=None, show=True):
+                 figsize=(10, 3), subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
@@ -401,7 +413,7 @@ def rolling_volatility(returns, benchmark=None,
                        period=126, period_label="6-Months",
                        lw=1.5, fontname='Arial', grayscale=False,
                        figsize=(10, 3),
-                       subtitle=True, savefig=None, show=True):
+                       subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns)
     returns = returns.rolling(period).std() * _np.sqrt(252)
@@ -425,7 +437,7 @@ def rolling_volatility(returns, benchmark=None,
 def rolling_sharpe(returns, benchmark=None, rf=0.,
                    period=126, period_label="6-Months",
                    lw=1.25, fontname='Arial', grayscale=False,
-                   figsize=(10, 3), subtitle=True, savefig=None, show=True):
+                   figsize=(10, 3), subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / returns.rolling(period).std()
@@ -450,7 +462,7 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
 def rolling_sortino(returns, benchmark=None, rf=0.,
                     period=126, period_label="6-Months",
                     lw=1.25, fontname='Arial', grayscale=False,
-                    figsize=(10, 3), subtitle=True, savefig=None, show=True):
+                    figsize=(10, 3), subtitle=True, savefig=None, show=False):
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / \
@@ -477,7 +489,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
                     cbar=True, square=False,
                     compounded=True, eoy=False,
                     grayscale=False, fontname='Arial',
-                    savefig=None, show=True):
+                    savefig=None, show=False):
 
     colors, ls, alpha = _core._get_colors(grayscale)
     cmap = 'gray' if grayscale else 'RdYlGn'
@@ -519,7 +531,15 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     _plt.xticks(rotation=0, fontsize=annot_size*1.2)
     _plt.yticks(rotation=0, fontsize=annot_size*1.2)
     _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    fig.tight_layout()
+
+    try:
+        _plt.subplots_adjust(hspace=0)
+    except Exception:
+        pass
+    try:
+        fig.tight_layout(w_pad=0, h_pad=0)
+    except Exception:
+        pass
 
     if savefig:
         if isinstance(savefig, dict):
@@ -529,6 +549,9 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     if show:
         _plt.show(fig)
+
+    _plt.close()
+    return fig
 
 
 def _format_yaxis(x, pos):
