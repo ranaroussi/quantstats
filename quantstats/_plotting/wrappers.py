@@ -34,14 +34,6 @@ from .. import (
 from . import core as _core
 
 
-def _format_yaxis(x, pos):
-    if x >= 1e6:
-        return '$%1.1fM' % (x * 1e-6)
-    if x >= 1e3:
-        return '$%1.0fK' % (x * 1e-3)
-    return '$%1.0f' % x
-
-
 _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
                   "#4fa487", "#9b59b6", "#808080"]
 _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
@@ -538,3 +530,10 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     if show:
         _plt.show(fig)
 
+
+def _format_yaxis(x, pos):
+    if x >= 1e6:
+        return '$%1.1fM' % (x * 1e-6)
+    if x >= 1e3:
+        return '$%1.0fK' % (x * 1e-3)
+    return '$%1.0f' % x
