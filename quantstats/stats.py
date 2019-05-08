@@ -29,6 +29,12 @@ from . import utils as _utils
 
 # ======== STATS ========
 
+def pct_rank(prices, window=60):
+    """ rank prices by window """
+    rank = _utils.multi_shift(prices, window).T.rank(pct=True).T
+    return rank.iloc[:, 0] * 100.
+
+
 def compsum(returns):
     """
     Calculates rolling compounded returns
