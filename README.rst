@@ -168,7 +168,9 @@ To view a complete list of available methods, run
 	 'sortino',
 	 'tail_ratio',
 	 'to_drawdown_series',
-	 'ulcer',
+	 'ulcer_index',
+	 'ulcer_performance_index',
+	 'upi',
 	 'utils',
 	 'value_at_risk',
 	 'var',
@@ -230,7 +232,7 @@ Install ``quantstats`` using ``pip``:
 Requirements
 ------------
 
-* `Python <https://www.python.org>`_ >= 3.4+
+* `Python <https://www.python.org>`_ >= 3.5+
 * `pandas <https://github.com/pydata/pandas>`_ (tested to work with >=0.24.0)
 * `numpy <http://www.numpy.org>`_ >= 1.15.0
 * `scipy <https://www.scipy.org>`_ >= 1.2.0
@@ -238,7 +240,7 @@ Requirements
 * `seaborn <https://seaborn.pydata.org>`_ >= 0.9.0
 * `tabulate <https://bitbucket.org/astanin/python-tabulate>`_ >= 0.8.0
 * `fix_yahoo_finance <https://github.com/ranaroussi/fix-yahoo-finance>`_ >= 0.1.33
-
+* `plotly <https://plot.ly/>`_ >= 3.4.1 (optional, for using ``plots.to_plotly()``)
 
 Questions?
 ----------
