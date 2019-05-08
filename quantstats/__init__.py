@@ -63,7 +63,9 @@ def extend_pandas():
     _po.skew = stats.skew
     _po.kurtosis = stats.kurtosis
     _po.calmar = stats.calmar
-    _po.ulcer = stats.ulcer
+    _po.ulcer_index = stats.ulcer_index
+    _po.ulcer_performance_index = stats.ulcer_performance_index
+    _po.upi = stats.upi
     _po.risk_of_ruin = stats.risk_of_ruin
     _po.ror = stats.ror
     _po.value_at_risk = stats.value_at_risk

@@ -313,13 +313,28 @@ def calmar(returns):
     return cagr_ratio / abs(max_dd)
 
 
-def ulcer(returns):
+def ulcer_index(returns, rf=0):
     """
     calculates the ulcer index score (downside risk measurment)
     """
-    returns = _utils._prepare_returns(returns)
-    dd = max_drawdown(returns) * 100
-    return _np.sqrt(_np.divide((dd**2).sum(), sharpe(returns) - 1))
+    returns = _utils._prepare_returns(returns, rf)
+    dd = 1. - returns/returns.cummax()
+    return _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
+
+
+def ulcer_performance_index(returns, rf=0):
+    """
+    calculates the ulcer index score (downside risk measurment)
+    """
+    returns = _utils._prepare_returns(returns, rf)
+    dd = 1. - returns/returns.cummax()
+    ulcer = _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
+    return returns.mean() / ulcer
+
+
+def upi(returns, rf=0):
+    """ shorthand for ulcer_performance_index() """
+    return ulcer_performance_index(returns, rf)
 
 
 def risk_of_ruin(returns):
