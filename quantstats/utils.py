@@ -159,7 +159,7 @@ def _prepare_prices(data, base=1.):
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
                 data[col] = to_prices(data[col], base)
 
-    elif data.min() <= 0 or data.max() < 1:
+    elif data.min() <= 0 and data.max() < 1:
         data = to_prices(data, base)
 
     if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
@@ -178,7 +178,7 @@ def _prepare_returns(data, rf=0., nperiods=None):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
-    elif data.min() >= 0 or data.max() > 1:
+    elif data.min() >= 0 and data.max() > 1:
         data = data.pct_change()
 
     if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
