@@ -417,60 +417,74 @@ def plots(returns, benchmark=None, grayscale=False,
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
-                        figsize=(figsize[0], figsize[0]))
+                        figsize=(figsize[0], figsize[0]),
+                        show=True)
 
         _plots.monthly_heatmap(returns, grayscale=grayscale,
-                               figsize=(figsize[0], figsize[0]*.5))
+                               figsize=(figsize[0], figsize[0]*.5),
+                               show=True)
 
         return
 
     _plots.returns(returns, benchmark, grayscale=grayscale,
-                   figsize=(figsize[0], figsize[0]*.6))
+                   figsize=(figsize[0], figsize[0]*.6),
+                   show=True)
 
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
-                       figsize=(figsize[0], figsize[0]*.5))
+                       figsize=(figsize[0], figsize[0]*.5),
+                       show=True)
 
     if benchmark is not None:
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale,
-                       figsize=(figsize[0], figsize[0]*.5))
+                       figsize=(figsize[0], figsize[0]*.5),
+                       show=True)
 
     _plots.yearly_returns(returns, benchmark,
                           grayscale=grayscale,
-                          figsize=(figsize[0], figsize[0]*.5))
+                          figsize=(figsize[0], figsize[0]*.5),
+                          show=True)
 
     _plots.histogram(returns, grayscale=grayscale,
-                     figsize=(figsize[0], figsize[0]*.5))
+                     figsize=(figsize[0], figsize[0]*.5),
+                     show=True)
 
     _plots.daily_returns(returns, grayscale=grayscale,
-                         figsize=(figsize[0], figsize[0]*.3))
+                         figsize=(figsize[0], figsize[0]*.3),
+                         show=True)
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
-                            figsize=(
-                                figsize[0], figsize[0]*.3))
+                            figsize=(figsize[0], figsize[0]*.3),
+                            show=True)
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
-        figsize=(figsize[0], figsize[0]*.3))
+        figsize=(figsize[0], figsize[0]*.3), show=True)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
-                          figsize=(figsize[0], figsize[0]*.3))
+                          figsize=(figsize[0], figsize[0]*.3),
+                          show=True)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
-                           figsize=(figsize[0], figsize[0]*.3))
+                           figsize=(figsize[0], figsize[0]*.3),
+                           show=True)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
-                             figsize=(figsize[0], figsize[0]*.5))
+                             figsize=(figsize[0], figsize[0]*.5),
+                             show=True)
 
     _plots.drawdown(returns, grayscale=grayscale,
-                    figsize=(figsize[0], figsize[0]*.4))
+                    figsize=(figsize[0], figsize[0]*.4),
+                    show=True)
 
     _plots.monthly_heatmap(returns, grayscale=grayscale,
-                           figsize=(figsize[0], figsize[0]*.5))
+                           figsize=(figsize[0], figsize[0]*.5),
+                           show=True)
 
     _plots.distribution(returns, grayscale=grayscale,
-                        figsize=(figsize[0], figsize[0]*.5))
+                        figsize=(figsize[0], figsize[0]*.5),
+                        show=True)
 
 
 def _calc_dd(df):
