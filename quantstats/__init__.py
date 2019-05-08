@@ -18,7 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.0.04"
+__version__ = "0.0.05"
 __author__ = "Ran Aroussi"
 
 from pandas.core.base import PandasObject as _po
