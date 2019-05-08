@@ -360,6 +360,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     for ix, row in dd.iterrows():
         metrics[ix] = row
     metrics['Recovery Factor'] = _stats.recovery_factor(df)
+    metrics['Ulcer Index'] = _stats.ulcer_index(df, rf)
 
     # win rate
     if mode.lower() == 'full':
