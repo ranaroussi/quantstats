@@ -264,7 +264,7 @@ def cagr(returns, rf=0.):
     """
 
     returns = compsum(_utils._prepare_returns(returns, rf))
-    years = len(returns) / 252
+    years = len(set(returns.index.year))
 
     res = (returns.values[-1] / 1.0) ** (1.0 / years) - 1
 
