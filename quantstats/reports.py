@@ -243,6 +243,15 @@ def basic(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
 def metrics(returns, benchmark=None, rf=0., display=True,
             mode='basic', sep=False):
 
+    if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
+        raise ValueError("`returns` must be a pandas Series, "
+                         "but a multi-column DataFrame was passed")
+
+    if benchmark is not None:
+        if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
+            raise ValueError("`benchmark` must be a pandas Series, "
+                             "but a multi-column DataFrame was passed")
+
     blank = ['']
     df = _pd.DataFrame({"returns": _utils._prepare_returns(returns, rf)})
     if benchmark is not None:
