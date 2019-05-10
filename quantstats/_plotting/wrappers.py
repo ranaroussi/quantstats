@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
 import matplotlib.pyplot as _plt
 from matplotlib.ticker import (
     StrMethodFormatter as _StrMethodFormatter,
@@ -39,7 +40,6 @@ _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
 _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
 
 _HAS_PLOTLY = False
-import warnings
 try:
     import plotly
     _HAS_PLOTLY = True
