@@ -53,11 +53,16 @@ def to_prices(returns, base=1e5):
     return base + base * _stats.compsum(returns)
 
 
-def log_returns(returns):
+def log_returns(returns, rf=0., nperiods=None):
+    """ shorthand for to_log_returns """
+    return to_log_returns(returns, rf, nperiods)
+
+
+def to_log_returns(returns, rf=0., nperiods=None):
     """
     Converts returns series to log returns
     """
-    returns = _prepare_returns(returns)
+    returns = _prepare_returns(returns, rf, nperiods)
     try:
         return _np.log(returns+1).replace([_np.inf, -_np.inf], float('NaN'))
     except Exception:

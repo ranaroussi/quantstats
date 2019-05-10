@@ -94,6 +94,7 @@ def extend_pandas():
     # methods from utils
     _po.to_returns = utils.to_returns
     _po.to_prices = utils.to_prices
+    _po.to_log_returns = utils.to_log_returns
     _po.log_returns = utils.log_returns
     _po.exponential_stdev = utils.exponential_stdev
     _po.rebase = utils.rebase
