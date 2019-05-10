@@ -20,6 +20,7 @@
 
 import pandas as _pd
 import numpy as _np
+from math import ceil as _ceil
 from scipy.stats import (
     norm as _norm, linregress as _linregress
 )
@@ -122,7 +123,17 @@ def exposure(returns):
     returns the market exposure time (returns != 0)
     """
     returns = _utils._prepare_returns(returns)
-    return len(returns[(~_np.isnan(returns)) & (returns != 0)]) / len(returns)
+
+    def _exposure(ret):
+        ex = len(ret[(~_np.isnan(ret)) & (ret != 0)]) / len(ret)
+        return _ceil(ex * 100) / 100
+
+    if isinstance(returns, _pd.DataFrame):
+        _df = {}
+        for col in returns.columns:
+            _df[col] = _exposure(returns[col])
+        return _pd.Series(_df)
+    return _exposure(returns)
 
 
 def win_rate(returns, aggregate=None, compounded=True):
