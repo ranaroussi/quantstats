@@ -390,7 +390,8 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.95):
     """
     returns = _utils._prepare_returns(returns)
     var = value_at_risk(returns, sigma, confidence)
-    return returns[returns < var].mean()
+    c_var = returns[returns < var].mean()[0]
+    return c_var if ~_np.isnan(c_var) else var
 
 
 def cvar(returns, sigma=1, confidence=0.95):
