@@ -134,7 +134,7 @@ def plot_returns_bars(returns, benchmark=None,
                   fontweight='bold', fontsize=12, color="black")
     ax.yaxis.set_label_coords(-.1, .5)
 
-    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_yaxis))
+    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -243,7 +243,7 @@ def plot_timeseries(returns, benchmark=None,
     _plt.yscale("symlog" if log_scale else "linear")
 
     if percent:
-        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_yaxis))
+        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
         # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
         #     lambda x, loc: "{:,}%".format(int(x*100))))
 
@@ -730,7 +730,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
         return fig
 
 
-def format_cur_yaxis(x, pos):
+def format_cur_axis(x, pos):
     if x >= 1e6:
         return '$%1.1fM' % (x * 1e-6)
     if x >= 1e3:
@@ -738,7 +738,7 @@ def format_cur_yaxis(x, pos):
     return '$%1.0f' % x
 
 
-def format_pct_yaxis(x, pos):
+def format_pct_axis(x, pos):
     x *= 100 # lambda x, loc: "{:,}%".format(int(x * 100))
     if x >= 1e6:
         return '%1.1fM%%' % (x * 1e-6)

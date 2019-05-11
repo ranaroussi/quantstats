@@ -200,7 +200,7 @@ def earnings(returns, start_balance=1e5,
     ax.set_ylabel('Value of  ${:,.0f}'.format(start_balance),
                   fontname=fontname, fontweight='bold', fontsize=12)
 
-    ax.yaxis.set_major_formatter(_core.format_cur_axis)
+    ax.yaxis.set_major_formatter(_FuncFormatter(_core.format_cur_axis))
     ax.yaxis.set_label_coords(-.1, .5)
 
     fig.set_facecolor('white')
