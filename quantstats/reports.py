@@ -331,8 +331,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Kelly Criterion %'] = _stats.kelly_criterion(df) * pct
         metrics['Risk of Ruin %'] = _stats.risk_of_ruin(df)
 
-        metrics['Daily Value-at-Risk %'] = -_stats.var(df) * pct
-        metrics['Expected Shortfall (cVaR) %'] = -_stats.cvar(df) * pct
+        metrics['Daily Value-at-Risk %'] = -abs(_stats.var(df) * pct)
+        metrics['Expected Shortfall (cVaR) %'] = -abs(_stats.cvar(df) * pct)
 
     metrics['~~~~~~'] = blank
 
