@@ -300,7 +300,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~'] = blank
 
-    metrics['Total Return %'] = _stats.comp(df) * pct
+    metrics['Cumulative Return %'] = _stats.comp(df) * pct
     metrics['CAGR%%'] = _stats.cagr(df, rf) * pct
     metrics['Sharpe'] = _stats.sharpe(df, rf)
     metrics['Sortino'] = _stats.sortino(df, rf)
