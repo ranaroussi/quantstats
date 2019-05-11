@@ -579,9 +579,3 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
         return fig
 
 
-def _format_yaxis(x, pos):
-    if x >= 1e6:
-        return '$%1.1fM' % (x * 1e-6)
-    if x >= 1e3:
-        return '$%1.0fK' % (x * 1e-3)
-    return '$%1.0f' % x

@@ -20,7 +20,10 @@
 
 import matplotlib.pyplot as _plt
 import matplotlib.dates as _mdates
-from matplotlib.ticker import FormatStrFormatter as _FormatStrFormatter
+from matplotlib.ticker import (
+    FormatStrFormatter as _FormatStrFormatter,
+    FuncFormatter as _FuncFormatter
+)
 
 import pandas as _pd
 import numpy as _np
@@ -131,8 +134,7 @@ def plot_returns_bars(returns, benchmark=None,
                   fontweight='bold', fontsize=12, color="black")
     ax.yaxis.set_label_coords(-.1, .5)
 
-    ax.yaxis.set_major_formatter(_plt.FuncFormatter(
-        lambda x, loc: "{:,}%".format(int(x*100))))
+    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_yaxis))
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -201,7 +203,7 @@ def plot_timeseries(returns, benchmark=None,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("\n%s - %s                  " % (
             returns.index.date[:1][0].strftime('%e %b \'%y'),
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
@@ -241,8 +243,9 @@ def plot_timeseries(returns, benchmark=None,
     _plt.yscale("symlog" if log_scale else "linear")
 
     if percent:
-        ax.yaxis.set_major_formatter(_plt.FuncFormatter(
-            lambda x, loc: "{:,}%".format(int(x*100))))
+        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_yaxis))
+        # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
+        #     lambda x, loc: "{:,}%".format(int(x*100))))
 
     ax.set_xlabel('')
     ax.set_ylabel(ylabel, fontname=fontname,
@@ -725,3 +728,20 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
 
     if not show:
         return fig
+
+
+def format_cur_yaxis(x, pos):
+    if x >= 1e6:
+        return '$%1.1fM' % (x * 1e-6)
+    if x >= 1e3:
+        return '$%1.0fK' % (x * 1e-3)
+    return '$%1.0f' % x
+
+
+def format_pct_yaxis(x, pos):
+    x *= 100 # lambda x, loc: "{:,}%".format(int(x * 100))
+    if x >= 1e6:
+        return '%1.1fM%%' % (x * 1e-6)
+    if x >= 1e3:
+        return '%1.0fK%%' % (x * 1e-3)
+    return '%1.0f%%' % x
