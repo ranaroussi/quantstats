@@ -49,9 +49,7 @@ except ImportError:
 
 def to_plotly(fig, title=""):
     if not _HAS_PLOTLY:
-
-        if not show:
-            return fig
+        return fig
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig = plotly.tools.mpl_to_plotly(fig)
