@@ -581,3 +581,13 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
         return fig
 
 
+def monthly_returns(returns, annot_size=10, figsize=(10, 5),
+                    cbar=True, square=False,
+                    compounded=True, eoy=False,
+                    grayscale=False, fontname='Arial',
+                    savefig=None, show=True):
+    return monthly_heatmap(returns, annot_size, figsize,
+                           cbar, square,
+                           compounded, eoy,
+                           grayscale, fontname,
+                           savefig, show)
