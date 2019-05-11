@@ -277,7 +277,7 @@ def log_returns(returns, benchmark=None,
         if match_volatility:
             title += ', Volatility Matched'
     else:
-        title += '(Log Scaled'
+        title += ' (Log Scaled'
     title += ')'
 
     returns = _utils._prepare_returns(returns)
