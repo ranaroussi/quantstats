@@ -274,10 +274,10 @@ def cagr(returns, rf=0.):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
 
-    returns = compsum(_utils._prepare_returns(returns, rf))
+    total = comp(_utils._prepare_returns(returns, rf))
     years = len(set(returns.index.year))
 
-    res = (returns.values[-1] / 1.0) ** (1.0 / years) - 1
+    res = abs(total / 1.0) ** (1.0 / years) - 1
 
     if isinstance(returns, _pd.DataFrame):
         res = _pd.Series(res)
