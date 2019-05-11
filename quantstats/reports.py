@@ -203,7 +203,8 @@ def html(returns, benchmark=None, rf=0.,
         file.write(tpl)
 
 
-def full(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
+def full(returns, benchmark=None, rf=0., grayscale=False,
+         figsize=(8, 5), display=True):
 
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
@@ -214,7 +215,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         iDisplay(metrics(returns=returns, benchmark=benchmark,
-                         rf=rf, display=False, mode='full'))
+                         rf=rf, display=display, mode='full'))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         iDisplay(dd_info)
 
@@ -222,7 +223,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=True, mode='full')
+                rf=rf, display=display, mode='full')
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         print(_tabulate(dd_info, headers="keys",
@@ -234,19 +235,18 @@ def full(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
           grayscale=grayscale, figsize=figsize, mode='full')
 
 
-def basic(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
+def basic(returns, benchmark=None, rf=0., grayscale=False,
+          figsize=(8, 5), display=True):
 
     if _utils._in_notebook():
-        df = metrics(returns=returns, benchmark=benchmark,
-                     rf=rf, display=False, mode='basic')
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
-        iDisplay(df)
-
+        metrics(returns=returns, benchmark=benchmark,
+                rf=rf, display=display, mode='basic')
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=True, mode='basic')
+                rf=rf, display=display, mode='basic')
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
