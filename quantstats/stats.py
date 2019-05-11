@@ -168,7 +168,7 @@ def avg_return(returns, aggregate=None, compounded=True):
     returns = _utils._prepare_returns(returns)
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return returns[returns != 0].fillna(0).mean()
+    return returns[returns != 0].dropna().mean()
 
 
 def avg_win(returns, aggregate=None, compounded=True):
@@ -178,7 +178,7 @@ def avg_win(returns, aggregate=None, compounded=True):
     returns = _utils._prepare_returns(returns)
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return returns[returns >= 0].fillna(0).mean()
+    return returns[returns > 0].dropna().mean()
 
 
 def avg_loss(returns, aggregate=None, compounded=True):
@@ -188,7 +188,7 @@ def avg_loss(returns, aggregate=None, compounded=True):
     returns = _utils._prepare_returns(returns)
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return returns[returns < 0].fillna(0).mean()
+    return returns[returns < 0].dropna().mean()
 
 
 def volatility(returns, periods=252, annualize=True):
@@ -416,7 +416,7 @@ def payoff_ratio(returns):
     measures the payoff ratio (average win/average loss)
     """
     returns = _utils._prepare_returns(returns)
-    return avg_win(returns) / avg_loss(returns)
+    return avg_win(returns) / abs(avg_loss(returns))
 
 
 def win_loss_ratio(returns):
