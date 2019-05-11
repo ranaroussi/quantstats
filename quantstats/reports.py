@@ -55,17 +55,28 @@ def html(returns, benchmark=None, rf=0.,
 
     mtrx = metrics(returns=returns, benchmark=benchmark,
                    rf=rf, display=False, mode='full',
-                   sep=True)[2:]
+                   sep=True, internal="True")[2:]
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
                       '<tr><td colspan="3"><hr></td></tr>')
+    tpl = tpl.replace('<tr><td></td><td></td></tr>',
+                      '<tr><td colspan="2"><hr></td></tr>')
 
     if benchmark is not None:
         yoy = _stats.compare(returns, benchmark, "A")
         yoy.columns = ['Benchmark', 'Strategy', 'Diff%', 'Won']
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
+        tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
+    else:
+        # pct multiplier
+        yoy = _pd.DataFrame(
+            _utils.group_returns(returns, returns.index.year) * 100)
+        yoy.columns = ['Return']
+        yoy['Return'] = yoy['Return'].round(2).astype(str) + '%'
+        yoy.index.name = 'Year'
+        tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
 
     dd = _stats.to_drawdown_series(returns)
@@ -241,7 +252,7 @@ def basic(returns, benchmark=None, rf=0., grayscale=False, figsize=(8, 5)):
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', sep=False):
+            mode='basic', sep=False, **kwargs):
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -261,8 +272,11 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     df = df.dropna()
 
+    # pct multiplier
+    pct = 100 if display or "internal" in kwargs else 1
+
     # return df
-    dd = _calc_dd(df)
+    dd = _calc_dd(df, display=(display or "internal" in kwargs))
 
     metrics = _pd.DataFrame()
 
@@ -278,21 +292,21 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Start Period'] = _pd.Series(s_start)
     metrics['End Period'] = _pd.Series(s_end)
     metrics['Risk-free rate %'] = _pd.Series(s_rf)
-    metrics['Exposure %%'] = _stats.exposure(df) * 100
+    metrics['Exposure %%'] = _stats.exposure(df) * pct
 
     metrics['~'] = blank
 
-    metrics['Total Return %'] = _stats.comp(df) * 100
-    metrics['CAGR%%'] = _stats.cagr(df, rf) * 100
+    metrics['Total Return %'] = _stats.comp(df) * pct
+    metrics['CAGR%%'] = _stats.cagr(df, rf) * pct
     metrics['Sharpe'] = _stats.sharpe(df, rf)
     metrics['Sortino'] = _stats.sortino(df, rf)
     metrics['Max Drawdown %'] = blank
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns']) * 100
+        ret_vol = _stats.volatility(df['returns']) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark']) * 100
+            bench_vol = _stats.volatility(df['benchmark']) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:
@@ -305,16 +319,16 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     if mode.lower() == 'full':
         metrics['~~~~~~~~~~'] = blank
 
-        metrics['Expected Daily %%'] = _stats.expected_return(df) * 100
+        metrics['Expected Daily %%'] = _stats.expected_return(df) * pct
         metrics['Expected Monthly %%'] = _stats.expected_return(
-            df, aggregate='M') * 100
+            df, aggregate='M') * pct
         metrics['Expected Yearly %%'] = _stats.expected_return(
-            df, aggregate='A') * 100
-        metrics['Kelly Criterion %'] = _stats.kelly_criterion(df) * 100
+            df, aggregate='A') * pct
+        metrics['Kelly Criterion %'] = _stats.kelly_criterion(df) * pct
         metrics['Risk of Ruin %'] = _stats.risk_of_ruin(df)
 
-        metrics['Daily Value-at-Risk %'] = -_stats.var(df) * 100
-        metrics['Expected Shortfall (cVaR) %'] = -_stats.cvar(df) * 100
+        metrics['Daily Value-at-Risk %'] = -_stats.var(df) * pct
+        metrics['Expected Shortfall (cVaR) %'] = -_stats.cvar(df) * pct
 
     metrics['~~~~~~'] = blank
 
@@ -331,38 +345,38 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     today = _dt.today()
     metrics['MTD %'] = _stats.comp(
-        df[df.index >= _dt(today.year, today.month, 1)]) * 100
+        df[df.index >= _dt(today.year, today.month, 1)]) * pct
 
     d = today - _td(3*365/12)
     metrics['3M %'] = _stats.comp(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * 100
+        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
 
     d = today - _td(6*365/12)
     metrics['6M %'] = _stats.comp(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * 100
+        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
 
-    metrics['YTD %'] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * 100
+    metrics['YTD %'] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
 
     d = today - _td(12*365/12)
     metrics['1Y %'] = _stats.comp(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * 100
+        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
     metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-3, today.month, today.day)]) * 100
+        df[df.index >= _dt(today.year-3, today.month, today.day)]) * pct
     metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-5, today.month, today.day)]) * 100
+        df[df.index >= _dt(today.year-5, today.month, today.day)]) * pct
     metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-10, today.month, today.day)]) * 100
-    metrics['All-time (ann.) %'] = _stats.cagr(df) * 100
+        df[df.index >= _dt(today.year-10, today.month, today.day)]) * pct
+    metrics['All-time (ann.) %'] = _stats.cagr(df) * pct
 
     # best/worst
     if mode.lower() == 'full':
         metrics['~~~'] = blank
-        metrics['Best Day %'] = _stats.best(df) * 100
-        metrics['Worst Day %'] = _stats.worst(df) * 100
-        metrics['Best Month %'] = _stats.best(df, aggregate='M') * 100
-        metrics['Worst Month %'] = _stats.worst(df, aggregate='M') * 100
-        metrics['Best Year %'] = _stats.best(df, aggregate='A') * 100
-        metrics['Worst Year %'] = _stats.worst(df, aggregate='A') * 100
+        metrics['Best Day %'] = _stats.best(df) * pct
+        metrics['Worst Day %'] = _stats.worst(df) * pct
+        metrics['Best Month %'] = _stats.best(df, aggregate='M') * pct
+        metrics['Worst Month %'] = _stats.worst(df, aggregate='M') * pct
+        metrics['Best Year %'] = _stats.best(df, aggregate='A') * pct
+        metrics['Worst Year %'] = _stats.worst(df, aggregate='A') * pct
 
     # dd
     metrics['~~~~'] = blank
@@ -371,15 +385,16 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Recovery Factor'] = _stats.recovery_factor(df)
     metrics['Ulcer Index'] = _stats.ulcer_index(df, rf)
 
+
     # win rate
     if mode.lower() == 'full':
         metrics['~~~~~'] = blank
-        metrics['Avg. Up Month %'] = _stats.avg_win(df, aggregate='M') * 100
-        metrics['Avg. Down Month %'] = _stats.avg_loss(df, aggregate='M') * 100
-        metrics['Win Days %%'] = _stats.win_rate(df) * 100
-        metrics['Win Month %%'] = _stats.win_rate(df, aggregate='M') * 100
-        metrics['Win Quarter %%'] = _stats.win_rate(df, aggregate='Q') * 100
-        metrics['Win Year %%'] = _stats.win_rate(df, aggregate='A') * 100
+        metrics['Avg. Up Month %'] = _stats.avg_win(df, aggregate='M') * pct
+        metrics['Avg. Down Month %'] = _stats.avg_loss(df, aggregate='M') * pct
+        metrics['Win Days %%'] = _stats.win_rate(df) * pct
+        metrics['Win Month %%'] = _stats.win_rate(df, aggregate='M') * pct
+        metrics['Win Quarter %%'] = _stats.win_rate(df, aggregate='Q') * pct
+        metrics['Win Year %%'] = _stats.win_rate(df, aggregate='A') * pct
 
     if mode.lower() == "full" and "benchmark" in df:
         metrics['~~~~~~~'] = blank
@@ -390,22 +405,27 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     # prepare for display
     for col in metrics.columns:
         try:
-            metrics[col] = metrics[col].astype(float).round(2).astype(str)
+            metrics[col] = metrics[col].astype(float).round(2)
+            if display or "internal" in kwargs:
+                metrics[col] = metrics[col].astype(str)
         except Exception:
             pass
-        if "%" in col:
+        if (display or "internal" in kwargs) and "%" in col:
             metrics[col] = metrics[col] + '%'
+
+        metrics['Longest DD Days'] = _pd.to_numeric(
+            metrics['Longest DD Days']).astype('int')
+        metrics['Avg. Drawdown Days'] = _pd.to_numeric(
+            metrics['Avg. Drawdown Days']).astype('int')
+
+        if display or "internal" in kwargs:
+            metrics['Longest DD Days'] = metrics['Longest DD Days'].astype(str)
+            metrics['Avg. Drawdown Days'] = metrics['Avg. Drawdown Days'].astype(str)
 
     metrics.columns = [
         col if '~' not in col else '' for col in metrics.columns]
     metrics.columns = [
         col[:-1] if '%' in col else col for col in metrics.columns]
-
-    metrics['Longest DD Days'] = _pd.to_numeric(
-        metrics['Longest DD Days']).astype('int').astype(str)
-    metrics['Avg. Drawdown Days'] = _pd.to_numeric(
-        metrics['Avg. Drawdown Days']).astype('int').astype(str)
-
     metrics = metrics.T
 
     if "benchmark" in df:
@@ -497,7 +517,7 @@ def plots(returns, benchmark=None, grayscale=False,
                         show=True)
 
 
-def _calc_dd(df):
+def _calc_dd(df, display=True):
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
@@ -506,14 +526,17 @@ def _calc_dd(df):
     else:
         ret_dd = dd_info
 
+    # pct multiplier
+    pct = 1 if display else 100
+
     dd_stats = {
         'returns': {
             'Max Drawdown %': ret_dd.sort_values(
                 by='max drawdown', ascending=True
-            )['max drawdown'].values[0],
+            )['max drawdown'].values[0] / pct,
             'Longest DD Days': str(round(ret_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': ret_dd['max drawdown'].mean(),
+            'Avg. Drawdown %': ret_dd['max drawdown'].mean() / pct,
             'Avg. Drawdown Days': str(round(ret_dd['days'].mean()))
         }
     }
@@ -522,10 +545,10 @@ def _calc_dd(df):
         dd_stats['benchmark'] = {
             'Max Drawdown %': bench_dd.sort_values(
                 by='max drawdown', ascending=True
-            )['max drawdown'].values[0],
+            )['max drawdown'].values[0] / pct,
             'Longest DD Days': str(round(bench_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': bench_dd['max drawdown'].mean(),
+            'Avg. Drawdown %': bench_dd['max drawdown'].mean() / pct,
             'Avg. Drawdown Days': str(round(bench_dd['days'].mean()))
         }
 
