@@ -1,6 +1,13 @@
 Change Log
 ===========
 
+0.0.08
+------
+- Better calculations for cagr, var, cvar, avg win/loss and payoff_ratio
+- Removed unused param from ``to_plotly()``
+- Added risk free param to ``log_returns()`` + renamed it to ``to_log_returns()``
+- Misc bug fixes and code improvements
+
 0.0.07
 ------
 - Plots returns figure if ``show`` is set to False
