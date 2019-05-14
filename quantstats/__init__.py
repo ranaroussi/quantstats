@@ -21,7 +21,6 @@
 __version__ = "0.0.08"
 __author__ = "Ran Aroussi"
 
-from pandas.core.base import PandasObject as _po
 from . import stats, utils, plots, reports
 
 try:
@@ -38,6 +37,8 @@ def extend_pandas():
     extends pandas by exposing methods to be used like:
     df.sharpe(), df.best('day'), ...
     """
+    from pandas.core.base import PandasObject as _po
+
     _po.compsum = stats.compsum
     _po.comp = stats.comp
     _po.expected_return = stats.expected_return
