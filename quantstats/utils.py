@@ -33,7 +33,8 @@ def _pandas_date(df, dates):
 
 def _pandas_current_month(df):
     n = _dt.datetime.now()
-    return df[_pd.date_range(_dt.date(n.year, n.month, 1), n)].dropna()
+    daterange = _pd.date_range(_dt.date(n.year, n.month, 1), n)
+    return df[df.index.isin(daterange)]
 
 
 def multi_shift(df, shift=3):
