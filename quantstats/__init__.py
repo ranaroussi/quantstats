@@ -23,12 +23,6 @@ __author__ = "Ran Aroussi"
 
 from . import stats, utils, plots, reports
 
-try:
-    from pandas.plotting import register_matplotlib_converters as _rmc
-    _rmc()
-except ImportError:
-    pass
-
 __all__ = ['stats', 'plots', 'reports', 'utils', 'extend_pandas']
 
 
