@@ -102,6 +102,8 @@ def extend_pandas():
     _po.aggregate_returns = utils.aggregate_returns
     _po.to_excess_returns = utils.to_excess_returns
     _po.multi_shift = utils.multi_shift
+    _po.curr_month = utils._pandas_current_month
+    _po.date = utils._pandas_date
 
     # methods that requires benchmark stats
     _po.r_squared = stats.r_squared

@@ -18,10 +18,22 @@
 # limitations under the License.
 
 import io as _io
+import datetime as _dt
 import pandas as _pd
 import numpy as _np
 import fix_yahoo_finance as _yf
 from . import stats as _stats
+
+
+def _pandas_date(df, dates):
+    if not isinstance(dates, list):
+        dates = [dates]
+    return df[df.index.isin(dates)]
+
+
+def _pandas_current_month(df):
+    n = _dt.datetime.now()
+    return df[_pd.date_range(_dt.date(n.year, n.month, 1), n)].dropna()
 
 
 def multi_shift(df, shift=3):
