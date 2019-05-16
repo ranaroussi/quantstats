@@ -156,7 +156,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
         return fig
 
 
-def earnings(returns, start_balance=1e5,
+def earnings(returns, start_balance=1e5, mode="sum",
              grayscale=False, figsize=(10, 6),
              title='Portfolio Earnings',
              fontname='Arial', lw=1.5,
@@ -165,7 +165,7 @@ def earnings(returns, start_balance=1e5,
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     alpha = .5 if grayscale else .8
 
-    returns = _utils._make_portfolio(returns, start_balance)
+    returns = _utils._make_portfolio(returns, start_balance, mode)
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())

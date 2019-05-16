@@ -289,13 +289,20 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def _make_portfolio(returns, start_balance=1e5, round_to=None):
+def _make_portfolio(returns, start_balance=1e5,
+                    mode="sum", round_to=None):
     """
     Calculates compounded value of portfolio
     """
-    comp_rev = (start_balance + start_balance *
-                returns.shift(1)).fillna(start_balance) * returns
-    p1 = start_balance + comp_rev.cumsum()
+    if mode.lower() in ["cumsum", "sum"]:
+        p1 = start_balance + start_balance * returns.cumsum()
+    elif mode.lower() in ["compsum", "comp"]:
+        p1 = to_prices(returns, start_balance)
+    else:
+        # fixed amount every day
+        comp_rev = (start_balance + start_balance *
+                    returns.shift(1)).fillna(start_balance) * returns
+        p1 = start_balance + comp_rev.cumsum()
 
     # add day before with starting balance
     p0 = _pd.Series(data=start_balance,
