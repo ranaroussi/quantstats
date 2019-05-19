@@ -1,6 +1,13 @@
 Change Log
 ===========
 
+0.0.09
+------
+- Added support for 3 modes (cumulative, compounded, fixed amount) in ``plots.earnings()`` and ``utils.make_portfolio()``
+- Added two DataFrame utilities: ``df.curr_month()`` and ``df.date(date)``
+- Misc bug fixes and code refactoring
+
+
 0.0.08
 ------
 - Better calculations for cagr, var, cvar, avg win/loss and payoff_ratio
