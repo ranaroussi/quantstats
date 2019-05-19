@@ -165,7 +165,7 @@ def earnings(returns, start_balance=1e5, mode="sum",
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     alpha = .5 if grayscale else .8
 
-    returns = _utils._make_portfolio(returns, start_balance, mode)
+    returns = _utils.make_portfolio(returns, start_balance, mode)
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())

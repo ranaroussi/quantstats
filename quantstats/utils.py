@@ -289,8 +289,8 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def _make_portfolio(returns, start_balance=1e5,
-                    mode="sum", round_to=None):
+def make_portfolio(returns, start_balance=1e5,
+                   mode="sum", round_to=None):
     """
     Calculates compounded value of portfolio
     """
