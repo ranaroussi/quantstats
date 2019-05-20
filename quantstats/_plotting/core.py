@@ -63,7 +63,7 @@ def plot_returns_bars(returns, benchmark=None,
                       hline=None, hlw=None, hlcolor="red", hllabel="",
                       resample="A", title="Returns", match_volatility=False,
                       log_scale=False, figsize=(10, 6),
-                      grayscale=False, fontname='Arial',
+                      grayscale=False, fontname='Arial', ylabel=True,
                       subtitle=True, savefig=None, show=True):
 
     if match_volatility and benchmark is None:
@@ -130,9 +130,10 @@ def plot_returns_bars(returns, benchmark=None,
     _plt.yscale("symlog" if log_scale else "linear")
 
     ax.set_xlabel('')
-    ax.set_ylabel("Returns", fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
-    ax.yaxis.set_label_coords(-.1, .5)
+    if ylabel:
+        ax.set_ylabel("Returns", fontname=fontname,
+                    fontweight='bold', fontsize=12, color="black")
+        ax.yaxis.set_label_coords(-.1, .5)
 
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
 
@@ -248,8 +249,9 @@ def plot_timeseries(returns, benchmark=None,
         #     lambda x, loc: "{:,}%".format(int(x*100))))
 
     ax.set_xlabel('')
-    ax.set_ylabel(ylabel, fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
+    if ylabel:
+        ax.set_ylabel(ylabel, fontname=fontname,
+                    fontweight='bold', fontsize=12, color="black")
     ax.yaxis.set_label_coords(-.1, .5)
 
     try:
@@ -280,7 +282,7 @@ def plot_timeseries(returns, benchmark=None,
 def plot_histogram(returns, resample="M", bins=20,
                    fontname='Arial', grayscale=False,
                    title="Returns", kde=True, figsize=(10, 6),
-                   subtitle=True, savefig=None, show=True):
+                   ylabel=True, subtitle=True, savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
     if grayscale:
@@ -319,9 +321,11 @@ def plot_histogram(returns, resample="M", bins=20,
     ax.axvline(0, lw=1, color="#000000", zorder=2)
 
     ax.set_xlabel('')
-    ax.set_ylabel("Occurrences", fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
-    ax.yaxis.set_label_coords(-.1, .5)
+    if ylabel:
+        ax.set_ylabel("Occurrences", fontname=fontname,
+                    fontweight='bold', fontsize=12, color="black")
+        ax.yaxis.set_label_coords(-.1, .5)
+
     ax.legend(fontsize=12)
 
     # fig.autofmt_xdate()
@@ -394,10 +398,13 @@ def plot_rolling_stats(returns, benchmark=None, title="",
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
-    ax.set_ylabel(ylabel, fontname=fontname,
+    if ylabel:
+        ax.set_ylabel(ylabel, fontname=fontname,
                   fontweight='bold', fontsize=12, color="black")
-    ax.yaxis.set_label_coords(-.1, .5)
+        ax.yaxis.set_label_coords(-.1, .5)
+
     ax.yaxis.set_major_formatter(_FormatStrFormatter('%.2f'))
+
     ax.legend(fontsize=12)
 
     try:
@@ -429,7 +436,7 @@ def plot_rolling_beta(returns, benchmark,
                       window2=None, window2_label="",
                       title="", hlcolor="red", figsize=(10, 6),
                       grayscale=False, fontname="Arial", lw=1.5,
-                      subtitle=True, savefig=None, show=True):
+                      ylabel=True, subtitle=True, savefig=None, show=True):
 
     colors, ls, alpha = _get_colors(grayscale)
 
@@ -464,10 +471,12 @@ def plot_rolling_beta(returns, benchmark,
 
     # use a more precise date string for the x axis locations in the toolbar
     ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-    ax.set_ylabel("Beta", fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
 
-    ax.yaxis.set_label_coords(-.1, .5)
+    if ylabel:
+        ax.set_ylabel("Beta", fontname=fontname,
+                  fontweight='bold', fontsize=12, color="black")
+        ax.yaxis.set_label_coords(-.1, .5)
+
     ax.legend(fontsize=12)
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -496,7 +505,7 @@ def plot_rolling_beta(returns, benchmark,
 
 def plot_longest_drawdowns(returns, periods=5, lw=1.5,
                            fontname='Arial', grayscale=False,
-                           log_scale=False, figsize=(10, 6),
+                           log_scale=False, figsize=(10, 6), ylabel=True,
                            subtitle=True, savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
@@ -535,13 +544,14 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
     _plt.yscale("symlog" if log_scale else "linear")
-    ax.set_ylabel("Cumulative Returns", fontname=fontname,
+    if ylabel:
+        ax.set_ylabel("Cumulative Returns", fontname=fontname,
                   fontweight='bold', fontsize=12, color="black")
+        ax.yaxis.set_label_coords(-.1, .5)
 
-    ax.yaxis.set_label_coords(-.1, .5)
-
-    ax.yaxis.set_major_formatter(_plt.FuncFormatter(
-        lambda x, loc: "{:,}%".format(int(x*100))))
+    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+    # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
+    #     lambda x, loc: "{:,}%".format(int(x*100))))
 
     fig.autofmt_xdate()
 
@@ -571,7 +581,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
 
 def plot_distribution(returns, figsize=(10, 6),
-                      fontname='Arial', grayscale=False,
+                      fontname='Arial', grayscale=False, ylabel=True,
                       subtitle=True, savefig=None, show=True):
 
     colors = _FLATUI_COLORS
@@ -617,9 +627,10 @@ def plot_distribution(returns, figsize=(10, 6),
     ax.yaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
 
-    ax.set_ylabel('Rerurns', fontname=fontname,
+    if ylabel:
+        ax.set_ylabel('Rerurns', fontname=fontname,
                   fontweight='bold', fontsize=12, color="black")
-    ax.yaxis.set_label_coords(-.1, .5)
+        ax.yaxis.set_label_coords(-.1, .5)
 
     fig.autofmt_xdate()
 
@@ -731,17 +742,35 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
 
 
 def format_cur_axis(x, pos):
+    if x >= 1e12:
+        res = '$%1.1fT' % (x * 1e-12)
+        return res.replace('.0T', 'T')
+    if x >= 1e9:
+        res = '$%1.1fB' % (x * 1e-9)
+        return res.replace('.0B', 'B')
     if x >= 1e6:
-        return '$%1.1fM' % (x * 1e-6)
+        res = '$%1.1fM' % (x * 1e-6)
+        return res.replace('.0M', 'M')
     if x >= 1e3:
-        return '$%1.0fK' % (x * 1e-3)
-    return '$%1.0f' % x
+        res = '$%1.0fK' % (x * 1e-3)
+        return res.replace('.0K', 'K')
+    res = '$%1.0f' % x
+    return res.replace('.0', '')
 
 
 def format_pct_axis(x, pos):
     x *= 100 # lambda x, loc: "{:,}%".format(int(x * 100))
+    if x >= 1e12:
+        res = '%1.1fT%%' % (x * 1e-12)
+        return res.replace('.0T%', 'T%')
+    if x >= 1e9:
+        res = '%1.1fB%%' % (x * 1e-9)
+        return res.replace('.0B%', 'B%')
     if x >= 1e6:
-        return '%1.1fM%%' % (x * 1e-6)
+        res = '%1.1fM%%' % (x * 1e-6)
+        return res.replace('.0M%', 'M%')
     if x >= 1e3:
-        return '%1.0fK%%' % (x * 1e-3)
-    return '%1.0f%%' % x
+        res = '%1.1fK%%' % (x * 1e-3)
+        return res.replace('.0K%', 'K%')
+    res = '%1.0f%%' % x
+    return res.replace('.0%', '%')

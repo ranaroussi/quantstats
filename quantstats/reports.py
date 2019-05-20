@@ -96,14 +96,14 @@ def html(returns, benchmark=None, rf=0.,
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(8, 5), subtitle=False,
                    savefig={'fname': figfile, 'format': 'svg'},
-                   show=False)
+                   show=False, ylabel=False)
     tpl = tpl.replace('{{returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
                        figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': 'svg'},
-                       show=False)
+                       show=False, ylabel=False)
     tpl = tpl.replace('{{log_returns}}', figfile.getvalue().decode())
 
     if benchmark is not None:
@@ -111,28 +111,28 @@ def html(returns, benchmark=None, rf=0.,
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale, figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': 'svg'},
-                       show=False)
+                       show=False, ylabel=False)
         tpl = tpl.replace('{{vol_returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.yearly_returns(returns, benchmark, grayscale=grayscale,
                           figsize=(8, 4), subtitle=False,
                           savefig={'fname': figfile, 'format': 'svg'},
-                          show=False)
+                          show=False, ylabel=False)
     tpl = tpl.replace('{{eoy_returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.histogram(returns, grayscale=grayscale,
                      figsize=(8, 4), subtitle=False,
                      savefig={'fname': figfile, 'format': 'svg'},
-                     show=False)
+                     show=False, ylabel=False)
     tpl = tpl.replace('{{monthly_dist}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.daily_returns(returns, grayscale=grayscale,
                          figsize=(8, 3), subtitle=False,
                          savefig={'fname': figfile, 'format': 'svg'},
-                         show=False)
+                         show=False, ylabel=False)
     tpl = tpl.replace('{{daily_returns}}', figfile.getvalue().decode())
 
     if benchmark is not None:
@@ -140,56 +140,56 @@ def html(returns, benchmark=None, rf=0.,
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             figsize=(8, 3), subtitle=False,
                             savefig={'fname': figfile, 'format': 'svg'},
-                            show=False)
+                            show=False, ylabel=False)
         tpl = tpl.replace('{{rolling_beta}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': 'svg'},
-                              show=False)
+                              show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_vol}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': 'svg'},
-                          show=False)
+                          show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_sharpe}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': 'svg'},
-                           show=False)
+                           show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_sortino}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(8, 4), subtitle=False,
                              savefig={'fname': figfile, 'format': 'svg'},
-                             show=False)
+                             show=False, ylabel=False)
     tpl = tpl.replace('{{dd_periods}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.drawdown(returns, grayscale=grayscale,
                     figsize=(8, 3), subtitle=False,
                     savefig={'fname': figfile, 'format': 'svg'},
-                    show=False)
+                    show=False, ylabel=False)
     tpl = tpl.replace('{{dd_plot}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.monthly_heatmap(returns, grayscale=grayscale,
                            figsize=(8, 4), cbar=False,
                            savefig={'fname': figfile, 'format': 'svg'},
-                           show=False)
+                           show=False, ylabel=False)
     tpl = tpl.replace('{{monthly_heatmap}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.distribution(returns, grayscale=grayscale,
                         figsize=(8, 4), subtitle=False,
                         savefig={'fname': figfile, 'format': 'svg'},
-                        show=False)
+                        show=False, ylabel=False)
     tpl = tpl.replace('{{returns_dist}}', figfile.getvalue().decode())
 
     tpl = _regex.sub('\{\{(.*?)\}\}', '', tpl)
@@ -452,73 +452,73 @@ def plots(returns, benchmark=None, grayscale=False,
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]),
-                        show=True)
+                        show=True, ylabel=False)
 
         _plots.monthly_heatmap(returns, grayscale=grayscale,
                                figsize=(figsize[0], figsize[0]*.5),
-                               show=True)
+                               show=True, ylabel=False)
 
         return
 
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(figsize[0], figsize[0]*.6),
-                   show=True)
+                   show=True, ylabel=False)
 
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
                        figsize=(figsize[0], figsize[0]*.5),
-                       show=True)
+                       show=True, ylabel=False)
 
     if benchmark is not None:
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale,
                        figsize=(figsize[0], figsize[0]*.5),
-                       show=True)
+                       show=True, ylabel=False)
 
     _plots.yearly_returns(returns, benchmark,
                           grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.5),
-                          show=True)
+                          show=True, ylabel=False)
 
     _plots.histogram(returns, grayscale=grayscale,
                      figsize=(figsize[0], figsize[0]*.5),
-                     show=True)
+                     show=True, ylabel=False)
 
     _plots.daily_returns(returns, grayscale=grayscale,
                          figsize=(figsize[0], figsize[0]*.3),
-                         show=True)
+                         show=True, ylabel=False)
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             figsize=(figsize[0], figsize[0]*.3),
-                            show=True)
+                            show=True, ylabel=False)
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
-        figsize=(figsize[0], figsize[0]*.3), show=True)
+        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True)
+                          show=True, ylabel=False)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True)
+                           show=True, ylabel=False)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),
-                             show=True)
+                             show=True, ylabel=False)
 
     _plots.drawdown(returns, grayscale=grayscale,
                     figsize=(figsize[0], figsize[0]*.4),
-                    show=True)
+                    show=True, ylabel=False)
 
     _plots.monthly_heatmap(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.5),
-                           show=True)
+                           show=True, ylabel=False)
 
     _plots.distribution(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]*.5),
-                        show=True)
+                        show=True, ylabel=False)
 
 
 def _calc_dd(df, display=True):
