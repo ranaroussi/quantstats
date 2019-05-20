@@ -156,7 +156,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
         return fig
 
 
-def earnings(returns, start_balance=1e5, mode="sum",
+def earnings(returns, start_balance=1e5, mode="comp",
              grayscale=False, figsize=(10, 6),
              title='Portfolio Earnings',
              fontname='Arial', lw=1.5,

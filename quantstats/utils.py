@@ -290,10 +290,12 @@ def _score_str(val):
 
 
 def make_portfolio(returns, start_balance=1e5,
-                   mode="sum", round_to=None):
+                   mode="comp", round_to=None):
     """
     Calculates compounded value of portfolio
     """
+    returns.fillna(0, inplace=True)
+
     if mode.lower() in ["cumsum", "sum"]:
         p1 = start_balance + start_balance * returns.cumsum()
     elif mode.lower() in ["compsum", "comp"]:
