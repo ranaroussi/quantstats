@@ -59,9 +59,11 @@ def to_plotly(fig, title=""):
 
 def snapshot(returns, grayscale=False, figsize=(10, 8),
              title='Portfolio Summary', fontname='Arial', lw=1.5,
-             subtitle=True, savefig=None, show=True):
+             mode="comp", subtitle=True, savefig=None, show=True):
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
+
+    returns = _utils.make_portfolio(returns, 1, mode).pct_change().fillna(0)
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
