@@ -20,7 +20,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='QuantStats',
-    version='0.0.09',
+    version='0.0.10',
     description='Portfolio analytics for quants',
     long_description=long_description,
     url='https://github.com/ranaroussi/quantstats',
@@ -60,7 +60,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'examples']),
     install_requires=['pandas>=0.24.0', 'numpy>=1.15.0', 'scipy>=1.2.0',
                       'matplotlib>=3.0.0', 'seaborn>=0.9.0',
-                      'tabulate>=0.8.0', 'fix_yahoo_finance>=0.1.33'],
+                      'tabulate>=0.8.0', 'yfinance>=0.1.38'],
     entry_points={
         'console_scripts': [
             'sample=sample:main',

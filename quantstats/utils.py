@@ -21,7 +21,7 @@ import io as _io
 import datetime as _dt
 import pandas as _pd
 import numpy as _np
-import fix_yahoo_finance as _yf
+import yfinance as _yf
 from . import stats as _stats
 
 

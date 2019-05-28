@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.10
+------
+- Updated to install and use ``yfinance`` instead of ``fix_yahoo_finance``
+
 0.0.09
 ------
 - Added support for 3 modes (cumulative, compounded, fixed amount) in ``plots.earnings()`` and ``utils.make_portfolio()``
