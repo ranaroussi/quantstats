@@ -239,7 +239,7 @@ Requirements
 * `matplotlib <https://matplotlib.org>`_ >= 3.0.0
 * `seaborn <https://seaborn.pydata.org>`_ >= 0.9.0
 * `tabulate <https://bitbucket.org/astanin/python-tabulate>`_ >= 0.8.0
-* `yfinance <https://github.com/ranaroussi/fix-yahoo-finance>`_ >= 0.1.38
+* `yfinance <https://github.com/ranaroussi/yfinance>`_ >= 0.1.38
 * `plotly <https://plot.ly/>`_ >= 3.4.1 (optional, for using ``plots.to_plotly()``)
 
 Questions?
