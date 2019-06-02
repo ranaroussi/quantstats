@@ -294,7 +294,7 @@ def make_portfolio(returns, start_balance=1e5,
     """
     Calculates compounded value of portfolio
     """
-    returns.fillna(0, inplace=True)
+    returns = returns.copy().fillna(0)
 
     if mode.lower() in ["cumsum", "sum"]:
         p1 = start_balance + start_balance * returns.cumsum()
