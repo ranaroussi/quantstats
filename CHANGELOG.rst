@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.11
+------
+- Minor bug fixes
+
 0.0.10
 ------
 - Updated to install and use ``yfinance`` instead of ``fix_yahoo_finance``
