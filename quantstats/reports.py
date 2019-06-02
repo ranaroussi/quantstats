@@ -452,7 +452,7 @@ def plots(returns, benchmark=None, grayscale=False,
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]),
-                        show=True, ylabel=False)
+                        show=True)
 
         _plots.monthly_heatmap(returns, grayscale=grayscale,
                                figsize=(figsize[0], figsize[0]*.5),
