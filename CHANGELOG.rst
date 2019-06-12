@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.12
+------
+- Option to add ``compounded=True/False`` to reports (default is ``True``)
+
 0.0.11
 ------
 - Minor bug fixes
