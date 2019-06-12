@@ -19,6 +19,7 @@
 # limitations under the License.
 
 import pandas as _pd
+import numpy as _np
 from datetime import (
     datetime as _dt, timedelta as _td
 )
@@ -39,7 +40,7 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         file=None):
+         file=None, compounded=True):
 
     if file is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -55,7 +56,8 @@ def html(returns, benchmark=None, rf=0.,
 
     mtrx = metrics(returns=returns, benchmark=benchmark,
                    rf=rf, display=False, mode='full',
-                   sep=True, internal="True")[2:]
+                   sep=True, internal="True",
+                   compounded=compounded)[2:]
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
@@ -204,7 +206,7 @@ def html(returns, benchmark=None, rf=0.,
 
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
-         figsize=(8, 5), display=True):
+         figsize=(8, 5), display=True, compounded=True):
 
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
@@ -215,7 +217,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         iDisplay(metrics(returns=returns, benchmark=benchmark,
-                         rf=rf, display=display, mode='full'))
+                         rf=rf, display=display, mode='full',
+                         compounded=compounded))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         iDisplay(dd_info)
 
@@ -223,7 +226,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=display, mode='full')
+                rf=rf, display=display, mode='full',
+                compounded=compounded)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         print(_tabulate(dd_info, headers="keys",
@@ -236,17 +240,19 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
-          figsize=(8, 5), display=True):
+          figsize=(8, 5), display=True, compounded=True):
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=display, mode='basic')
+                rf=rf, display=display, mode='basic',
+                compounded=compounded)
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=display, mode='basic')
+                rf=rf, display=display, mode='basic',
+                compounded=compounded)
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
@@ -256,7 +262,7 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', sep=False, **kwargs):
+            mode='basic', sep=False, compounded=True, **kwargs):
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -300,8 +306,11 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~'] = blank
 
-    metrics['Cumulative Return %'] = _stats.comp(df) * pct
-    metrics['CAGR%%'] = _stats.cagr(df, rf) * pct
+    if compounded:
+        metrics['Cumulative Return %'] = _stats.comp(df) * pct
+    else:
+        metrics['Total Return %'] = df.sum() * pct
+    metrics['CAGR%%'] = _stats.cagr(df, rf, compounded) * pct
     metrics['Sharpe'] = _stats.sharpe(df, rf)
     metrics['Sortino'] = _stats.sortino(df, rf)
     metrics['Max Drawdown %'] = blank
@@ -346,31 +355,32 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     # returns
     metrics['~~'] = blank
+    comp_func = _stats.comp if compounded else _np.sum
 
     today = _dt.today()
-    metrics['MTD %'] = _stats.comp(
+    metrics['MTD %'] = comp_func(
         df[df.index >= _dt(today.year, today.month, 1)]) * pct
 
     d = today - _td(3*365/12)
-    metrics['3M %'] = _stats.comp(
+    metrics['3M %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
 
     d = today - _td(6*365/12)
-    metrics['6M %'] = _stats.comp(
+    metrics['6M %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
 
-    metrics['YTD %'] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+    metrics['YTD %'] = comp_func(df[df.index >= _dt(today.year, 1, 1)]) * pct
 
     d = today - _td(12*365/12)
-    metrics['1Y %'] = _stats.comp(
+    metrics['1Y %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
     metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-3, today.month, today.day)]) * pct
+        df[df.index >= _dt(today.year-3, today.month, today.day)], 0., compounded) * pct
     metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-5, today.month, today.day)]) * pct
+        df[df.index >= _dt(today.year-5, today.month, today.day)], 0., compounded) * pct
     metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-10, today.month, today.day)]) * pct
-    metrics['All-time (ann.) %'] = _stats.cagr(df) * pct
+        df[df.index >= _dt(today.year-10, today.month, today.day)], 0., compounded) * pct
+    metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
     # best/worst
     if mode.lower() == 'full':
@@ -447,16 +457,17 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 
 def plots(returns, benchmark=None, grayscale=False,
-          figsize=(8, 5), mode='basic'):
+          figsize=(8, 5), mode='basic', compounded=True):
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]),
-                        show=True)
+                        show=True, mode=("comp" if compounded else "sum"))
 
         _plots.monthly_heatmap(returns, grayscale=grayscale,
                                figsize=(figsize[0], figsize[0]*.5),
-                               show=True, ylabel=False)
+                               show=True, ylabel=False,
+                               compounded=compounded)
 
         return
 

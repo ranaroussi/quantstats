@@ -265,7 +265,7 @@ def sortino(returns, rf=0, periods=252, annualize=True):
     return res
 
 
-def cagr(returns, rf=0.):
+def cagr(returns, rf=0., compounded=True):
     """
     calculates the communicative annualized growth return
     (CAGR%) of access returns
@@ -274,7 +274,12 @@ def cagr(returns, rf=0.):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
 
-    total = comp(_utils._prepare_returns(returns, rf))
+    total = _utils._prepare_returns(returns, rf)
+    if compounded:
+        total = comp(total)
+    else:
+        total = _np.sum(total)
+
     years = len(set(returns.index.year))
 
     res = abs(total / 1.0) ** (1.0 / years) - 1
