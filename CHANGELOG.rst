@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.13
+------
+- Fixed non-compounded plots in reports when using ``compounded=False``
+
 0.0.12
 ------
 - Option to add ``compounded=True/False`` to reports (default is ``True``)
