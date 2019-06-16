@@ -66,7 +66,7 @@ def html(returns, benchmark=None, rf=0.,
                       '<tr><td colspan="2"><hr></td></tr>')
 
     if benchmark is not None:
-        yoy = _stats.compare(returns, benchmark, "A")
+        yoy = _stats.compare(returns, benchmark, "A", compounded=compounded)
         yoy.columns = ['Benchmark', 'Strategy', 'Diff%', 'Won']
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
@@ -98,14 +98,14 @@ def html(returns, benchmark=None, rf=0.,
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(8, 5), subtitle=False,
                    savefig={'fname': figfile, 'format': 'svg'},
-                   show=False, ylabel=False)
+                   show=False, ylabel=False, cumulative=compounded)
     tpl = tpl.replace('{{returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
                        figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': 'svg'},
-                       show=False, ylabel=False)
+                       show=False, ylabel=False, cumulative=compounded)
     tpl = tpl.replace('{{log_returns}}', figfile.getvalue().decode())
 
     if benchmark is not None:
@@ -113,21 +113,21 @@ def html(returns, benchmark=None, rf=0.,
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale, figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': 'svg'},
-                       show=False, ylabel=False)
+                       show=False, ylabel=False, cumulative=compounded)
         tpl = tpl.replace('{{vol_returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.yearly_returns(returns, benchmark, grayscale=grayscale,
                           figsize=(8, 4), subtitle=False,
                           savefig={'fname': figfile, 'format': 'svg'},
-                          show=False, ylabel=False)
+                          show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{eoy_returns}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.histogram(returns, grayscale=grayscale,
                      figsize=(8, 4), subtitle=False,
                      savefig={'fname': figfile, 'format': 'svg'},
-                     show=False, ylabel=False)
+                     show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{monthly_dist}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
@@ -170,7 +170,7 @@ def html(returns, benchmark=None, rf=0.,
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(8, 4), subtitle=False,
                              savefig={'fname': figfile, 'format': 'svg'},
-                             show=False, ylabel=False)
+                             show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{dd_periods}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
@@ -184,17 +184,18 @@ def html(returns, benchmark=None, rf=0.,
     _plots.monthly_heatmap(returns, grayscale=grayscale,
                            figsize=(8, 4), cbar=False,
                            savefig={'fname': figfile, 'format': 'svg'},
-                           show=False, ylabel=False)
+                           show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{monthly_heatmap}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.distribution(returns, grayscale=grayscale,
                         figsize=(8, 4), subtitle=False,
                         savefig={'fname': figfile, 'format': 'svg'},
-                        show=False, ylabel=False)
+                        show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{returns_dist}}', figfile.getvalue().decode())
 
     tpl = _regex.sub('\{\{(.*?)\}\}', '', tpl)
+    tpl = tpl.replace('white-space:pre;', '')
 
     if file is None:
         # _open_html(tpl)

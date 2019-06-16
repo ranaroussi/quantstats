@@ -27,6 +27,7 @@ from matplotlib.ticker import (
 
 import pandas as _pd
 import numpy as _np
+from pandas import DataFrame as _df
 import seaborn as _sns
 from .. import stats as _stats
 
@@ -163,7 +164,7 @@ def plot_returns_bars(returns, benchmark=None,
 
 
 def plot_timeseries(returns, benchmark=None,
-                    title="Returns", compound=False,
+                    title="Returns", compound=False, cumulative=True,
                     fill=False, returns_label="Strategy",
                     hline=None, hlw=None, hlcolor="red", hllabel="",
                     percent=True, match_volatility=False, log_scale=False,
@@ -186,9 +187,14 @@ def plot_timeseries(returns, benchmark=None,
 
     # ---------------
     if compound is True:
-        returns = _stats.compsum(returns)
-        if isinstance(benchmark, _pd.Series):
-            benchmark = _stats.compsum(benchmark)
+        if cumulative:
+            returns = _stats.compsum(returns)
+            if isinstance(benchmark, _pd.Series):
+                benchmark = _stats.compsum(benchmark)
+        else:
+            returns = returns.cumsum()
+            if isinstance(benchmark, _pd.Series):
+                benchmark = benchmark.cumsum()
 
     if resample:
         returns = returns.resample(resample)
@@ -282,14 +288,16 @@ def plot_timeseries(returns, benchmark=None,
 def plot_histogram(returns, resample="M", bins=20,
                    fontname='Arial', grayscale=False,
                    title="Returns", kde=True, figsize=(10, 6),
-                   ylabel=True, subtitle=True, savefig=None, show=True):
+                   ylabel=True, subtitle=True, compounded=True,
+                   savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
     if grayscale:
         colors = ['silver', 'gray', 'black']
 
+    apply = _stats.comp if compounded else _np.sum
     returns = returns.fillna(0).resample(resample).apply(
-        _stats.comp).resample(resample).last()
+        apply).resample(resample).last()
 
     fig, ax = _plt.subplots(figsize=figsize)
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
@@ -506,7 +514,8 @@ def plot_rolling_beta(returns, benchmark,
 def plot_longest_drawdowns(returns, periods=5, lw=1.5,
                            fontname='Arial', grayscale=False,
                            log_scale=False, figsize=(10, 6), ylabel=True,
-                           subtitle=True, savefig=None, show=True):
+                           subtitle=True, compounded=True,
+                           savefig=None, show=True):
 
     colors = ['#348dc1', '#003366', 'red']
     if grayscale:
@@ -529,7 +538,8 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
     fig.set_facecolor('white')
     ax.set_facecolor('white')
-    ax.plot(_stats.compsum(returns), lw=lw, label="Backtest", color=colors[0])
+    series = _stats.compsum(returns) if compounded else returns.cumsum()
+    ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
     highlight = 'black' if grayscale else 'red'
     for idx, row in longest_dd.iterrows():
@@ -582,7 +592,8 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
 def plot_distribution(returns, figsize=(10, 6),
                       fontname='Arial', grayscale=False, ylabel=True,
-                      subtitle=True, savefig=None, show=True):
+                      subtitle=True, compounded=True,
+                      savefig=None, show=True):
 
     colors = _FLATUI_COLORS
     if grayscale:
@@ -592,20 +603,22 @@ def plot_distribution(returns, figsize=(10, 6),
     port = _pd.DataFrame(returns.fillna(0))
     port.columns = ['Daily']
 
+    apply = _stats.comp if compounded else _np.sum
+
     port['Weekly'] = port['Daily'].resample(
-        'W-MON').apply(_stats.comp).resample('W-MON').last()
+        'W-MON').apply(apply).resample('W-MON').last()
     port['Weekly'].ffill(inplace=True)
 
     port['Monthly'] = port['Daily'].resample(
-        'M').apply(_stats.comp).resample('M').last()
+        'M').apply(apply).resample('M').last()
     port['Monthly'].ffill(inplace=True)
 
     port['Quarterly'] = port['Daily'].resample(
-        'Q').apply(_stats.comp).resample('Q').last()
+        'Q').apply(apply).resample('Q').last()
     port['Quarterly'].ffill(inplace=True)
 
     port['Yearly'] = port['Daily'].resample(
-        'A').apply(_stats.comp).resample('A').last()
+        'A').apply(apply).resample('A').last()
     port['Yearly'].ffill(inplace=True)
 
     fig, ax = _plt.subplots(figsize=figsize)

@@ -26,6 +26,7 @@ from matplotlib.ticker import (
 )
 
 import numpy as _np
+from pandas import DataFrame as _df
 import seaborn as _sns
 
 from .. import (
@@ -234,7 +235,7 @@ def earnings(returns, start_balance=1e5, mode="comp",
 def returns(returns, benchmark=None,
             grayscale=False, figsize=(10, 6),
             fontname='Arial', lw=1.5,
-            match_volatility=False, compound=True,
+            match_volatility=False, compound=True, cumulative=True,
             resample=None, ylabel="Cumulative Returns",
             subtitle=True, savefig=None, show=True):
 
@@ -256,6 +257,7 @@ def returns(returns, benchmark=None,
                           log_scale=False,
                           resample=resample,
                           compound=compound,
+                          cumulative=cumulative,
                           lw=lw,
                           figsize=figsize,
                           fontname=fontname,
@@ -266,7 +268,7 @@ def returns(returns, benchmark=None,
 def log_returns(returns, benchmark=None,
                 grayscale=False, figsize=(10, 5),
                 fontname='Arial', lw=1.5,
-                match_volatility=False, compound=True,
+                match_volatility=False, compound=True, cumulative=True,
                 resample=None, ylabel="Cumulative Returns",
                 subtitle=True, savefig=None, show=True):
 
@@ -291,6 +293,7 @@ def log_returns(returns, benchmark=None,
                           log_scale=True,
                           resample=resample,
                           compound=compound,
+                          cumulative=cumulative,
                           lw=lw,
                           figsize=figsize,
                           fontname=fontname,
@@ -324,7 +327,8 @@ def yearly_returns(returns, benchmark=None,
                    hlcolor="red", hllabel="",
                    match_volatility=False,
                    log_scale=False, figsize=(10, 5), ylabel=True,
-                   subtitle=True, savefig=None, show=True):
+                   subtitle=True, compounded=True,
+                   savefig=None, show=True):
 
     title = 'EOY Returns'
     if benchmark is not None:
@@ -333,8 +337,12 @@ def yearly_returns(returns, benchmark=None,
             benchmark, returns.index).resample('A').apply(
                 _stats.compsum).resample('A').last()
 
-    returns = _utils._prepare_returns(returns).resample('A').apply(
-        _stats.compsum).resample('A').last()
+    returns = _utils._prepare_returns(returns).resample('A')
+    if compounded:
+        returns = returns.apply(_stats.compsum)
+    else:
+        returns = returns.apply(_df.cumsum)
+    returns = returns.resample('A').last()
 
     _core.plot_returns_bars(returns, benchmark,
                             hline=returns.mean(),
@@ -351,19 +359,22 @@ def yearly_returns(returns, benchmark=None,
 
 
 def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
-                 figsize=(10, 6), subtitle=True, savefig=None, show=True):
+                 figsize=(10, 6), subtitle=True, compounded=True,
+                 savefig=None, show=True):
     returns = _utils._prepare_returns(returns)
     _core.plot_distribution(returns,
                             fontname=fontname,
                             grayscale=grayscale,
                             figsize=figsize,
                             ylabel=ylabel,
-                            subtitle=subtitle, savefig=savefig, show=show)
+                            subtitle=subtitle,
+                            compounded=compounded,
+                            savefig=savefig, show=show)
 
 
 def histogram(returns, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5), ylabel=True,
-              subtitle=True, savefig=None, show=True):
+              subtitle=True, compounded=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns)
     if resample == 'W':
@@ -384,7 +395,9 @@ def histogram(returns, resample='M', fontname='Arial',
                                 title="Distribution of %sReturns" % title,
                                 figsize=figsize,
                                 ylabel=ylabel,
-                                subtitle=subtitle, savefig=savefig, show=show)
+                                subtitle=subtitle,
+                                compounded=compounded,
+                                savefig=savefig, show=show)
 
 
 def drawdown(returns, grayscale=False, figsize=(10, 5),
@@ -408,7 +421,8 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
 
 def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                       fontname='Arial', grayscale=False, figsize=(10, 5),
-                      ylabel=True, subtitle=True, savefig=None, show=True):
+                      ylabel=True, subtitle=True, compounded=True,
+                      savefig=None, show=True):
     returns = _utils._prepare_returns(returns)
     _core.plot_longest_drawdowns(returns,
                                  periods=periods,
@@ -417,7 +431,9 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                                  grayscale=grayscale,
                                  figsize=figsize,
                                  ylabel=ylabel,
-                                 subtitle=subtitle, savefig=savefig, show=show)
+                                 subtitle=subtitle,
+                                 compounded=compounded,
+                                 savefig=savefig, show=show)
 
 
 def rolling_beta(returns, benchmark,
