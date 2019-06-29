@@ -4,7 +4,7 @@ Change Log
 0.0.14
 ------
 - Fixed calculation for rolling sharpe and rolling sortino charts
-
+- Nicer CSS when printing html reports
 
 0.0.13
 ------
