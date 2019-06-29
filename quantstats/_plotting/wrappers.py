@@ -491,11 +491,13 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / returns.rolling(period).std()
+    returns = returns * _np.sqrt(1 if period is None else period)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         benchmark = benchmark.rolling(
             period).mean() / benchmark.rolling(period).std()
+        benchmark = benchmark * _np.sqrt(1 if period is None else period)
 
     _core.plot_rolling_stats(returns, benchmark,
                              hline=returns.mean(),
@@ -518,11 +520,13 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / \
         returns[returns < 0].rolling(period).std()
+    returns = returns * _np.sqrt(1 if period is None else period)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
-        benchmark = benchmark.rolling(period).mean(
-        ) / benchmark[benchmark < 0].rolling(period).std()
+        benchmark = benchmark.rolling(period).mean() / benchmark[
+            benchmark < 0].rolling(period).std()
+        benchmark = benchmark * _np.sqrt(1 if period is None else period)
 
     _core.plot_rolling_stats(returns, benchmark,
                              hline=returns.mean(),
