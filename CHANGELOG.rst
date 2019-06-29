@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.14
+------
+- Fixed calculation for rolling sharpe and rolling sortino charts
+
+
 0.0.13
 ------
 - Fixed non-compounded plots in reports when using ``compounded=False``
