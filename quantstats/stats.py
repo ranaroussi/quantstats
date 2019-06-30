@@ -689,8 +689,10 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
     data = _pd.DataFrame(data={
-        'Benchmark': _utils.aggregate_returns(benchmark, aggregate, compounded) * 100,
-        'Returns': _utils.aggregate_returns(returns, aggregate, compounded) * 100
+        'Benchmark': _utils.aggregate_returns(
+            benchmark, aggregate, compounded) * 100,
+        'Returns': _utils.aggregate_returns(
+            returns, aggregate, compounded) * 100
     })
 
     data['Diff%'] = data['Returns'] / data['Benchmark']
