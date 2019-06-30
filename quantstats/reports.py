@@ -308,9 +308,11 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['~'] = blank
 
     if compounded:
-        metrics['Cumulative Return %'] = _stats.comp(df) * pct
+        metrics['Cumulative Return %'] = (
+            _stats.comp(df) * pct).map('{:,.2f}'.format)
     else:
-        metrics['Total Return %'] = df.sum() * pct
+        metrics['Total Return %'] = (df.sum() * pct).map('{:,.2f}'.format)
+
     metrics['CAGR%%'] = _stats.cagr(df, rf, compounded) * pct
     metrics['Sharpe'] = _stats.sharpe(df, rf)
     metrics['Sortino'] = _stats.sortino(df, rf)
