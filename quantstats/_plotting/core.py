@@ -27,7 +27,6 @@ from matplotlib.ticker import (
 
 import pandas as _pd
 import numpy as _np
-from pandas import DataFrame as _df
 import seaborn as _sns
 from .. import stats as _stats
 
