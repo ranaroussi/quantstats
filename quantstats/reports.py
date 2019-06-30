@@ -378,11 +378,14 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['1Y %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
     metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-3, today.month, today.day)], 0., compounded) * pct
+        df[df.index >= _dt(today.year-3, today.month, today.day)
+           ], 0., compounded) * pct
     metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-5, today.month, today.day)], 0., compounded) * pct
+        df[df.index >= _dt(today.year-5, today.month, today.day)
+           ], 0., compounded) * pct
     metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-10, today.month, today.day)], 0., compounded) * pct
+        df[df.index >= _dt(today.year-10, today.month, today.day)
+           ], 0., compounded) * pct
     metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
     # best/worst
@@ -401,7 +404,6 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics[ix] = row
     metrics['Recovery Factor'] = _stats.recovery_factor(df)
     metrics['Ulcer Index'] = _stats.ulcer_index(df, rf)
-
 
     # win rate
     if mode.lower() == 'full':
@@ -437,7 +439,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
         if display or "internal" in kwargs:
             metrics['Longest DD Days'] = metrics['Longest DD Days'].astype(str)
-            metrics['Avg. Drawdown Days'] = metrics['Avg. Drawdown Days'].astype(str)
+            metrics['Avg. Drawdown Days'] = metrics['Avg. Drawdown Days'
+                                                    ].astype(str)
 
     metrics.columns = [
         col if '~' not in col else '' for col in metrics.columns]

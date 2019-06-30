@@ -580,7 +580,8 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     # align plot to match other
     if ylabel:
-        ax.set_ylabel('Years', fontname=fontname, fontweight='bold', fontsize=12)
+        ax.set_ylabel('Years', fontname=fontname,
+                      fontweight='bold', fontsize=12)
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.tick_params(colors="#808080")
