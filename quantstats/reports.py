@@ -67,7 +67,7 @@ def html(returns, benchmark=None, rf=0.,
 
     if benchmark is not None:
         yoy = _stats.compare(returns, benchmark, "A", compounded=compounded)
-        yoy.columns = ['Benchmark', 'Strategy', 'Diff%', 'Won']
+        yoy.columns = ['Benchmark', 'Strategy', 'Multiplier', 'Won']
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
