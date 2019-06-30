@@ -695,7 +695,7 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
             returns, aggregate, compounded) * 100
     })
 
-    data['Diff%'] = data['Returns'] / data['Benchmark']
+    data['Multiplier'] = data['Returns'] / data['Benchmark']
     data['Won'] = _np.where(data['Returns'] >= data['Benchmark'], '+', '-')
 
     if round_vals is not None:
