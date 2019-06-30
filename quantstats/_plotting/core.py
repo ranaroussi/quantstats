@@ -132,7 +132,7 @@ def plot_returns_bars(returns, benchmark=None,
     ax.set_xlabel('')
     if ylabel:
         ax.set_ylabel("Returns", fontname=fontname,
-                    fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
@@ -256,7 +256,7 @@ def plot_timeseries(returns, benchmark=None,
     ax.set_xlabel('')
     if ylabel:
         ax.set_ylabel(ylabel, fontname=fontname,
-                    fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
     ax.yaxis.set_label_coords(-.1, .5)
 
     try:
@@ -330,7 +330,7 @@ def plot_histogram(returns, resample="M", bins=20,
     ax.set_xlabel('')
     if ylabel:
         ax.set_ylabel("Occurrences", fontname=fontname,
-                    fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.legend(fontsize=12)
@@ -407,7 +407,7 @@ def plot_rolling_stats(returns, benchmark=None, title="",
 
     if ylabel:
         ax.set_ylabel(ylabel, fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.yaxis.set_major_formatter(_FormatStrFormatter('%.2f'))
@@ -481,7 +481,7 @@ def plot_rolling_beta(returns, benchmark,
 
     if ylabel:
         ax.set_ylabel("Beta", fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.legend(fontsize=12)
@@ -555,7 +555,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     _plt.yscale("symlog" if log_scale else "linear")
     if ylabel:
         ax.set_ylabel("Cumulative Returns", fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
@@ -641,7 +641,7 @@ def plot_distribution(returns, figsize=(10, 6),
 
     if ylabel:
         ax.set_ylabel('Rerurns', fontname=fontname,
-                  fontweight='bold', fontsize=12, color="black")
+                      fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
     fig.autofmt_xdate()
@@ -771,7 +771,7 @@ def format_cur_axis(x, pos):
 
 
 def format_pct_axis(x, pos):
-    x *= 100 # lambda x, loc: "{:,}%".format(int(x * 100))
+    x *= 100  # lambda x, loc: "{:,}%".format(int(x * 100))
     if x >= 1e12:
         res = '%1.1fT%%' % (x * 1e-12)
         return res.replace('.0T%', 'T%')
