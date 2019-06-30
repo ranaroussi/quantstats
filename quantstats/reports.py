@@ -302,8 +302,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['Start Period'] = _pd.Series(s_start)
     metrics['End Period'] = _pd.Series(s_end)
-    metrics['Risk-free rate %'] = _pd.Series(s_rf)
-    metrics['Exposure %%'] = _stats.exposure(df) * pct
+    metrics['Risk-Free Rate %'] = _pd.Series(s_rf)
+    metrics['Time in Market %'] = _stats.exposure(df) * pct
 
     metrics['~'] = blank
 
