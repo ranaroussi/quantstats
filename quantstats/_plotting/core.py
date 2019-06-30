@@ -19,6 +19,11 @@
 # limitations under the License.
 
 import matplotlib.pyplot as _plt
+try:
+    _plt.rcParams["font.family"] = "Arial"
+except Exception:
+    pass
+
 import matplotlib.dates as _mdates
 from matplotlib.ticker import (
     FormatStrFormatter as _FormatStrFormatter,
