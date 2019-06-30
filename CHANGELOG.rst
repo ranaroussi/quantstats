@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.15
+------
+- Better report formatting
+- Code cleanup
+
 0.0.14
 ------
 - Fixed calculation for rolling sharpe and rolling sortino charts
