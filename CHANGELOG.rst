@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.16
+------
+- Handles no drawdowns better
+
 0.0.15
 ------
 - Better report formatting
