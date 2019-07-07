@@ -549,7 +549,9 @@ def drawdown_details(drawdown):
 
         # no drawdown :)
         if len(starts) == 0:
-            return None
+            return _pd.DataFrame(
+                index=[], columns=('start', 'valley', 'end', 'days',
+                                   'max drawdown', '99% max drawdown'))
 
         # drawdown series begins in a drawdown
         if starts[0] > ends[0]:

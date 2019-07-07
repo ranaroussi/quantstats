@@ -212,16 +212,21 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
         by='max drawdown', ascending=True)[:5]
-    dd_info.index = range(1, 6)
 
-    dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+    if not dd_info.empty:
+        dd_info.index = range(1, 6)
+        dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         iDisplay(metrics(returns=returns, benchmark=benchmark,
                          rf=rf, display=display, mode='full',
                          compounded=compounded))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
-        iDisplay(dd_info)
+        if dd_info.empty:
+            iDisplay(iHTML("<p>(no drawdowns)</p>"))
+        else:
+            iDisplay(dd_info)
 
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
@@ -231,8 +236,11 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                 compounded=compounded)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
-        print(_tabulate(dd_info, headers="keys",
-                        tablefmt='simple', floatfmt=".2f"))
+        if dd_info.empty:
+            print("(no drawdowns)")
+        else:
+            print(_tabulate(dd_info, headers="keys",
+                            tablefmt='simple', floatfmt=".2f"))
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
 
@@ -431,7 +439,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             pass
         if (display or "internal" in kwargs) and "%" in col:
             metrics[col] = metrics[col] + '%'
-
+    try:
         metrics['Longest DD Days'] = _pd.to_numeric(
             metrics['Longest DD Days']).astype('int')
         metrics['Avg. Drawdown Days'] = _pd.to_numeric(
@@ -441,6 +449,12 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             metrics['Longest DD Days'] = metrics['Longest DD Days'].astype(str)
             metrics['Avg. Drawdown Days'] = metrics['Avg. Drawdown Days'
                                                     ].astype(str)
+    except Exception:
+        metrics['Longest DD Days'] = '-'
+        metrics['Avg. Drawdown Days'] = '-'
+        if display or "internal" in kwargs:
+            metrics['Longest DD Days'] = '-'
+            metrics['Avg. Drawdown Days'] = '-'
 
     metrics.columns = [
         col if '~' not in col else '' for col in metrics.columns]
@@ -541,6 +555,9 @@ def plots(returns, benchmark=None, grayscale=False,
 def _calc_dd(df, display=True):
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
+
+    if dd_info.empty:
+        return _pd.DataFrame()
 
     if "returns" in dd_info:
         ret_dd = dd_info['returns']
