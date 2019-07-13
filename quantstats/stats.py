@@ -554,11 +554,11 @@ def drawdown_details(drawdown):
                                    'max drawdown', '99% max drawdown'))
 
         # drawdown series begins in a drawdown
-        if starts[0] > ends[0]:
+        if ends and starts[0] > ends[0]:
             starts.insert(0, drawdown.index[0])
 
-        # series endss in a drawdown fill with last date
-        if len(ends) == 0 or starts[-1] > ends[-1]:
+        # series ends in a drawdown fill with last date
+        if not ends or starts[-1] > ends[-1]:
             ends.append(drawdown.index[-1])
 
         # build dataframe from results
