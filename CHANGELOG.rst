@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.17
+------
+- Fixed CAGR calculation for more accuracy
+- Handles drawdowns better in live trading mode when currently in drawdown
+
 0.0.16
 ------
 - Handles no drawdowns better
