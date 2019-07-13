@@ -280,9 +280,9 @@ def cagr(returns, rf=0., compounded=True):
     else:
         total = _np.sum(total)
 
-    years = len(set(returns.index.year))
+    years = (returns.index[-1] - returns.index[0]).days / 365.
 
-    res = abs(total / 1.0) ** (1.0 / years) - 1
+    res = abs(total + 1.0) ** (1.0 / years) - 1
 
     if isinstance(returns, _pd.DataFrame):
         res = _pd.Series(res)
