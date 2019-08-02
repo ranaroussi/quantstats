@@ -214,7 +214,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         by='max drawdown', ascending=True)[:5]
 
     if not dd_info.empty:
-        dd_info.index = range(1, 6)
+        dd_info.index = range(1, min(6, len(dd_info)+1))
         dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
 
     if _utils._in_notebook():
@@ -368,7 +368,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['~~'] = blank
     comp_func = _stats.comp if compounded else _np.sum
 
-    today = _dt.today()
+    today = df.index[-1]  # _dt.today()
     metrics['MTD %'] = comp_func(
         df[df.index >= _dt(today.year, today.month, 1)]) * pct
 
