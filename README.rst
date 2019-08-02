@@ -14,6 +14,10 @@
     :target: https://travis-ci.org/ranaroussi/quantstats
     :alt: Travis-CI build status
 
+.. image:: https://img.shields.io/pypi/dm/quantstats.svg?maxAge=2592000&label=installs&color=%2327B1FF
+    :target: https://pypi.python.org/pypi/quantstats
+    :alt: PyPi downloads
+
 .. image:: https://img.shields.io/github/stars/ranaroussi/quantstats.svg?style=social&label=Star&maxAge=60
     :target: https://github.com/ranaroussi/quantstats
     :alt: Star this repo
