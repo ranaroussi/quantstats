@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.18
+------
+- Fixed issue when last date in data is in the past (issue #4)
+- Fixed issue when data has less than 5 drawdown periods (issue #4)
+
 0.0.17
 ------
 - Fixed CAGR calculation for more accuracy
