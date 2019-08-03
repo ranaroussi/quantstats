@@ -193,15 +193,15 @@ def _prepare_returns(data, rf=0., nperiods=None):
     """
     data = data.copy()
 
-    # cleanup data
-    data = data.replace([_np.inf, -_np.inf, -0], 0)
-
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
     elif data.min() >= 0 and data.max() > 1:
         data = data.pct_change()
+
+    # cleanup data
+    data = data.replace([_np.inf, -_np.inf], float('NaN'))
 
     if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
         data = data.fillna(0).replace(
@@ -298,7 +298,7 @@ def make_portfolio(returns, start_balance=1e5,
     """
     Calculates compounded value of portfolio
     """
-    returns = returns.copy().fillna(0)
+    returns = _prepare_returns(returns)
 
     if mode.lower() in ["cumsum", "sum"]:
         p1 = start_balance + start_balance * returns.cumsum()
