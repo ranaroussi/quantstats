@@ -192,6 +192,10 @@ def _prepare_returns(data, rf=0., nperiods=None):
     Converts price data into returns + cleanup
     """
     data = data.copy()
+
+    # cleanup data
+    data = data.replace([_np.inf, -_np.inf, -0], 0)
+
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
