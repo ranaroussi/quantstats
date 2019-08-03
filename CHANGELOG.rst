@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.20
+------
+- Misx bugfixes
+
 0.0.19
 ------
 - Cleaning up data before calculations (replaces inf/-inf/-0 with 0)
