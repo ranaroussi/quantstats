@@ -1,6 +1,12 @@
 Change Log
 ===========
 
+0.0.19
+------
+- Cleaning up data before calculations (replaces inf/-inf/-0 with 0)
+- Removed usage of `pandas.compound()` for future `pandas` version compatibility
+- Auto conversion of price-to-returns and returns-to-data as needed
+
 0.0.18
 ------
 - Fixed issue when last date in data is in the past (issue #4)
