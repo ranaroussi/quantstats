@@ -659,7 +659,7 @@ def greeks(returns, benchmark, periods=252.):
         "beta":  beta,
         "alpha": alpha,
         # "vol": _np.sqrt(matrix[0, 0]) * _np.sqrt(periods)
-    })
+    }).fillna(0)
 
 
 def rolling_greeks(returns, benchmark, periods=252):
@@ -680,7 +680,7 @@ def rolling_greeks(returns, benchmark, periods=252):
     return _pd.DataFrame(index=returns.index, data={
         "beta": beta,
         "alpha": alpha
-    })
+    }).fillna(0)
 
 
 def compare(returns, benchmark, aggregate=None, compounded=True,
