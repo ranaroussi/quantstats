@@ -499,7 +499,7 @@ def recovery_factor(returns):
     measures how fast the strategy recovers from drawdowns
     """
     returns = _utils._prepare_returns(returns)
-    total_returns = returns.compound()
+    total_returns = comp(returns)
     max_dd = max_drawdown(returns)
     return total_returns / abs(max_dd)
 
