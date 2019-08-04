@@ -112,11 +112,11 @@ def plot_returns_bars(returns, benchmark=None,
 
     ax.set_xticklabels(df.index.year)
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-    years = list(set(df.index.year))
+    years = sorted(list(set(df.index.year)))
     if len(years) > 10:
         mod = int(len(years)/10)
-        _plt.xticks(_np.arange(len(years)), sorted([
-            str(year) if not i % mod else '' for i, year in enumerate(years)]))
+        _plt.xticks(_np.arange(len(years)), [
+            str(year) if not i % mod else '' for i, year in enumerate(years)])
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
