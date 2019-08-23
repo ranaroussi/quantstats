@@ -43,9 +43,10 @@ def multi_shift(df, shift=3):
     """
     if isinstance(df, _pd.Series):
         df = _pd.DataFrame(df)
+
     dfs = [df.shift(i) for i in _np.arange(shift)]
-    for ix, df in enumerate(dfs[1:]):
-        dfs[ix + 1].columns = [str(col) for col in df.columns + str(ix + 1)]
+    for ix, dfi in enumerate(dfs[1:]):
+        dfs[ix + 1].columns = [str(col) for col in dfi.columns + str(ix + 1)]
     return _pd.concat(dfs, 1, sort=True)
 
 
