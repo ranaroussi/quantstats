@@ -122,23 +122,31 @@ def aggregate_returns(returns, period=None, compounded=True):
     if period is None or 'day' in period:
         return returns
     index = returns.index
+
     if 'month' in period:
-        returns = group_returns(returns, index.month, compounded=compounded)
+        return group_returns(returns, index.month, compounded=compounded)
+
     if 'quarter' in period:
-        returns = group_returns(returns, index.quarter, compounded=compounded)
-    elif 'year' in period or 'eoy' in period or 'yoy' in period or "A" == period:
-        returns = group_returns(returns, index.year, compounded=compounded)
+        return group_returns(returns, index.quarter, compounded=compounded)
+
+    elif "A" == period or any(x in period for x in ['year', 'eoy', 'yoy']):
+        return group_returns(returns, index.year, compounded=compounded)
+
     elif 'week' in period:
-        returns = group_returns(returns, index.week, compounded=compounded)
+        return group_returns(returns, index.week, compounded=compounded)
+
     elif 'eow' in period or "W" == period:
-        returns = group_returns(returns, [index.year, index.week],
-                                compounded=compounded)
+        return group_returns(returns, [index.year, index.week],
+                             compounded=compounded)
+
     elif 'eom' in period or "M" == period:
-        returns = group_returns(returns, [index.year, index.month],
-                                compounded=compounded)
+        return group_returns(returns, [index.year, index.month],
+                             compounded=compounded)
+
     elif 'eoq' in period or "Q" == period:
-        returns = group_returns(returns, [index.year, index.quarter],
-                                compounded=compounded)
+        return group_returns(returns, [index.year, index.quarter],
+                             compounded=compounded)
+
     elif not isinstance(period, str):
         return group_returns(returns, period, compounded)
 
@@ -181,7 +189,7 @@ def _prepare_prices(data, base=1.):
     elif data.min() <= 0 and data.max() < 1:
         data = to_prices(data, base)
 
-    if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
+    if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace(
             [_np.inf, -_np.inf], float('NaN'))
 

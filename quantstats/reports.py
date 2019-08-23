@@ -340,7 +340,6 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Skew'] = _stats.skew(df)
         metrics['Kurtosis'] = _stats.kurtosis(df)
 
-    if mode.lower() == 'full':
         metrics['~~~~~~~~~~'] = blank
 
         metrics['Expected Daily %%'] = _stats.expected_return(df) * pct
@@ -423,11 +422,11 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Win Quarter %%'] = _stats.win_rate(df, aggregate='Q') * pct
         metrics['Win Year %%'] = _stats.win_rate(df, aggregate='A') * pct
 
-    if mode.lower() == "full" and "benchmark" in df:
-        metrics['~~~~~~~'] = blank
-        greeks = _stats.greeks(df['returns'], df['benchmark'])
-        metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
-        metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
+        if "benchmark" in df:
+            metrics['~~~~~~~'] = blank
+            greeks = _stats.greeks(df['returns'], df['benchmark'])
+            metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
+            metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
 
     # prepare for display
     for col in metrics.columns:
