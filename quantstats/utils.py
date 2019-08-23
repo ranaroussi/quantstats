@@ -212,7 +212,7 @@ def _prepare_returns(data, rf=0., nperiods=None):
     # cleanup data
     data = data.replace([_np.inf, -_np.inf], float('NaN'))
 
-    if isinstance(data, _pd.DataFrame) or isinstance(data, _pd.Series):
+    if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace(
             [_np.inf, -_np.inf], float('NaN'))
 
