@@ -1,0 +1,61 @@
+{% set name = "QuantStats" %}
+{% set version = "0.0.20" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: "5805ae74b0b23e95f9c8ca72b0cb21e4618cacd2683eb3dfe2bae65bf965176e"
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - matplotlib >=3.0.0
+    - numpy >=1.15.0
+    - pandas >=0.24.0
+    - pip
+    - python
+    - scipy >=1.2.0
+    - seaborn >=0.9.0
+    - tabulate >=0.8.0
+    - yfinance >=0.1.44
+  run:
+    - matplotlib >=3.0.0
+    - numpy >=1.15.0
+    - pandas >=0.24.0
+    - python
+    - scipy >=1.2.0
+    - seaborn >=0.9.0
+    - tabulate >=0.8.0
+    - yfinance >=0.1.44
+
+test:
+  imports:
+    - quantstats
+    - quantstats._plotting
+
+about:
+  home: "https://github.com/ranaroussi/quantstats"
+  license: "Apache Software"
+  license_family: "APACHE"
+  license_file: ""
+  summary: "QuantStats: Portfolio analytics for quants"
+  description: |
+    QuantStats Python library that performs portfolio profiling,
+    allowing quants and portfolio managers to understand their
+    performance better by providing them with in-depth analytics
+    and risk metrics.
+  doc_url: "https://github.com/ranaroussi/quantstats"
+  dev_url: "https://pypi.python.org/pypi/quantstats"
+  doc_source_url: https://github.com/ranaroussi/quantstats/blob/master/README.rst
+
+
+extra:
+  recipe-maintainers:
+    - ranaroussi

@@ -18,6 +18,10 @@
     :target: https://pypi.python.org/pypi/quantstats
     :alt: PyPi downloads
 
+.. image:: https://www.codefactor.io/repository/github/ranaroussi/quantstats/badge
+    :target: https://www.codefactor.io/repository/github/ranaroussi/quantstats
+    :alt: CodeFactor
+
 .. image:: https://img.shields.io/github/stars/ranaroussi/quantstats.svg?style=social&label=Star&maxAge=60
     :target: https://github.com/ranaroussi/quantstats
     :alt: Star this repo
@@ -226,11 +230,18 @@ In the meantime, you can get insights as to optional parameters for each method,
 Installation
 ------------
 
-Install ``quantstats`` using ``pip``:
+Install using ``pip``:
 
 .. code:: bash
 
     $ pip install quantstats --upgrade --no-cache-dir
+
+
+Install using ``conda``:
+
+.. code:: bash
+
+    $ conda install -c ranaroussi quantstats
 
 
 Requirements
