@@ -40,9 +40,9 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         file=None, compounded=True):
+         output=None, compounded=True):
 
-    if file is None and not _utils._in_notebook():
+    if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
 
     f = open(__file__[:-4] + '.html')
@@ -197,13 +197,13 @@ def html(returns, benchmark=None, rf=0.,
     tpl = _regex.sub('\{\{(.*?)\}\}', '', tpl)
     tpl = tpl.replace('white-space:pre;', '')
 
-    if file is None:
+    if output is None:
         # _open_html(tpl)
         _download_html(tpl, 'quantstats-tearsheet.html')
         return
 
-    with open(file, 'w') as file:
-        file.write(tpl)
+    with open(output, 'w') as f:
+        f.write(tpl)
 
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
