@@ -60,7 +60,7 @@ setup(
                 quantitative-analysis algo-trading visualization plotting""",
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'examples']),
     install_requires=['pandas>=0.24.0', 'numpy>=1.15.0', 'scipy>=1.2.0',
-                      'matplotlib==3.1.0', 'seaborn>=0.9.0',
+                      'matplotlib>=3.0.0', 'seaborn>=0.9.0',
                       'tabulate>=0.8.0', 'yfinance>=0.1.44'],
     entry_points={
         'console_scripts': [
