@@ -172,7 +172,9 @@ def _prepare_prices(data, base=1.):
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
                 data[col] = to_prices(data[col], base)
 
-    elif data.min() <= 0 and data.max() < 1:
+    # is it returns?
+    # elif data.min() < 0 and data.max() < 1:
+    elif data.min() < 0 or data.max() < 1:
         data = to_prices(data, base)
 
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
