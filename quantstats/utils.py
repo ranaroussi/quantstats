@@ -272,7 +272,7 @@ def _in_notebook():
         if shell == 'ZMQInteractiveShell':
             # from IPython.core.display import display, HTML, Image
             return True  # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
+        if shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
         return False  # Other type (?)
     except NameError:
