@@ -587,10 +587,9 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     ax.tick_params(colors="#808080")
     _plt.xticks(rotation=0, fontsize=annot_size*1.2)
     _plt.yticks(rotation=0, fontsize=annot_size*1.2)
-    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
 
     try:
-        _plt.subplots_adjust(hspace=0)
+        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
     except Exception:
         pass
     try:
