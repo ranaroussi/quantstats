@@ -158,6 +158,8 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     if not show:
         return fig
 
+    return None
+
 
 def earnings(returns, start_balance=1e5, mode="comp",
              grayscale=False, figsize=(10, 6),
@@ -230,6 +232,8 @@ def earnings(returns, start_balance=1e5, mode="comp",
 
     if not show:
         return fig
+
+    return None
 
 
 def returns(returns, benchmark=None,
@@ -612,6 +616,8 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     if not show:
         return fig
+
+    return None
 
 
 def monthly_returns(returns, annot_size=10, figsize=(10, 5),
