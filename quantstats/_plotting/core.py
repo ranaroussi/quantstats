@@ -166,6 +166,8 @@ def plot_returns_bars(returns, benchmark=None,
     if not show:
         return fig
 
+    return None
+
 
 def plot_timeseries(returns, benchmark=None,
                     title="Returns", compound=False, cumulative=True,
@@ -288,6 +290,8 @@ def plot_timeseries(returns, benchmark=None,
     if not show:
         return fig
 
+    return None
+
 
 def plot_histogram(returns, resample="M", bins=20,
                    fontname='Arial', grayscale=False,
@@ -366,6 +370,8 @@ def plot_histogram(returns, resample="M", bins=20,
     if not show:
         return fig
 
+    return None
+
 
 def plot_rolling_stats(returns, benchmark=None, title="",
                        returns_label="Strategy",
@@ -442,6 +448,8 @@ def plot_rolling_stats(returns, benchmark=None, title="",
     if not show:
         return fig
 
+    return None
+
 
 def plot_rolling_beta(returns, benchmark,
                       window1=126, window1_label="",
@@ -513,6 +521,8 @@ def plot_rolling_beta(returns, benchmark,
 
     if not show:
         return fig
+
+    return None
 
 
 def plot_longest_drawdowns(returns, periods=5, lw=1.5,
@@ -592,6 +602,8 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
 
     if not show:
         return fig
+
+    return None
 
 
 def plot_distribution(returns, figsize=(10, 6),
@@ -673,6 +685,8 @@ def plot_distribution(returns, figsize=(10, 6),
 
     if not show:
         return fig
+
+    return None
 
 
 def plot_table(tbl, columns=None, title="", title_loc="left",
@@ -756,6 +770,8 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
 
     if not show:
         return fig
+
+    return None
 
 
 def format_cur_axis(x):
