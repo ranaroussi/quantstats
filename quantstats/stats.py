@@ -309,9 +309,7 @@ def calmar(returns):
 
 
 def ulcer_index(returns, rf=0):
-    """
-    calculates the ulcer index score (downside risk measurment)
-    """
+    """ calculates the ulcer index score (downside risk measurment) """
     returns = _utils._prepare_returns(returns, rf)
     dd = 1. - returns/returns.cummax()
     return _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))

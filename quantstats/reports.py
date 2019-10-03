@@ -469,7 +469,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     if display:
         print(_tabulate(metrics, headers="keys", tablefmt='simple'))
-        return
+        return None
 
     if not sep:
         metrics = metrics[metrics.index != '']
