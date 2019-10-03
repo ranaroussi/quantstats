@@ -1,6 +1,14 @@
 Change Log
 ===========
 
+0.0.22
+------
+- Fixed issue where daily return >= 100%
+- Fixed Snapshot plot
+- Removed duplicaated code
+- Added conda installer
+- Misc code refactoring and optimizations
+
 0.0.21
 ------
 - Fixed chart EOY chart's `xticks` when charting data with 10+ years
