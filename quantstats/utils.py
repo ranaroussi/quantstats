@@ -54,7 +54,7 @@ def to_returns(prices, rf=0.):
     """
     Calculates the simple arithmetic returns of a price series
     """
-    return _prepare_returns(prices)
+    return _prepare_returns(prices, rf)
 
 
 def to_prices(returns, base=1e5):
@@ -129,25 +129,25 @@ def aggregate_returns(returns, period=None, compounded=True):
     if 'quarter' in period:
         return group_returns(returns, index.quarter, compounded=compounded)
 
-    elif "A" == period or any(x in period for x in ['year', 'eoy', 'yoy']):
+    if period == "A" or any(x in period for x in ['year', 'eoy', 'yoy']):
         return group_returns(returns, index.year, compounded=compounded)
 
-    elif 'week' in period:
+    if 'week' in period:
         return group_returns(returns, index.week, compounded=compounded)
 
-    elif 'eow' in period or "W" == period:
+    if 'eow' in period or period == "W":
         return group_returns(returns, [index.year, index.week],
                              compounded=compounded)
 
-    elif 'eom' in period or "M" == period:
+    if 'eom' in period or period == "M":
         return group_returns(returns, [index.year, index.month],
                              compounded=compounded)
 
-    elif 'eoq' in period or "Q" == period:
+    if 'eoq' in period or period == "Q":
         return group_returns(returns, [index.year, index.quarter],
                              compounded=compounded)
 
-    elif not isinstance(period, str):
+    if not isinstance(period, str):
         return group_returns(returns, period, compounded)
 
     return returns

@@ -45,9 +45,10 @@ def html(returns, benchmark=None, rf=0.,
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
 
-    f = open(__file__[:-4] + '.html')
-    tpl = f.read()
-    f.close()
+    tpl = ""
+    with open(__file__[:-4] + '.html') as f:
+        tpl = f.read()
+        f.close()
 
     date_range = returns.index.strftime('%e %b, %Y')
     tpl = tpl.replace('{{date_range}}', date_range[0] + ' - ' + date_range[-1])
@@ -194,7 +195,7 @@ def html(returns, benchmark=None, rf=0.,
                         show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{returns_dist}}', figfile.getvalue().decode())
 
-    tpl = _regex.sub('\{\{(.*?)\}\}', '', tpl)
+    tpl = _regex.sub(r'\{\{(.*?)\}\}', '', tpl)
     tpl = tpl.replace('white-space:pre;', '')
 
     if output is None:

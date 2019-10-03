@@ -105,7 +105,7 @@ def consecutive_wins(returns, aggregate=None, compounded=True):
     returns the maximum consecutive wins by day/month/week/quarter/year
     """
     returns = _utils._prepare_returns(returns)
-    returns = 0 < _utils.aggregate_returns(returns, aggregate, compounded)
+    returns = _utils.aggregate_returns(returns, aggregate, compounded) > 0
     return _utils.count_consecutive(returns).max()
 
 
@@ -114,7 +114,7 @@ def consecutive_losses(returns, aggregate=None, compounded=True):
     returns the maximum consecutive losses by day/month/week/quarter/year
     """
     returns = _utils._prepare_returns(returns)
-    returns = 0 > _utils.aggregate_returns(returns, aggregate, compounded)
+    returns = _utils.aggregate_returns(returns, aggregate, compounded) < 0
     return _utils.count_consecutive(returns).max()
 
 
@@ -614,7 +614,8 @@ def r_squared(returns, benchmark):
     """
     measures the straight line fit of the equity curve
     """
-    slope, intercept, r_val, p_val, std_err = _linregress(
+    # slope, intercept, r_val, p_val, std_err = _linregress(
+    _, _, r_val, _, _ = _linregress(
         _utils._prepare_returns(returns),
         _utils._prepare_benchmark(benchmark, returns.index))
     return r_val**2

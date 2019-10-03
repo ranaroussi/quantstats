@@ -79,7 +79,7 @@ def plot_returns_bars(returns, benchmark=None,
         returns = (returns / returns.std()) * bmark_vol
 
     # ---------------
-    colors, ls, alpha = _get_colors(grayscale)
+    colors, _, _ = _get_colors(grayscale)
     df = _pd.DataFrame(index=returns.index, data={returns_label: returns})
     if isinstance(benchmark, _pd.Series):
         df['Benchmark'] = benchmark[benchmark.index.isin(returns.index)]
@@ -374,7 +374,7 @@ def plot_rolling_stats(returns, benchmark=None, title="",
                        grayscale=False, fontname="Arial", subtitle=True,
                        savefig=None, show=True):
 
-    colors, ls, alpha = _get_colors(grayscale)
+    colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
 
@@ -450,7 +450,7 @@ def plot_rolling_beta(returns, benchmark,
                       grayscale=False, fontname="Arial", lw=1.5,
                       ylabel=True, subtitle=True, savefig=None, show=True):
 
-    colors, ls, alpha = _get_colors(grayscale)
+    colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
@@ -546,7 +546,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
     highlight = 'black' if grayscale else 'red'
-    for idx, row in longest_dd.iterrows():
+    for _, row in longest_dd.iterrows():
         ax.axvspan(*_mdates.datestr2num([str(row['start']), str(row['end'])]),
                    color=highlight, alpha=.1)
 
@@ -680,10 +680,10 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
                colWidths=None,
                rowLoc='right',
                colLoc='right',
-               colLabels=[],
+               colLabels=None,
                edges='horizontal',
                orient='horizontal',
-               figsize=(10, 6),
+               figsize=(5.5, 6),
                savefig=None,
                show=False):
 
@@ -693,7 +693,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
         except Exception:
             pass
 
-    fig = _plt.figure(figsize=(5.5, 6))
+    fig = _plt.figure(figsize=figsize)
     ax = _plt.subplot(111, frame_on=False)
 
     if title != "":
@@ -705,7 +705,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
                          rowLoc=rowLoc,
                          colLoc=colLoc,
                          edges=edges,
-                         colLabels=(tbl.columns if header else None),
+                         colLabels=(tbl.columns if header else colLabels),
                          loc='center',
                          zorder=2
                          )
@@ -758,7 +758,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
         return fig
 
 
-def format_cur_axis(x, pos):
+def format_cur_axis(x):
     if x >= 1e12:
         res = '$%1.1fT' % (x * 1e-12)
         return res.replace('.0T', 'T')
@@ -775,7 +775,7 @@ def format_cur_axis(x, pos):
     return res.replace('.0', '')
 
 
-def format_pct_axis(x, pos):
+def format_pct_axis(x):
     x *= 100  # lambda x, loc: "{:,}%".format(int(x * 100))
     if x >= 1e12:
         res = '%1.1fT%%' % (x * 1e-12)

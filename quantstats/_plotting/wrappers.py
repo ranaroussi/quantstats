@@ -48,7 +48,7 @@ except ImportError:
     pass
 
 
-def to_plotly(fig, title=""):
+def to_plotly(fig):
     if not _HAS_PLOTLY:
         return fig
     with warnings.catch_warnings():
@@ -323,8 +323,7 @@ def daily_returns(returns,
 
 def yearly_returns(returns, benchmark=None,
                    fontname='Arial', grayscale=False,
-                   hline=None, hlw=None,
-                   hlcolor="red", hllabel="",
+                   hlw=1.5, hlcolor="red", hllabel="",
                    match_volatility=False,
                    log_scale=False, figsize=(10, 5), ylabel=True,
                    subtitle=True, compounded=True,
@@ -345,11 +344,13 @@ def yearly_returns(returns, benchmark=None,
     returns = returns.resample('A').last()
 
     _core.plot_returns_bars(returns, benchmark,
+                            fontname=fontname,
                             hline=returns.mean(),
-                            hlw=1.5,
-                            hllabel="",
-                            match_volatility=False,
-                            log_scale=False,
+                            hlw=hlw,
+                            hllabel=hllabel,
+                            hlcolor=hlcolor,
+                            match_volatility=match_volatility,
+                            log_scale=log_scale,
                             resample=None,
                             title=title,
                             figsize=figsize,
@@ -402,7 +403,7 @@ def histogram(returns, resample='M', fontname='Arial',
 
 def drawdown(returns, grayscale=False, figsize=(10, 5),
              fontname='Arial', lw=1, log_scale=False,
-             match_volatility=False, compound=True, ylabel="Drawdown",
+             match_volatility=False, compound=False, ylabel="Drawdown",
              resample=None, subtitle=True, savefig=None, show=True):
 
     dd = _stats.to_drawdown_series(returns)
@@ -410,8 +411,8 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
     _core.plot_timeseries(dd, title='Underwater Plot',
                           hline=dd.mean(), hlw=2, hllabel="Average",
                           returns_label="Drawdown",
-                          compound=False, match_volatility=False,
-                          log_scale=log_scale, resample=None,
+                          compound=compound, match_volatility=match_volatility,
+                          log_scale=log_scale, resample=resample,
                           fill=True, lw=lw, figsize=figsize,
                           ylabel=ylabel,
                           fontname=fontname, grayscale=grayscale,
@@ -427,6 +428,7 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
     _core.plot_longest_drawdowns(returns,
                                  periods=periods,
                                  lw=lw,
+                                 log_scale=log_scale,
                                  fontname=fontname,
                                  grayscale=grayscale,
                                  figsize=figsize,
@@ -546,7 +548,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
                     grayscale=False, fontname='Arial',
                     ylabel=True, savefig=None, show=True):
 
-    colors, ls, alpha = _core._get_colors(grayscale)
+    # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = 'gray' if grayscale else 'RdYlGn'
 
     returns = _stats.monthly_returns(returns, eoy=eoy,
