@@ -774,7 +774,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
     return None
 
 
-def format_cur_axis(x):
+def format_cur_axis(x, _):
     if x >= 1e12:
         res = '$%1.1fT' % (x * 1e-12)
         return res.replace('.0T', 'T')
@@ -791,7 +791,7 @@ def format_cur_axis(x):
     return res.replace('.0', '')
 
 
-def format_pct_axis(x):
+def format_pct_axis(x, _):
     x *= 100  # lambda x, loc: "{:,}%".format(int(x * 100))
     if x >= 1e12:
         res = '%1.1fT%%' % (x * 1e-12)
