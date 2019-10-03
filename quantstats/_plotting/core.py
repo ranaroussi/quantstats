@@ -74,7 +74,7 @@ def plot_returns_bars(returns, benchmark=None,
     if match_volatility and benchmark is None:
         raise ValueError('match_volatility requires passing of '
                          'benchmark.')
-    elif match_volatility and benchmark is not None:
+    if match_volatility and benchmark is not None:
         bmark_vol = benchmark.loc[returns.index].std()
         returns = (returns / returns.std()) * bmark_vol
 
@@ -187,7 +187,7 @@ def plot_timeseries(returns, benchmark=None,
     if match_volatility and benchmark is None:
         raise ValueError('match_volatility requires passing of '
                          'benchmark.')
-    elif match_volatility and benchmark is not None:
+    if match_volatility and benchmark is not None:
         bmark_vol = benchmark.std()
         returns = (returns / returns.std()) * bmark_vol
 
