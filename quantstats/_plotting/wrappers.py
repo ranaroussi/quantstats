@@ -145,9 +145,9 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
 
     if savefig:
         if isinstance(savefig, dict):
-            _plt.savefig(**savefig, framon=True)
+            _plt.savefig(**savefig)
         else:
-            _plt.savefig(savefig, framon=True)
+            _plt.savefig(savefig)
 
     if show:
         _plt.show(fig)
