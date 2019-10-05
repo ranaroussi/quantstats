@@ -73,9 +73,6 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     fig, axes = _plt.subplots(3, 1, sharex=True, figsize=figsize,
                               gridspec_kw={'height_ratios': [3, 1, 1]})
 
-    for item in axes:
-        item.patch.set_visible(False)
-
     fig.suptitle(title, fontsize=14, y=.995,
                  fontname=fontname, fontweight='bold', color='black')
 
@@ -148,9 +145,9 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
 
     if savefig:
         if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
+            _plt.savefig(**savefig, framon=True)
         else:
-            _plt.savefig(savefig)
+            _plt.savefig(savefig, framon=True)
 
     if show:
         _plt.show(fig)
