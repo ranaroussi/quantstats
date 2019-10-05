@@ -72,6 +72,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
 
     fig, axes = _plt.subplots(3, 1, sharex=True,
                               figsize=figsize,
+                              frameon=False,
                               gridspec_kw={'height_ratios': [3, 1, 1]})
 
     fig.suptitle(title, fontsize=14, y=.995,
