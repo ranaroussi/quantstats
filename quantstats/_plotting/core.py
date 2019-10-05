@@ -92,6 +92,10 @@ def plot_returns_bars(returns, benchmark=None,
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
     # use a more precise date string for the x axis locations in the toolbar
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
@@ -212,6 +216,11 @@ def plot_timeseries(returns, benchmark=None,
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
@@ -308,6 +317,11 @@ def plot_histogram(returns, resample="M", bins=20,
         apply_fnc).resample(resample).last()
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
@@ -383,6 +397,10 @@ def plot_rolling_stats(returns, benchmark=None, title="",
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
     df = _pd.DataFrame(index=returns.index, data={returns_label: returns})
     if isinstance(benchmark, _pd.Series):
@@ -461,6 +479,11 @@ def plot_rolling_beta(returns, benchmark,
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
@@ -541,6 +564,11 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
         by='days', ascending=False, kind='mergesort')[:periods]
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle("Top %.0f Drawdown Periods\n" %
                  periods, y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
@@ -638,6 +666,11 @@ def plot_distribution(returns, figsize=(10, 6),
     port['Yearly'].ffill(inplace=True)
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle("Return Quantiles\n", y=.99,
                  fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")

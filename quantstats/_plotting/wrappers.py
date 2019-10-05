@@ -182,6 +182,11 @@ def earnings(returns, start_balance=1e5, mode="comp",
         figsize = (size[0], size[0]*.55)
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.suptitle(title, fontsize=14, y=.995,
                  fontname=fontname, fontweight='bold', color='black')
 
@@ -575,6 +580,11 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
         figsize = (figsize[0]*1.04, max([fig_height, figsize[1]]))
 
     fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
