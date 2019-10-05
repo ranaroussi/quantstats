@@ -149,6 +149,8 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
         else:
             _plt.savefig(savefig)
 
+    _plt.box(on=None)
+
     if show:
         _plt.show(fig)
 
