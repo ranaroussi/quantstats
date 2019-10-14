@@ -203,7 +203,7 @@ def html(returns, benchmark=None, rf=0.,
         _download_html(tpl, 'quantstats-tearsheet.html')
         return
 
-    with open(output, 'w') as f:
+    with open(output, 'w', encoding='utf-8') as f:
         f.write(tpl)
 
 
