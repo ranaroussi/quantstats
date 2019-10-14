@@ -424,7 +424,7 @@ def profit_ratio(returns):
 def profit_factor(returns):
     """ measures the profit ratio (wins/loss) """
     returns = _utils._prepare_returns(returns)
-    return abs(returns.sum() / returns[returns < 0].sum())
+    return abs(returns[returns >= 0].sum() / returns[returns < 0].sum())
 
 
 def gain_to_pain_ratio(returns):
