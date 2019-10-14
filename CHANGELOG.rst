@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.22
+------
+- Misc bug fixes
+
 0.0.21
 ------
 - Fixed chart EOY chart's `xticks` when charting data with 10+ years
