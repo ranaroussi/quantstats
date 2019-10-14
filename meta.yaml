@@ -1,5 +1,5 @@
 {% set name = "QuantStats" %}
-{% set version = "0.0.20" %}
+{% set version = "0.0.22" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: "5805ae74b0b23e95f9c8ca72b0cb21e4618cacd2683eb3dfe2bae65bf965176e"
+  sha256: "c445478da26bedf5517c61272b4b49d834f72c600740951f36d02424aba321c8"
 
 build:
   noarch: python
