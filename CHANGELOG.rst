@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.23
+------
+- Fixed profit Factor formula
+
 0.0.22
 ------
 - Misc bug fixes
