@@ -290,7 +290,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         df["benchmark"] = _utils._prepare_benchmark(
             benchmark, returns.index, rf)
 
-    df = df.dropna()
+    df = df.fillna(0)
 
     # pct multiplier
     pct = 100 if display or "internal" in kwargs else 1
