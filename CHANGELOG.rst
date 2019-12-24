@@ -1,6 +1,13 @@
 Change Log
 ===========
 
+0.0.24
+------
+- Added mtd/qtd/ytd methods for panda (usage: `df.mtd()`)
+- Fixed Pandas deprecation warning
+- Fixed Matplotlib deprecation warning
+- Try setting `%matplotlib inline` automatic in notebooks
+
 0.0.23
 ------
 - Fixed profit Factor formula
