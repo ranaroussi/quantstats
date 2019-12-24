@@ -163,7 +163,7 @@ def plot_returns_bars(returns, benchmark=None,
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -292,7 +292,7 @@ def plot_timeseries(returns, benchmark=None,
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -377,7 +377,7 @@ def plot_histogram(returns, resample="M", bins=20,
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -459,7 +459,7 @@ def plot_rolling_stats(returns, benchmark=None, title="",
         else:
             _plt.savefig(savefig)
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -538,7 +538,7 @@ def plot_rolling_beta(returns, benchmark,
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -624,7 +624,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -712,7 +712,7 @@ def plot_distribution(returns, figsize=(10, 6),
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -797,7 +797,7 @@ def plot_table(tbl, columns=None, title="", title_loc="left",
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 

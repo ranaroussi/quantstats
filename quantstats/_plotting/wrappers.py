@@ -156,7 +156,7 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -236,7 +236,7 @@ def earnings(returns, start_balance=1e5, mode="comp",
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
@@ -625,7 +625,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
             _plt.savefig(savefig)
 
     if show:
-        _plt.show(fig)
+        _plt.show(block=False)
 
     _plt.close()
 
