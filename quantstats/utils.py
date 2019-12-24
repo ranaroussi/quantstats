@@ -25,6 +25,25 @@ import yfinance as _yf
 from . import stats as _stats
 
 
+def _mtd(df):
+    return df[df.index >= _dt.datetime.now(
+    ).strftime('%Y-%m-01')]
+
+
+def _qtd(df):
+    date = _dt.datetime.now()
+    for q in [1, 4, 7, 10]:
+        if date.month <= q:
+            return df[df.index >= _dt.datetime(
+                date.year, q, 1).strftime('%Y-%m-01')]
+    return df[df.index >= date.strftime('%Y-%m-01')]
+
+
+def _ytd(df):
+    return df[df.index >= _dt.datetime.now(
+    ).strftime('%Y-01-01')]
+
+
 def _pandas_date(df, dates):
     if not isinstance(dates, list):
         dates = [dates]

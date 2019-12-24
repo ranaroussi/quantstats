@@ -98,6 +98,9 @@ def extend_pandas():
     _po.multi_shift = utils.multi_shift
     _po.curr_month = utils._pandas_current_month
     _po.date = utils._pandas_date
+    _po.mtd = utils._mtd
+    _po.qtd = utils._qtd
+    _po.ytd = utils._ytd
 
     # methods that requires benchmark stats
     _po.r_squared = stats.r_squared
