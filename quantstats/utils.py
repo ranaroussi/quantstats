@@ -271,7 +271,6 @@ def _file_stream():
 def _in_notebook(matplotlib_inline=False):
     """ Identify enviroment (notebook, terminal, etc) """
     try:
-        from IPython import get_ipython
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
             # Jupyter notebook or qtconsole
