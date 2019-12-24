@@ -25,6 +25,9 @@ from . import stats, utils, plots, reports
 
 __all__ = ['stats', 'plots', 'reports', 'utils', 'extend_pandas']
 
+# try automatic matplotlib inline
+utils._in_notebook(matplotlib_inline=True)
+
 
 def extend_pandas():
     """
