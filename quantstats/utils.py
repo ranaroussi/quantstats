@@ -91,7 +91,7 @@ def rebase(prices, base=100.):
         * prices: Expects a price series/dataframe
         * base (number): starting value for all series.
     """
-    return prices.dropna() / prices.dropna().ix[0] * base
+    return prices.dropna() / prices.dropna().iloc[0] * base
 
 
 def group_returns(returns, groupby, compounded=False):
