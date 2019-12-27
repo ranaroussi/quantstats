@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.25
+------
+- Fixed `conditional_value_at_risk()`
+- Fixed `%matplotlib inline` issue notebooks
+
 0.0.24
 ------
 - Added mtd/qtd/ytd methods for panda (usage: `df.mtd()`)
