@@ -27,6 +27,7 @@ branches:
     - master
 
 notifications:
+  slack: tradologics:HcnS6XusfcuS02waQPCG18oc
   webhooks:
     urls:
     on_success: change  # options: [always|never|change] default: always
