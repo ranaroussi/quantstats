@@ -572,10 +572,10 @@ def _calc_dd(df, display=True):
             'Max Drawdown %': ret_dd.sort_values(
                 by='max drawdown', ascending=True
             )['max drawdown'].values[0] / pct,
-            'Longest DD Days': str(round(ret_dd.sort_values(
+            'Longest DD Days': str(_np.round(ret_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
             'Avg. Drawdown %': ret_dd['max drawdown'].mean() / pct,
-            'Avg. Drawdown Days': str(round(ret_dd['days'].mean()))
+            'Avg. Drawdown Days': str(_np.round(ret_dd['days'].mean()))
         }
     }
     if "benchmark" in df and (dd_info.columns, _pd.MultiIndex):
@@ -584,10 +584,10 @@ def _calc_dd(df, display=True):
             'Max Drawdown %': bench_dd.sort_values(
                 by='max drawdown', ascending=True
             )['max drawdown'].values[0] / pct,
-            'Longest DD Days': str(round(bench_dd.sort_values(
+            'Longest DD Days': str(_np.round(bench_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
             'Avg. Drawdown %': bench_dd['max drawdown'].mean() / pct,
-            'Avg. Drawdown Days': str(round(bench_dd['days'].mean()))
+            'Avg. Drawdown Days': str(_np.round(bench_dd['days'].mean()))
         }
 
     dd_stats = _pd.DataFrame(dd_stats).T
