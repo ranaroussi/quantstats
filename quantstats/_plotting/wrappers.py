@@ -265,19 +265,21 @@ def returns(returns, benchmark=None,
     returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    _core.plot_timeseries(returns, benchmark, title,
-                          ylabel=ylabel,
-                          match_volatility=match_volatility,
-                          log_scale=False,
-                          resample=resample,
-                          compound=compound,
-                          cumulative=cumulative,
-                          lw=lw,
-                          figsize=figsize,
-                          fontname=fontname,
-                          grayscale=grayscale,
-                          subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_timeseries(returns, benchmark, title,
+                                ylabel=ylabel,
+                                match_volatility=match_volatility,
+                                log_scale=False,
+                                resample=resample,
+                                compound=compound,
+                                cumulative=cumulative,
+                                lw=lw,
+                                figsize=figsize,
+                                fontname=fontname,
+                                grayscale=grayscale,
+                                subtitle=subtitle, 
+                                savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def log_returns(returns, benchmark=None,
                 grayscale=False, figsize=(10, 5),
@@ -301,19 +303,21 @@ def log_returns(returns, benchmark=None,
     returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    _core.plot_timeseries(returns, benchmark, title,
-                          ylabel=ylabel,
-                          match_volatility=match_volatility,
-                          log_scale=True,
-                          resample=resample,
-                          compound=compound,
-                          cumulative=cumulative,
-                          lw=lw,
-                          figsize=figsize,
-                          fontname=fontname,
-                          grayscale=grayscale,
-                          subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_timeseries(returns, benchmark, title,
+                                ylabel=ylabel,
+                                match_volatility=match_volatility,
+                                log_scale=True,
+                                resample=resample,
+                                compound=compound,
+                                cumulative=cumulative,
+                                lw=lw,
+                                figsize=figsize,
+                                fontname=fontname,
+                                grayscale=grayscale,
+                                subtitle=subtitle, 
+                                savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def daily_returns(returns,
                   grayscale=False, figsize=(10, 4),
@@ -322,18 +326,20 @@ def daily_returns(returns,
                   subtitle=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns)
-    _core.plot_timeseries(returns, None, 'Daily Returns',
-                          ylabel=ylabel,
-                          match_volatility=False,
-                          log_scale=log_scale,
-                          resample='D',
-                          compound=False,
-                          lw=lw,
-                          figsize=figsize,
-                          fontname=fontname,
-                          grayscale=grayscale,
-                          subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_timeseries(returns, None, 'Daily Returns',
+                                ylabel=ylabel,
+                                match_volatility=False,
+                                log_scale=log_scale,
+                                resample='D',
+                                compound=False,
+                                lw=lw,
+                                figsize=figsize,
+                                fontname=fontname,
+                                grayscale=grayscale,
+                                subtitle=subtitle, 
+                                savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def yearly_returns(returns, benchmark=None,
                    fontname='Arial', grayscale=False,
@@ -357,35 +363,38 @@ def yearly_returns(returns, benchmark=None,
         returns = returns.apply(_df.cumsum)
     returns = returns.resample('A').last()
 
-    _core.plot_returns_bars(returns, benchmark,
-                            fontname=fontname,
-                            hline=returns.mean(),
-                            hlw=hlw,
-                            hllabel=hllabel,
-                            hlcolor=hlcolor,
-                            match_volatility=match_volatility,
-                            log_scale=log_scale,
-                            resample=None,
-                            title=title,
-                            figsize=figsize,
-                            grayscale=grayscale,
-                            ylabel=ylabel,
-                            subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_returns_bars(returns, benchmark,
+                                  fontname=fontname,
+                                  hline=returns.mean(),
+                                  hlw=hlw,
+                                  hllabel=hllabel,
+                                  hlcolor=hlcolor,
+                                  match_volatility=match_volatility,
+                                  log_scale=log_scale,
+                                  resample=None,
+                                  title=title,
+                                  figsize=figsize,
+                                  grayscale=grayscale,
+                                  ylabel=ylabel,
+                                  subtitle=subtitle, 
+                                  savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
                  figsize=(10, 6), subtitle=True, compounded=True,
                  savefig=None, show=True):
     returns = _utils._prepare_returns(returns)
-    _core.plot_distribution(returns,
-                            fontname=fontname,
-                            grayscale=grayscale,
-                            figsize=figsize,
-                            ylabel=ylabel,
-                            subtitle=subtitle,
-                            compounded=compounded,
-                            savefig=savefig, show=show)
-
+    fig = _core.plot_distribution(returns,
+                                  fontname=fontname,
+                                  grayscale=grayscale,
+                                  figsize=figsize,
+                                  ylabel=ylabel,
+                                  subtitle=subtitle,
+                                  compounded=compounded,
+                                  savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def histogram(returns, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5), ylabel=True,
@@ -422,35 +431,38 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
 
     dd = _stats.to_drawdown_series(returns)
 
-    _core.plot_timeseries(dd, title='Underwater Plot',
-                          hline=dd.mean(), hlw=2, hllabel="Average",
-                          returns_label="Drawdown",
-                          compound=compound, match_volatility=match_volatility,
-                          log_scale=log_scale, resample=resample,
-                          fill=True, lw=lw, figsize=figsize,
-                          ylabel=ylabel,
-                          fontname=fontname, grayscale=grayscale,
-                          subtitle=subtitle,
-                          savefig=savefig, show=show)
-
+    fig = _core.plot_timeseries(dd, title='Underwater Plot',
+                                hline=dd.mean(), hlw=2, hllabel="Average",
+                                returns_label="Drawdown",
+                                compound=compound, 
+                                match_volatility=match_volatility,
+                                log_scale=log_scale, resample=resample,
+                                fill=True, lw=lw, figsize=figsize,
+                                ylabel=ylabel,
+                                fontname=fontname, grayscale=grayscale,
+                                subtitle=subtitle,
+                                savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                       fontname='Arial', grayscale=False, figsize=(10, 5),
                       ylabel=True, subtitle=True, compounded=True,
                       savefig=None, show=True):
     returns = _utils._prepare_returns(returns)
-    _core.plot_longest_drawdowns(returns,
-                                 periods=periods,
-                                 lw=lw,
-                                 log_scale=log_scale,
-                                 fontname=fontname,
-                                 grayscale=grayscale,
-                                 figsize=figsize,
-                                 ylabel=ylabel,
-                                 subtitle=subtitle,
-                                 compounded=compounded,
-                                 savefig=savefig, show=show)
-
+    fig = _core.plot_longest_drawdowns(returns,
+                                       periods=periods,
+                                       lw=lw,
+                                       log_scale=log_scale,
+                                       fontname=fontname,
+                                       grayscale=grayscale,
+                                       figsize=figsize,
+                                       ylabel=ylabel,
+                                       subtitle=subtitle,
+                                       compounded=compounded,
+                                       savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def rolling_beta(returns, benchmark,
                  window1=126, window1_label="6-Months",
@@ -462,17 +474,21 @@ def rolling_beta(returns, benchmark,
     returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    _core.plot_rolling_beta(returns, benchmark,
-                            window1=window1, window1_label=window1_label,
-                            window2=window2, window2_label=window2_label,
-                            title="Rolling Beta to Benchmark",
-                            fontname=fontname,
-                            grayscale=grayscale,
-                            lw=lw,
-                            figsize=figsize,
-                            ylabel=ylabel,
-                            subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_rolling_beta(returns, benchmark,
+                                  window1=window1, 
+                                  window1_label=window1_label,
+                                  window2=window2, 
+                                  window2_label=window2_label,
+                                  title="Rolling Beta to Benchmark",
+                                  fontname=fontname,
+                                  grayscale=grayscale,
+                                  lw=lw,
+                                  figsize=figsize,
+                                  ylabel=ylabel,
+                                  subtitle=subtitle, 
+                                  savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def rolling_volatility(returns, benchmark=None,
                        period=126, period_label="6-Months",
@@ -487,16 +503,19 @@ def rolling_volatility(returns, benchmark=None,
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
         benchmark = benchmark.rolling(period).std() * _np.sqrt(252)
 
-    _core.plot_rolling_stats(returns, benchmark,
-                             hline=returns.mean(),
-                             hlw=1.5,
-                             ylabel=ylabel,
-                             title='Rolling Volatility (%s)' % period_label,
-                             fontname=fontname,
-                             grayscale=grayscale,
-                             lw=lw,
-                             figsize=figsize,
-                             subtitle=subtitle, savefig=savefig, show=show)
+    fig = _core.plot_rolling_stats(returns, benchmark,
+                                   hline=returns.mean(),
+                                   hlw=1.5,
+                                   ylabel=ylabel,
+                                   title=f'Rolling Volatility {period_label}',
+                                   fontname=fontname,
+                                   grayscale=grayscale,
+                                   lw=lw,
+                                   figsize=figsize,
+                                   subtitle=subtitle, 
+                                   savefig=savefig, show=show)
+    if not show:
+        return fig
 
 
 def rolling_sharpe(returns, benchmark=None, rf=0.,
@@ -515,17 +534,19 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
             period).mean() / benchmark.rolling(period).std()
         benchmark = benchmark * _np.sqrt(1 if period is None else period)
 
-    _core.plot_rolling_stats(returns, benchmark,
-                             hline=returns.mean(),
-                             hlw=1.5,
-                             ylabel=ylabel,
-                             title='Rolling Sharpe (%s)' % period_label,
-                             fontname=fontname,
-                             grayscale=grayscale,
-                             lw=lw,
-                             figsize=figsize,
-                             subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_rolling_stats(returns, benchmark,
+                                   hline=returns.mean(),
+                                   hlw=1.5,
+                                   ylabel=ylabel,
+                                   title=f'Rolling Sharpe {period_label}',
+                                   fontname=fontname,
+                                   grayscale=grayscale,
+                                   lw=lw,
+                                   figsize=figsize,
+                                   subtitle=subtitle, 
+                                   savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def rolling_sortino(returns, benchmark=None, rf=0.,
                     period=126, period_label="6-Months",
@@ -544,17 +565,19 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
             benchmark < 0].rolling(period).std()
         benchmark = benchmark * _np.sqrt(1 if period is None else period)
 
-    _core.plot_rolling_stats(returns, benchmark,
-                             hline=returns.mean(),
-                             hlw=1.5,
-                             ylabel=ylabel,
-                             title='Rolling Sortino (%s)' % period_label,
-                             fontname=fontname,
-                             grayscale=grayscale,
-                             lw=lw,
-                             figsize=figsize,
-                             subtitle=subtitle, savefig=savefig, show=show)
-
+    fig = _core.plot_rolling_stats(returns, benchmark,
+                                   hline=returns.mean(),
+                                   hlw=1.5,
+                                   ylabel=ylabel,
+                                   title=f'Rolling Sortino {period_label}',
+                                   fontname=fontname,
+                                   grayscale=grayscale,
+                                   lw=lw,
+                                   figsize=figsize,
+                                   subtitle=subtitle, 
+                                   savefig=savefig, show=show)
+    if not show:
+        return fig
 
 def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
                     cbar=True, square=False,
