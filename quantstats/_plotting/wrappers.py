@@ -449,9 +449,9 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                       fontname='Arial', grayscale=False, figsize=(10, 5),
                       ylabel=True, subtitle=True, compounded=True,
                       savefig=None, show=True):
-    print('1')
+
     returns = _utils._prepare_returns(returns)
-    print('2')
+
     fig = _core.plot_longest_drawdowns(returns,
                                        periods=periods,
                                        lw=lw,
@@ -463,9 +463,7 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                                        subtitle=subtitle,
                                        compounded=compounded,
                                        savefig=savefig, show=show)
-    print('3')
     if not show:
-        print('4')
         return fig
 
 def rolling_beta(returns, benchmark,
