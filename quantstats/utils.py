@@ -178,7 +178,7 @@ def to_excess_returns(returns, rf, nperiods=None):
 
     if nperiods is not None:
         # deannualize
-        rf = _np.power(1 + returns, 1. / nperiods) - 1.
+        rf = _np.power(1 + rf, 1. / nperiods) - 1.
 
     return returns - rf
 
