@@ -40,7 +40,7 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         output=None, compounded=True):
+         output=None, compounded=True, rolling_period=126):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -150,21 +150,21 @@ def html(returns, benchmark=None, rf=0.,
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': 'svg'},
-                              show=False, ylabel=False)
+                              show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_vol}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': 'svg'},
-                          show=False, ylabel=False)
+                          show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_sharpe}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': 'svg'},
-                           show=False, ylabel=False)
+                           show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_sortino}}', figfile.getvalue().decode())
 
     figfile = _utils._file_stream()
@@ -477,7 +477,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 
 def plots(returns, benchmark=None, grayscale=False,
-          figsize=(8, 5), mode='basic', compounded=True):
+          figsize=(8, 5), mode='basic', compounded=True,
+          rolling_period=126):
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -525,15 +526,16 @@ def plots(returns, benchmark=None, grayscale=False,
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
-        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False)
+        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
+        period=rolling_period)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False)
+                          show=True, ylabel=False, period=rolling_period)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False)
+                           show=True, ylabel=False, period=rolling_period)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),
