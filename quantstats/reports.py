@@ -40,7 +40,8 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         output=None, compounded=True, rolling_period=126):
+         output=None, compounded=True, rolling_period=126,
+         download_filename='quantstats-tearsheet.html'):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -200,7 +201,7 @@ def html(returns, benchmark=None, rf=0.,
 
     if output is None:
         # _open_html(tpl)
-        _download_html(tpl, 'quantstats-tearsheet.html')
+        _download_html(tpl, download_filename)
         return
 
     with open(output, 'w', encoding='utf-8') as f:
