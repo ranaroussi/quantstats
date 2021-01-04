@@ -40,13 +40,13 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         output=None, compounded=True):
+         output=None, compounded=True, report_template_path=None):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
 
     tpl = ""
-    with open(__file__[:-4] + '.html') as f:
+    with open(report_template_path or __file__[:-4] + '.html') as f:
         tpl = f.read()
         f.close()
 
