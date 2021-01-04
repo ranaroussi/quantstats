@@ -23,6 +23,7 @@ import numpy as _np
 from datetime import (
     datetime as _dt, timedelta as _td
 )
+from base64 import b64encode as _b64encode
 import re as _regex
 from tabulate import tabulate as _tabulate
 from . import (
@@ -40,13 +41,13 @@ except ImportError:
 
 def html(returns, benchmark=None, rf=0.,
          grayscale=False, title='Strategy Tearsheet',
-         output=None, compounded=True, report_template_path=None):
+         output=None, compounded=True, figfmt='svg', template_path=None):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
 
     tpl = ""
-    with open(report_template_path or __file__[:-4] + '.html') as f:
+    with open(template_path or __file__[:-4] + '.html') as f:
         tpl = f.read()
         f.close()
 
@@ -98,102 +99,102 @@ def html(returns, benchmark=None, rf=0.,
     figfile = _utils._file_stream()
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(8, 5), subtitle=False,
-                   savefig={'fname': figfile, 'format': 'svg'},
+                   savefig={'fname': figfile, 'format': figfmt},
                    show=False, ylabel=False, cumulative=compounded)
-    tpl = tpl.replace('{{returns}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{returns}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
                        figsize=(8, 4), subtitle=False,
-                       savefig={'fname': figfile, 'format': 'svg'},
+                       savefig={'fname': figfile, 'format': figfmt},
                        show=False, ylabel=False, cumulative=compounded)
-    tpl = tpl.replace('{{log_returns}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{log_returns}}', _embed_figure(figfile, figfmt))
 
     if benchmark is not None:
         figfile = _utils._file_stream()
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale, figsize=(8, 4), subtitle=False,
-                       savefig={'fname': figfile, 'format': 'svg'},
+                       savefig={'fname': figfile, 'format': figfmt},
                        show=False, ylabel=False, cumulative=compounded)
-        tpl = tpl.replace('{{vol_returns}}', figfile.getvalue().decode())
+        tpl = tpl.replace('{{vol_returns}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.yearly_returns(returns, benchmark, grayscale=grayscale,
                           figsize=(8, 4), subtitle=False,
-                          savefig={'fname': figfile, 'format': 'svg'},
+                          savefig={'fname': figfile, 'format': figfmt},
                           show=False, ylabel=False, compounded=compounded)
-    tpl = tpl.replace('{{eoy_returns}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{eoy_returns}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.histogram(returns, grayscale=grayscale,
                      figsize=(8, 4), subtitle=False,
-                     savefig={'fname': figfile, 'format': 'svg'},
+                     savefig={'fname': figfile, 'format': figfmt},
                      show=False, ylabel=False, compounded=compounded)
-    tpl = tpl.replace('{{monthly_dist}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{monthly_dist}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.daily_returns(returns, grayscale=grayscale,
                          figsize=(8, 3), subtitle=False,
-                         savefig={'fname': figfile, 'format': 'svg'},
+                         savefig={'fname': figfile, 'format': figfmt},
                          show=False, ylabel=False)
-    tpl = tpl.replace('{{daily_returns}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{daily_returns}}', _embed_figure(figfile, figfmt))
 
     if benchmark is not None:
         figfile = _utils._file_stream()
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             figsize=(8, 3), subtitle=False,
-                            savefig={'fname': figfile, 'format': 'svg'},
+                            savefig={'fname': figfile, 'format': figfmt},
                             show=False, ylabel=False)
-        tpl = tpl.replace('{{rolling_beta}}', figfile.getvalue().decode())
+        tpl = tpl.replace('{{rolling_beta}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
-                              savefig={'fname': figfile, 'format': 'svg'},
+                              savefig={'fname': figfile, 'format': figfmt},
                               show=False, ylabel=False)
-    tpl = tpl.replace('{{rolling_vol}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
-                          savefig={'fname': figfile, 'format': 'svg'},
+                          savefig={'fname': figfile, 'format': figfmt},
                           show=False, ylabel=False)
-    tpl = tpl.replace('{{rolling_sharpe}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
-                           savefig={'fname': figfile, 'format': 'svg'},
+                           savefig={'fname': figfile, 'format': figfmt},
                            show=False, ylabel=False)
-    tpl = tpl.replace('{{rolling_sortino}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(8, 4), subtitle=False,
-                             savefig={'fname': figfile, 'format': 'svg'},
+                             savefig={'fname': figfile, 'format': figfmt},
                              show=False, ylabel=False, compounded=compounded)
-    tpl = tpl.replace('{{dd_periods}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{dd_periods}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.drawdown(returns, grayscale=grayscale,
                     figsize=(8, 3), subtitle=False,
-                    savefig={'fname': figfile, 'format': 'svg'},
+                    savefig={'fname': figfile, 'format': figfmt},
                     show=False, ylabel=False)
-    tpl = tpl.replace('{{dd_plot}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{dd_plot}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.monthly_heatmap(returns, grayscale=grayscale,
                            figsize=(8, 4), cbar=False,
-                           savefig={'fname': figfile, 'format': 'svg'},
+                           savefig={'fname': figfile, 'format': figfmt},
                            show=False, ylabel=False, compounded=compounded)
-    tpl = tpl.replace('{{monthly_heatmap}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.distribution(returns, grayscale=grayscale,
                         figsize=(8, 4), subtitle=False,
-                        savefig={'fname': figfile, 'format': 'svg'},
+                        savefig={'fname': figfile, 'format': figfmt},
                         show=False, ylabel=False, compounded=compounded)
-    tpl = tpl.replace('{{returns_dist}}', figfile.getvalue().decode())
+    tpl = tpl.replace('{{returns_dist}}', _embed_figure(figfile, figfmt))
 
     tpl = _regex.sub(r'\{\{(.*?)\}\}', '', tpl)
     tpl = tpl.replace('white-space:pre;', '')
@@ -632,3 +633,10 @@ def _open_html(html):
         ' +', ' ', html.replace('\n', '')))
     if _utils._in_notebook():
         iDisplay(iHTML(jscode))
+
+
+def _embed_figure(figfile, figfmt):
+    if figfmt == 'svg':
+        return figfile.getvalue().decode()
+    return f'<img src="data:image/{figfmt};' \
+           f'base64,{_b64encode(figfile.getvalue()).decode()}" />'
