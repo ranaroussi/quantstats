@@ -36,6 +36,9 @@ import seaborn as _sns
 from .. import (
     stats as _stats, utils as _utils,
 )
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 _sns.set(font_scale=1.1, rc={
     'figure.figsize': (10, 6),
