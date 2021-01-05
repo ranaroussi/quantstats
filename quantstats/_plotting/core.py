@@ -33,7 +33,9 @@ from matplotlib.ticker import (
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
-from .. import stats as _stats
+from .. import (
+    stats as _stats, utils as _utils,
+)
 
 _sns.set(font_scale=1.1, rc={
     'figure.figsize': (10, 6),
@@ -318,9 +320,18 @@ def plot_histogram(returns, resample="M", bins=20,
     if grayscale:
         colors = ['silver', 'gray', 'black']
 
-    apply_fnc = _stats.comp if compounded else _np.sum
-    returns = returns.fillna(0).resample(resample).apply(
-        apply_fnc).resample(resample).last()
+    if resample in ["M", "A"]:
+        groupper = returns.index.year
+        if resample == "M":
+            groupper = [returns.index.year, returns.index.month]
+        if compounded:
+            returns = _utils.group_returns(returns, groupper, True)
+        else:
+            returns = _utils.group_returns(returns, groupper, False)
+    else:
+        apply_fnc = _stats.comp if compounded else _np.sum
+        returns = returns.fillna(0).resample(resample).apply(
+            apply_fnc).resample(resample).last()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines['top'].set_visible(False)
