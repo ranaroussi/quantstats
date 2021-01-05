@@ -284,7 +284,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                              "but a multi-column DataFrame was passed")
 
     blank = ['']
-    df = _pd.DataFrame({"returns": _utils._prepare_returns(returns, rf)})
+    df = _utils._prepare_returns(returns, rf)
+    df.columns = ["returns"]
+
     if benchmark is not None:
         blank = ['', '']
         df["benchmark"] = _utils._prepare_benchmark(

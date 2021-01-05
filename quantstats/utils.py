@@ -173,6 +173,9 @@ def to_excess_returns(returns, rf, nperiods=None):
     Returns:
         * excess_returns (Series, DataFrame): Returns - rf
     """
+    if isinstance(rf, int):
+        rf = float(rf)
+
     if not isinstance(rf, float):
         rf = rf[rf.index.isin(returns.index)]
 
