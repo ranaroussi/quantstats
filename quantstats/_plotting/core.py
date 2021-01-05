@@ -114,9 +114,15 @@ def plot_returns_bars(returns, benchmark=None,
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    ax.set_xticklabels(df.index.year)
+    try:
+        ax.set_xticklabels(df.index.year)
+        years = sorted(list(set(df.index.year)))
+    except AttributeError:
+        ax.set_xticklabels(df.index)
+        years = sorted(list(set(df.index)))
+
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-    years = sorted(list(set(df.index.year)))
+    # years = sorted(list(set(df.index.year)))
     if len(years) > 10:
         mod = int(len(years)/10)
         _plt.xticks(_np.arange(len(years)), [

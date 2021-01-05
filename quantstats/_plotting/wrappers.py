@@ -350,9 +350,8 @@ def yearly_returns(returns, benchmark=None,
             benchmark, returns.index).resample('A').apply(
                 _stats.compsum).resample('A').last()
 
-    returns = _utils._prepare_returns(returns).resample('A')
     if compounded:
-        returns = returns.apply(_stats.compsum)
+        returns = _utils.group_returns(returns, returns.index.year, True)
     else:
         returns = returns.apply(_df.cumsum)
     returns = returns.resample('A').last()
@@ -371,6 +370,7 @@ def yearly_returns(returns, benchmark=None,
                             grayscale=grayscale,
                             ylabel=ylabel,
                             subtitle=subtitle, savefig=savefig, show=show)
+        returns = _utils.group_returns(returns, returns.index.year, False)
 
 
 def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
