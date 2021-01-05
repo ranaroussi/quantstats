@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.26
+------
+- Misc bug fixes and code improvements
+
 0.0.25
 ------
 - Fixed `conditional_value_at_risk()`

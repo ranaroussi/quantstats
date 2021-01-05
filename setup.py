@@ -21,7 +21,7 @@ with io.open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='QuantStats',
-    version='0.0.25',
+    version='0.0.26',
     description='Portfolio analytics for quants',
     long_description=long_description,
     url='https://github.com/ranaroussi/quantstats',
