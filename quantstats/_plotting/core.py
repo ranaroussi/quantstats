@@ -33,7 +33,12 @@ from matplotlib.ticker import (
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
-from .. import stats as _stats
+from .. import (
+    stats as _stats, utils as _utils,
+)
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 _sns.set(font_scale=1.1, rc={
     'figure.figsize': (10, 6),
@@ -114,9 +119,15 @@ def plot_returns_bars(returns, benchmark=None,
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    ax.set_xticklabels(df.index.year)
+    try:
+        ax.set_xticklabels(df.index.year)
+        years = sorted(list(set(df.index.year)))
+    except AttributeError:
+        ax.set_xticklabels(df.index)
+        years = sorted(list(set(df.index)))
+
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-    years = sorted(list(set(df.index.year)))
+    # years = sorted(list(set(df.index.year)))
     if len(years) > 10:
         mod = int(len(years)/10)
         _plt.xticks(_np.arange(len(years)), [
@@ -312,9 +323,18 @@ def plot_histogram(returns, resample="M", bins=20,
     if grayscale:
         colors = ['silver', 'gray', 'black']
 
-    apply_fnc = _stats.comp if compounded else _np.sum
-    returns = returns.fillna(0).resample(resample).apply(
-        apply_fnc).resample(resample).last()
+    if resample in ["M", "A"]:
+        groupper = returns.index.year
+        if resample == "M":
+            groupper = [returns.index.year, returns.index.month]
+        if compounded:
+            returns = _utils.group_returns(returns, groupper, True)
+        else:
+            returns = _utils.group_returns(returns, groupper, False)
+    else:
+        apply_fnc = _stats.comp if compounded else _np.sum
+        returns = returns.fillna(0).resample(resample).apply(
+            apply_fnc).resample(resample).last()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines['top'].set_visible(False)

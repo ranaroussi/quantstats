@@ -39,9 +39,10 @@ except ImportError:
     pass
 
 
-def html(returns, benchmark=None, rf=0.,
-         grayscale=False, title='Strategy Tearsheet',
-         output=None, compounded=True, figfmt='svg', template_path=None):
+def html(returns, benchmark=None, rf=0., grayscale=False,
+         title='Strategy Tearsheet', output=None, compounded=True,
+         rolling_period=126, download_filename='quantstats-tearsheet.html',
+         figfmt='svg', template_path=None):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -151,21 +152,21 @@ def html(returns, benchmark=None, rf=0.,
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
-                              show=False, ylabel=False)
+                              show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
-                          show=False, ylabel=False)
+                          show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False)
+                           show=False, ylabel=False, period=rolling_period)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -201,7 +202,7 @@ def html(returns, benchmark=None, rf=0.,
 
     if output is None:
         # _open_html(tpl)
-        _download_html(tpl, 'quantstats-tearsheet.html')
+        _download_html(tpl, download_filename)
         return
 
     with open(output, 'w', encoding='utf-8') as f:
@@ -285,7 +286,14 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                              "but a multi-column DataFrame was passed")
 
     blank = ['']
+
+    if isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1:
+            raise ValueError("`returns` needs to be a Pandas Series. DataFrame was passed")
+        returns = returns[returns.columns[0]]
+
     df = _pd.DataFrame({"returns": _utils._prepare_returns(returns, rf)})
+
     if benchmark is not None:
         blank = ['', '']
         df["benchmark"] = _utils._prepare_benchmark(
@@ -297,7 +305,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     pct = 100 if display or "internal" in kwargs else 1
 
     # return df
-    dd = _calc_dd(df, display=(display or "internal" in kwargs))
+    dd = _calc_dd(df['returns'], display=(display or "internal" in kwargs))
 
     metrics = _pd.DataFrame()
 
@@ -478,7 +486,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 
 def plots(returns, benchmark=None, grayscale=False,
-          figsize=(8, 5), mode='basic', compounded=True):
+          figsize=(8, 5), mode='basic', compounded=True,
+          rolling_period=126):
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -526,15 +535,16 @@ def plots(returns, benchmark=None, grayscale=False,
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
-        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False)
+        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
+        period=rolling_period)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False)
+                          show=True, ylabel=False, period=rolling_period)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False)
+                           show=True, ylabel=False, period=rolling_period)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),
@@ -554,6 +564,8 @@ def plots(returns, benchmark=None, grayscale=False,
 
 
 def _calc_dd(df, display=True):
+    if isinstance(df, _pd.DataFrame):
+        df = df[df.columns[0]]
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
