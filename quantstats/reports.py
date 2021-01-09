@@ -651,5 +651,5 @@ def _embed_figure(figfile, figfmt):
     figbytes = figfile.getvalue()
     if figfmt == 'svg':
         return figbytes.decode()
-    else:
-        return '<img src="data:image/{};base64,{}" />'.format(figfmt, _b64encode(figbytes).decode())
+    data_uri = _b64encode(figbytes).decode()
+    return '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
