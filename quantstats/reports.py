@@ -648,7 +648,8 @@ def _open_html(html):
 
 
 def _embed_figure(figfile, figfmt):
+    figbytes = figfile.getvalue()
     if figfmt == 'svg':
-        return figfile.getvalue().decode()
-    return f'<img src="data:image/{figfmt};' \
-           f'base64,{_b64encode(figfile.getvalue()).decode()}" />'
+        return figbytes.decode()
+    else:
+        return '<img src="data:image/{};base64,{}" />'.format(figfmt, _b64encode(figbytes).decode())
