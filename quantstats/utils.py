@@ -212,7 +212,7 @@ def _prepare_returns(data, rf=0., nperiods=None):
 
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            if data[col].dropna().min() >= 0 or data[col].dropna().max() > 1:
+            if data[col].dropna().min() >= 0 and data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
     elif data.min() >= 0 and data.max() > 1:
         data = data.pct_change()
