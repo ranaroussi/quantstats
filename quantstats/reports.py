@@ -305,7 +305,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     pct = 100 if display or "internal" in kwargs else 1
 
     # return df
-    dd = _calc_dd(df['returns'], display=(display or "internal" in kwargs))
+    dd = _calc_dd(df, display=(display or "internal" in kwargs))
 
     metrics = _pd.DataFrame()
 
@@ -564,8 +564,6 @@ def plots(returns, benchmark=None, grayscale=False,
 
 
 def _calc_dd(df, display=True):
-    if isinstance(df, _pd.DataFrame):
-        df = df[df.columns[0]]
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
