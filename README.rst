@@ -87,7 +87,7 @@ Visualize stock performance
 
 Output:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/snapshot.jpg
+.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/snapshot.jpg?dt202103241048
     :alt: Snapshot plot
 
 
@@ -111,10 +111,10 @@ Let' create an html tearsheet
 
 Output will generate something like this:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/report.jpg
+.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/report.jpg?dt202103241048
     :alt: HTML tearsheet
 
-(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/bd0e70bd284798a58c569363bc7e1c3c8c6e3fd9/docs/tearsheet.html>`_)
+(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/master/docs/tearsheet.html>`_)
 
 
 To view a complete list of available methods, run
