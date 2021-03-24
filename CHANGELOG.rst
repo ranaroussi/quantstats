@@ -1,6 +1,14 @@
 Change Log
 ===========
 
+0.0.30
+------
+- Fixed PIP installer
+
+0.0.29
+------
+- Minor code refactoring
+
 0.0.28
 ------
 - ``gain_to_pain`` renamed to ``gain_to_pain_ratio``

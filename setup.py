@@ -26,8 +26,7 @@ here = path.abspath(path.dirname(__file__))
 with io.open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-req_file = 'requirements.txt'
-with open(req_file, encoding="utf-8") as f:
+with io.open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     requirements = [line.rstrip() for line in f]
 
 setup(
