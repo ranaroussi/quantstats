@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.28
+------
+- ``gain_to_pain`` renamed to ``gain_to_pain_ratio``
+- Minor code refactoring
+
 0.0.27
 ------
 - Added Sortino/√2 and Gain/Pain ratio to report
