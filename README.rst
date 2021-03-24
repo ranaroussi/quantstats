@@ -10,7 +10,7 @@
     :target: https://pypi.python.org/pypi/quantstats
     :alt: PyPi status
 
-.. image:: https://img.shields.io/travis/ranaroussi/quantstats/master.svg?maxAge=1
+.. image:: https://img.shields.io/travis/ranaroussi/quantstats/main.svg?maxAge=1
     :target: https://travis-ci.com/ranaroussi/quantstats
     :alt: Travis-CI build status
 
@@ -87,7 +87,7 @@ Visualize stock performance
 
 Output:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/snapshot.jpg?dt202103241048
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.jpg?raw=true
     :alt: Snapshot plot
 
 
@@ -111,10 +111,10 @@ Let' create an html tearsheet
 
 Output will generate something like this:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/report.jpg?dt202103241048
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.jpg?raw=true
     :alt: HTML tearsheet
 
-(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/master/docs/tearsheet.html>`_)
+(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/main/docs/tearsheet.html>`_)
 
 
 To view a complete list of available methods, run
