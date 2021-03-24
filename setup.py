@@ -26,6 +26,10 @@ here = path.abspath(path.dirname(__file__))
 with io.open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+req_file = 'requirements.txt'
+with open(req_file, encoding="utf-8") as f:
+    requirements = [line.rstrip() for line in f]
+
 setup(
     name='QuantStats',
     version=version,
@@ -68,9 +72,7 @@ setup(
     keywords="""quant algotrading algorithmic-trading quantitative-trading
                 quantitative-analysis algo-trading visualization plotting""",
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'examples']),
-    install_requires=['pandas>=0.24.0', 'numpy>=1.15.0', 'scipy>=1.2.0',
-                      'matplotlib>=3.0.0', 'seaborn>=0.9.0',
-                      'tabulate>=0.8.0', 'yfinance>=0.1.44'],
+    install_requires=requirements,
     entry_points={
         'console_scripts': [
             'sample=sample:main',
