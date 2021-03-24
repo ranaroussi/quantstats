@@ -20,6 +20,7 @@
 
 import pandas as _pd
 import numpy as _np
+from math import sqrt as _sqrt
 from datetime import (
     datetime as _dt, timedelta as _td
 )
@@ -332,8 +333,14 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Total Return %'] = (df.sum() * pct).map('{:,.2f}'.format)
 
     metrics['CAGR%%'] = _stats.cagr(df, rf, compounded) * pct
+
+    metrics['~~~~~~~~~~~~~~'] = blank
+
     metrics['Sharpe'] = _stats.sharpe(df, rf)
     metrics['Sortino'] = _stats.sortino(df, rf)
+    metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
+
+    metrics['~~~~~~~~'] = blank
     metrics['Max Drawdown %'] = blank
     metrics['Longest DD Days'] = blank
 
@@ -364,6 +371,14 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Expected Shortfall (cVaR) %'] = -abs(_stats.cvar(df) * pct)
 
     metrics['~~~~~~'] = blank
+
+    metrics['Gain/Pain Ratio'] = _stats.gain_to_pain(df, rf)
+    metrics['Gain/Pain (1M)'] = _stats.gain_to_pain(df, rf, "M")
+    # if mode.lower() == 'full':
+    #     metrics['GPR (3M)'] = _stats.gain_to_pain(df, rf, "Q")
+    #     metrics['GPR (6M)'] = _stats.gain_to_pain(df, rf, "2Q")
+    #     metrics['GPR (1Y)'] = _stats.gain_to_pain(df, rf, "A")
+    metrics['~~~~~~~'] = blank
 
     metrics['Payoff Ratio'] = _stats.payoff_ratio(df)
     metrics['Profit Factor'] = _stats.profit_factor(df)
