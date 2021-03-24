@@ -256,7 +256,11 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
     return data / _sqrt(2)
 
 
-def gain_to_pain(returns, rf=0, resolution="D"):
+def gain_to_pain_ratio(returns, rf=0, resolution="D"):
+    """
+    Jack Schwager's GPR. See here for more info:
+    https://archive.is/wip/2rwFW
+    """
     returns = _utils._prepare_returns(returns, rf).resample(resolution).sum()
     downside = abs(returns[returns < 0].sum())
     return returns.sum() / downside
@@ -441,11 +445,6 @@ def profit_factor(returns):
     """ measures the profit ratio (wins/loss) """
     returns = _utils._prepare_returns(returns)
     return abs(returns[returns >= 0].sum() / returns[returns < 0].sum())
-
-
-def gain_to_pain_ratio(returns):
-    """ shorthand for profit_factor() """
-    return profit_factor(returns)
 
 
 def cpc_index(returns):

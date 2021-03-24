@@ -372,12 +372,12 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~'] = blank
 
-    metrics['Gain/Pain Ratio'] = _stats.gain_to_pain(df, rf)
-    metrics['Gain/Pain (1M)'] = _stats.gain_to_pain(df, rf, "M")
+    metrics['Gain/Pain Ratio'] = _stats.gain_to_pain_ratio(df, rf)
+    metrics['Gain/Pain (1M)'] = _stats.gain_to_pain_ratio(df, rf, "M")
     # if mode.lower() == 'full':
-    #     metrics['GPR (3M)'] = _stats.gain_to_pain(df, rf, "Q")
-    #     metrics['GPR (6M)'] = _stats.gain_to_pain(df, rf, "2Q")
-    #     metrics['GPR (1Y)'] = _stats.gain_to_pain(df, rf, "A")
+    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "Q")
+    #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
+    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "A")
     metrics['~~~~~~~'] = blank
 
     metrics['Payoff Ratio'] = _stats.payoff_ratio(df)
