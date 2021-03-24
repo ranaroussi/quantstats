@@ -20,7 +20,7 @@
 
 import pandas as _pd
 import numpy as _np
-from math import ceil as _ceil
+from math import ceil as _ceil, sqrt as _sqrt
 from scipy.stats import (
     norm as _norm, linregress as _linregress
 )
@@ -244,6 +244,22 @@ def sortino(returns, rf=0, periods=252, annualize=True):
         return res * _np.sqrt(1 if periods is None else periods)
 
     return res
+
+
+def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
+    """
+    Jack Schwager's version of the Sortino ratio allows for
+    direct comparisons to the Sharpe. See here for more info:
+    https://archive.is/wip/2rwFW
+    """
+    data = sortino(returns, rf=0, periods=252, annualize=True)
+    return data / _sqrt(2)
+
+
+def gain_to_pain(returns, rf=0, resolution="D"):
+    returns = _utils._prepare_returns(returns, rf).resample(resolution).sum()
+    downside = abs(returns[returns < 0].sum())
+    return returns.sum() / downside
 
 
 def cagr(returns, rf=0., compounded=True):
