@@ -174,6 +174,7 @@ To view a complete list of available methods, run
 	 'sharpe',
 	 'skew',
 	 'sortino',
+	 'adjusted_sortino',
 	 'tail_ratio',
 	 'to_drawdown_series',
 	 'ulcer_index',
