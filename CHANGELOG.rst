@@ -1,21 +1,26 @@
 Change Log
 ===========
 
+0.0.27
+------
+- Added Sortino/√2 and Gain/Pain ratio to report
+- Merged PRs to fix some bugs
+
 0.0.26
 ------
 - Misc bug fixes and code improvements
 
 0.0.25
 ------
-- Fixed `conditional_value_at_risk()`
-- Fixed `%matplotlib inline` issue notebooks
+- Fixed ``conditional_value_at_risk()``
+- Fixed ``%matplotlib inline`` issue notebooks
 
 0.0.24
 ------
-- Added mtd/qtd/ytd methods for panda (usage: `df.mtd()`)
+- Added mtd/qtd/ytd methods for panda (usage: ``df.mtd()``)
 - Fixed Pandas deprecation warning
 - Fixed Matplotlib deprecation warning
-- Try setting `%matplotlib inline` automatic in notebooks
+- Try setting ``%matplotlib inline`` automatic in notebooks
 
 0.0.23
 ------
@@ -27,7 +32,7 @@ Change Log
 
 0.0.21
 ------
-- Fixed chart EOY chart's `xticks` when charting data with 10+ years
+- Fixed chart EOY chart's ``xticks`` when charting data with 10+ years
 - Fixed issue where daily return >= 100%
 - Fixed Snapshot plot
 - Removed duplicaated code
@@ -41,7 +46,7 @@ Change Log
 0.0.19
 ------
 - Cleaning up data before calculations (replaces inf/-inf/-0 with 0)
-- Removed usage of `pandas.compound()` for future `pandas` version compatibility
+- Removed usage of ``pandas.compound()`` for future ``pandas`` version compatibility
 - Auto conversion of price-to-returns and returns-to-data as needed
 
 0.0.18
