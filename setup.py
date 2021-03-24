@@ -13,6 +13,13 @@ from setuptools import setup, find_packages
 import io
 from os import path
 
+# --- get version ---
+version = "unknown"
+with open("quantstats/version.py") as f:
+    line = f.read().strip()
+    version = line.replace("version = ", "").replace('"', '')
+# --- /get version ---
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
@@ -21,7 +28,7 @@ with io.open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='QuantStats',
-    version='0.0.27',
+    version=version,
     description='Portfolio analytics for quants',
     long_description=long_description,
     url='https://github.com/ranaroussi/quantstats',
