@@ -26,7 +26,7 @@ after_success:
 
 branches:
   only:
-    - master
+    - main
 
 notifications:
   slack: tradologics:HcnS6XusfcuS02waQPCG18oc
