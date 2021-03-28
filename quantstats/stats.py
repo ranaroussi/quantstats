@@ -646,6 +646,7 @@ def rolling_greeks(returns, benchmark, periods=252):
         "returns": _utils._prepare_returns(returns),
         "benchmark": _utils._prepare_benchmark(benchmark, returns.index)
     })
+    df = df.fillna(0)
     corr = df.rolling(int(periods)).corr().unstack()['returns']['benchmark']
     std = df.rolling(int(periods)).std()
     beta = corr * std['returns'] / std['benchmark']
