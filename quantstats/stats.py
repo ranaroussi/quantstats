@@ -237,7 +237,7 @@ def sortino(returns, rf=0, periods=252, annualize=True):
 
     returns = _utils._prepare_returns(returns, rf, periods)
 
-    downside = (returns[returns < 0] ** 2).sum() / len(returns)
+    downside = ((returns[returns < 0] -returns.mean()) ** 2).sum() / len(returns)
     res = returns.mean() / _np.sqrt(downside)
 
     if annualize:
