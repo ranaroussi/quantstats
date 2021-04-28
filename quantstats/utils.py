@@ -307,22 +307,24 @@ def _score_str(val):
     """ Returns + sign for positive values (used in plots) """
     return ("" if "-" in val else "+") + str(val)
 
-def make_index(ticker_weights, period="max"):
-  """ Makes an index out of the given tickers and weights. """
-  # Declare a returns variable
-  index = None
-  # Iterate over weights
-  for ticker, ticker_weight in ticker_weights.items():
-    # Download the returns for this ticker, e.g. GOOG
-    ticker_returns = download_returns(ticker, period)
-    if index is None:
-      # Set the returns to this return series if it's empty
-      index = ticker_returns
-    else:
-      # Otherwise, add weighted return
-      index += ticker_returns * ticker_weight
-  # Return total index
-  return index
+
+def make_index(ticker_weights, rebalance=None, period="max"):
+    """ Makes an index out of the given tickers and weights. """
+    # Declare a returns variable
+    index = None
+
+    # Iterate over weights
+    for ticker, ticker_weight in ticker_weights.items():
+        # Download the returns for this ticker, e.g. GOOG
+        ticker_returns = download_returns(ticker, period)
+        if index is None:
+            # Set the returns to this return series if it's empty
+            index = ticker_returns
+        else:
+            # Otherwise, add weighted return
+            index += ticker_returns * ticker_weight
+    # Return total index
+    return index
 
 
 def make_portfolio(returns, start_balance=1e5,
