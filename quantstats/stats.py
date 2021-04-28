@@ -252,7 +252,7 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
     direct comparisons to the Sharpe. See here for more info:
     https://archive.is/wip/2rwFW
     """
-    data = sortino(returns, rf=0, periods=252, annualize=True)
+    data = sortino(returns, rf=0, periods=periods, annualize=True)
     return data / _sqrt(2)
 
 
