@@ -178,6 +178,11 @@ def avg_loss(returns, aggregate=None, compounded=True):
 
 def volatility(returns, periods=252, annualize=True):
     """ calculates the volatility of returns for a period """
+    if(periods == None or periods == 252):
+        periods = 252
+    else:
+        periods = 365
+
     std = _utils._prepare_returns(returns).std()
     if annualize:
         return std * _np.sqrt(periods)
@@ -187,6 +192,11 @@ def volatility(returns, periods=252, annualize=True):
 
 def implied_volatility(returns, periods=252, annualize=True):
     """ calculates the implied volatility of returns for a period """
+    if(periods == None or periods == 252):
+        periods = 252
+    else:
+        periods = 365
+
     logret = _utils.log_returns(returns)
     if annualize:
         return logret.rolling(periods).std() * _np.sqrt(periods)
@@ -205,12 +215,16 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     Args:
         * returns (Series, DataFrame): Input return series
         * rf (float): Risk-free rate expressed as a yearly (annualized) return
-        * periods (int): Frequency of returns (252 for daily, 12 for monthly)
+        * periods (int): Frequency of returns (252 or 365 for daily, 12 for monthly)
         * annualize: return annualize sharpe?
     """
-
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
+
+    if(periods == 252):
+        periods = 252
+    else:
+        periods = 365
 
     returns = _utils._prepare_returns(returns, rf, periods)
     res = returns.mean() / returns.std()
@@ -235,6 +249,11 @@ def sortino(returns, rf=0, periods=252, annualize=True):
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
+    if(periods == 252):
+        periods = 252
+    else:
+        periods = 365
+
     returns = _utils._prepare_returns(returns, rf, periods)
 
     downside = (returns[returns < 0] ** 2).sum() / len(returns)
@@ -252,7 +271,12 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
     direct comparisons to the Sharpe. See here for more info:
     https://archive.is/wip/2rwFW
     """
-    data = sortino(returns, rf=0, periods=252, annualize=True)
+    if(periods == None or periods == 252):
+        periods = 252
+    else:
+        periods = 365
+
+    data = sortino(returns, rf=0, periods=periods, annualize=True)
     return data / _sqrt(2)
 
 
@@ -618,6 +642,10 @@ def information_ratio(returns, benchmark):
 
 def greeks(returns, benchmark, periods=252.):
     """ calculates alpha and beta of the portfolio """
+    if(periods == None or periods == 252):
+        periods = 252.
+    else:
+        periods = 365.
 
     # ----------------------------
     # data cleanup
@@ -642,6 +670,11 @@ def greeks(returns, benchmark, periods=252.):
 
 def rolling_greeks(returns, benchmark, periods=252):
     """ calculates rolling alpha and beta of the portfolio """
+    if(periods == None or periods == 252):
+        periods = 252
+    else:
+        periods = 365
+
     df = _pd.DataFrame(data={
         "returns": _utils._prepare_returns(returns),
         "benchmark": _utils._prepare_benchmark(benchmark, returns.index)
