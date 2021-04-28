@@ -477,12 +477,6 @@ def rolling_beta(returns, benchmark,
                  figsize=(10, 3), ylabel=True,
                  subtitle=True, savefig=None, show=True):
 
-    if(window1 == None or window1 == 126):
-        window2 = 252
-    else:
-        window1 = 183
-        window2 = 365
-
     returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
@@ -507,18 +501,12 @@ def rolling_volatility(returns, benchmark=None,
                        figsize=(10, 3), ylabel="Volatility",
                        subtitle=True, savefig=None, show=True):
 
-    if(period == None or period == 126):
-        roll_year = 252
-    else:
-        period = 183
-        roll_year = 365
-
     returns = _utils._prepare_returns(returns)
-    returns = returns.rolling(period).std() * _np.sqrt(roll_year)
+    returns = returns.rolling(period).std() * _np.sqrt(period)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        benchmark = benchmark.rolling(period).std() * _np.sqrt(roll_year)
+        benchmark = benchmark.rolling(period).std() * _np.sqrt(period)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
@@ -540,12 +528,6 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
                    lw=1.25, fontname='Arial', grayscale=False,
                    figsize=(10, 3), ylabel="Sharpe",
                    subtitle=True, savefig=None, show=True):
-
-    if(period == None or period == 126):
-        roll_year = 252
-    else:
-        period = 183
-        roll_year = 365
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / returns.rolling(period).std()
@@ -577,12 +559,6 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
                     lw=1.25, fontname='Arial', grayscale=False,
                     figsize=(10, 3), ylabel="Sortino",
                     subtitle=True, savefig=None, show=True):
-
-    if(period == None or period == 126):
-        roll_year = 252
-    else:
-        period = 183
-        roll_year = 365
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / \

@@ -43,7 +43,22 @@ except ImportError:
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          rolling_period=126, download_filename='quantstats-tearsheet.html',
-         figfmt='svg', template_path=None):
+         figfmt='svg', asset_class='equity', template_path=None):
+
+    if(asset_class == 'crypto' and periods != 365):
+        raise ValueError('Bad combination: crypto asset class requires periods = 365!')
+    if(asset_class == 'equity' and periods != 252):
+        raise ValueError('Bad combination: equity asset class requires periods = 252!')
+
+    if(rolling_period is None and asset_class == 'equity'):
+        window_year = 252
+        window_half_year = 126
+    elif(rolling_period is None and asset_class == 'crypto'):
+        window_year = 365
+        window_half_year = 183
+    elif(rolling_period is None and asset_class is None): # default to equity
+        window_year = 252
+        window_half_year = 126
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -143,35 +158,43 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     if benchmark is not None:
         figfile = _utils._file_stream()
-        _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
+        _plots.rolling_beta(returns, benchmark, asset_class,
+                            window1=window_half_year,
+                            window2=window_year,
+                            grayscale=grayscale,
                             figsize=(8, 3), subtitle=False,
                             savefig={'fname': figfile, 'format': figfmt},
                             show=False, ylabel=False)
         tpl = tpl.replace('{{rolling_beta}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
+    _plots.rolling_volatility(returns, benchmark,
+                              period=window_half_year,
+                              grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
-                              show=False, ylabel=False, period=rolling_period)
+                              show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.rolling_sharpe(returns, grayscale=grayscale,
+    _plots.rolling_sharpe(returns, period=window_half_year,
+                          grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
-                          show=False, ylabel=False, period=rolling_period)
+                          show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.rolling_sortino(returns, grayscale=grayscale,
+    _plots.rolling_sortino(returns, period=window_half_year,
+                           grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False, period=rolling_period)
+                           show=False, ylabel=False)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.drawdowns_periods(returns, grayscale=grayscale,
+    _plots.drawdowns_periods(returns,
+                             grayscale=grayscale,
                              figsize=(8, 4), subtitle=False,
                              savefig={'fname': figfile, 'format': figfmt},
                              show=False, ylabel=False, compounded=compounded)
@@ -336,8 +359,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~~~~~~~~~'] = blank
 
-    metrics['Sharpe'] = _stats.sharpe(df, rf)
-    metrics['Sortino'] = _stats.sortino(df, rf)
+    metrics['Sharpe'] = _stats.sharpe(df, rf, periods=window_year)
+    metrics['Sortino'] = _stats.sortino(df, rf, periods=window_year)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
 
     metrics['~~~~~~~~'] = blank
@@ -345,9 +368,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns']) * pct
+        ret_vol = _stats.volatility(df['returns'],periods=window_year) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark']) * pct
+            bench_vol = _stats.volatility(df['benchmark'],periods=window_year) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:
@@ -449,7 +472,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
         if "benchmark" in df:
             metrics['~~~~~~~'] = blank
-            greeks = _stats.greeks(df['returns'], df['benchmark'])
+            greeks = _stats.greeks(df['returns'], df['benchmark'], periods=window_year)
             metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
             metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
 
@@ -502,7 +525,22 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          rolling_period=126):
+          rolling_period=126, asset_class='equity'):
+
+    if(asset_class == 'crypto' and periods != 365):
+        raise ValueError('Bad combination: crypto asset class requires periods = 365!')
+    if(asset_class == 'equity' and periods != 252):
+        raise ValueError('Bad combination: equity asset class requires periods = 252!')
+
+    if(rolling_period is None and asset_class == 'equity'):
+        window_year = 252
+        window_half_year = 126
+    elif(rolling_period is None and asset_class == 'crypto'):
+        window_year = 365
+        window_half_year = 183
+    elif(rolling_period is None and asset_class is None): # default to equity
+        window_year = 252
+        window_half_year = 126
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -544,24 +582,31 @@ def plots(returns, benchmark=None, grayscale=False,
                          show=True, ylabel=False)
 
     if benchmark is not None:
-        _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
+        _plots.rolling_beta(returns, benchmark,
+                            window1=window_half_year,
+                            window2=window_year,
+                            grayscale=grayscale,
                             figsize=(figsize[0], figsize[0]*.3),
                             show=True, ylabel=False)
 
     _plots.rolling_volatility(
-        returns, benchmark, grayscale=grayscale,
+        returns, benchmark,
+        period=window_half_year,
+        grayscale=grayscale,
         figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
-        period=rolling_period)
+        )
 
-    _plots.rolling_sharpe(returns, grayscale=grayscale,
+    _plots.rolling_sharpe(returns, period=window_half_year,
+                          grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False, period=rolling_period)
+                          show=True, ylabel=False, period=window_half_year)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False, period=rolling_period)
+                           show=True, ylabel=False, period=window_half_year)
 
-    _plots.drawdowns_periods(returns, grayscale=grayscale,
+    _plots.drawdowns_periods(returns,
+                             grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),
                              show=True, ylabel=False)
 
