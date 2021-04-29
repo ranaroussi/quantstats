@@ -39,12 +39,7 @@ try:
 except ImportError:
     pass
 
-def get_asset_windows(asset_class,period):
-    if(asset_class == 'crypto'):
-       assert period == 365 or period == 183, "Bad combination: crypto asset class & periods!"
-    if(asset_class == 'equity'):
-       assert period == 252 or period == 126, "Bad combination: equity asset class & periods!"
-
+def get_asset_windows(asset_class):
     if(asset_class == 'equity'):
         window_year = 252
         window_half_year = 126
@@ -56,10 +51,10 @@ def get_asset_windows(asset_class,period):
 
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
-         rolling_period=126, download_filename='quantstats-tearsheet.html',
+         download_filename='quantstats-tearsheet.html',
          figfmt='svg', asset_class='equity', template_path=None):
 
-    window_year, window_half_year = get_asset_windows(asset_class,rolling_period)
+    window_year, window_half_year = get_asset_windows(asset_class)
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -299,9 +294,9 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', period=252, asset_class='equity', sep=False, compounded=True, **kwargs):
+            mode='basic', asset_class='equity', sep=False, compounded=True, **kwargs):
 
-    window_year, window_half_year = get_asset_windows(asset_class,period)
+    window_year, window_half_year = get_asset_windows(asset_class)
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -528,9 +523,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          rolling_period=126, asset_class='equity'):
+          asset_class='equity'):
 
-    window_year, window_half_year = get_asset_windows(asset_class,rolling_period)
+    window_year, window_half_year = get_asset_windows(asset_class)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
