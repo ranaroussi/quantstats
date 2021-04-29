@@ -39,26 +39,27 @@ try:
 except ImportError:
     pass
 
+def get_asset_windows(asset_class,period):
+    if(asset_class == 'crypto'):
+       assert period == 365 or period == 183, "Bad combination: crypto asset class & periods!"
+    if(asset_class == 'equity'):
+       assert period == 252 or period == 126, "Bad combination: equity asset class & periods!"
+
+    if(asset_class == 'equity'):
+        window_year = 252
+        window_half_year = 126
+    elif(asset_class == 'crypto'):
+        window_year = 365
+        window_half_year = 183
+    return(window_year,window_half_year)
+
 
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          rolling_period=126, download_filename='quantstats-tearsheet.html',
          figfmt='svg', asset_class='equity', template_path=None):
 
-    if(asset_class == 'crypto' and periods != 365):
-        raise ValueError('Bad combination: crypto asset class requires periods = 365!')
-    if(asset_class == 'equity' and periods != 252):
-        raise ValueError('Bad combination: equity asset class requires periods = 252!')
-
-    if(rolling_period is None and asset_class == 'equity'):
-        window_year = 252
-        window_half_year = 126
-    elif(rolling_period is None and asset_class == 'crypto'):
-        window_year = 365
-        window_half_year = 183
-    elif(rolling_period is None and asset_class is None): # default to equity
-        window_year = 252
-        window_half_year = 126
+    window_year, window_half_year = get_asset_windows(asset_class,rolling_period)
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -298,7 +299,9 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', sep=False, compounded=True, **kwargs):
+            mode='basic', period=252, asset_class='equity', sep=False, compounded=True, **kwargs):
+
+    window_year, window_half_year = get_asset_windows(asset_class,period)
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -527,20 +530,7 @@ def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
           rolling_period=126, asset_class='equity'):
 
-    if(asset_class == 'crypto' and periods != 365):
-        raise ValueError('Bad combination: crypto asset class requires periods = 365!')
-    if(asset_class == 'equity' and periods != 252):
-        raise ValueError('Bad combination: equity asset class requires periods = 252!')
-
-    if(rolling_period is None and asset_class == 'equity'):
-        window_year = 252
-        window_half_year = 126
-    elif(rolling_period is None and asset_class == 'crypto'):
-        window_year = 365
-        window_half_year = 183
-    elif(rolling_period is None and asset_class is None): # default to equity
-        window_year = 252
-        window_half_year = 126
+    window_year, window_half_year = get_asset_windows(asset_class,rolling_period)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -599,11 +589,13 @@ def plots(returns, benchmark=None, grayscale=False,
     _plots.rolling_sharpe(returns, period=window_half_year,
                           grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False, period=window_half_year)
+                          show=True, ylabel=False)
 
-    _plots.rolling_sortino(returns, grayscale=grayscale,
+    _plots.rolling_sortino(returns,
+                           period=window_half_year,
+                           grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False, period=window_half_year)
+                           show=True, ylabel=False)
 
     _plots.drawdowns_periods(returns,
                              grayscale=grayscale,
