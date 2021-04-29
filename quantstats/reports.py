@@ -46,7 +46,7 @@ def get_asset_windows(asset_class):
     elif(asset_class == 'crypto'):
         window_year = 365
         window_half_year = 183
-    return(window_year,window_half_year)
+    return window_year, window_half_year
 
 
 def html(returns, benchmark=None, rf=0., grayscale=False,
@@ -366,9 +366,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns'],periods=window_year) * pct
+        ret_vol = _stats.volatility(df['returns'], periods=window_year) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark'],periods=window_year) * pct
+            bench_vol = _stats.volatility(df['benchmark'], periods=window_year) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:
