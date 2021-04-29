@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.31
+------
+- Enable period setting for adjusted sortino
+- Added ``utils.make_index()`` for easy "etf" creation
+
 0.0.30
 ------
 - Fixed PIP installer
