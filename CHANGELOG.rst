@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.32
+------
+- Fixed bug in ``plot_histogram()`` (issues 94+95)
+
 0.0.31
 ------
 - Enable period setting for adjusted sortino
