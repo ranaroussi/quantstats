@@ -20,7 +20,7 @@
 
 import pandas as _pd
 import numpy as _np
-from math import sqrt as _sqrt
+from math import sqrt as _sqrt, ceil as _ceil
 from datetime import (
     datetime as _dt, timedelta as _td
 )
@@ -40,10 +40,17 @@ except ImportError:
     pass
 
 
+def _get_trading_periods(trading_year_days=252):
+    half_year = _ceil(trading_year_days/2)
+    return trading_year_days, half_year
+
+
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
-         rolling_period=126, download_filename='quantstats-tearsheet.html',
+         trading_year_days=252, download_filename='quantstats-tearsheet.html',
          figfmt='svg', template_path=None):
+
+    win_year, win_half_year = _get_trading_periods(trading_year_days)
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -145,6 +152,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         figfile = _utils._file_stream()
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             figsize=(8, 3), subtitle=False,
+                            window1=win_year, window2=win_half_year,
                             savefig={'fname': figfile, 'format': figfmt},
                             show=False, ylabel=False)
         tpl = tpl.replace('{{rolling_beta}}', _embed_figure(figfile, figfmt))
@@ -153,21 +161,21 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
-                              show=False, ylabel=False, period=rolling_period)
+                              show=False, ylabel=False, period=win_half_year)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
-                          show=False, ylabel=False, period=rolling_period)
+                          show=False, ylabel=False, period=win_half_year)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False, period=rolling_period)
+                           show=False, ylabel=False, period=win_half_year)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -211,7 +219,8 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
-         figsize=(8, 5), display=True, compounded=True):
+         figsize=(8, 5), display=True, compounded=True,
+         trading_year_days=252):
 
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
@@ -249,11 +258,13 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         print('[Strategy Visualization]\nvia Matplotlib')
 
     plots(returns=returns, benchmark=benchmark,
-          grayscale=grayscale, figsize=figsize, mode='full')
+          grayscale=grayscale, figsize=figsize, mode='full',
+          trading_year_days=trading_year_days)
 
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
-          figsize=(8, 5), display=True, compounded=True):
+          figsize=(8, 5), display=True, compounded=True,
+          trading_year_days=252):
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
@@ -271,11 +282,15 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         print('[Strategy Visualization]\nvia Matplotlib')
 
     plots(returns=returns, benchmark=benchmark,
-          grayscale=grayscale, figsize=figsize, mode='basic')
+          grayscale=grayscale, figsize=figsize, mode='basic',
+          trading_year_days=trading_year_days)
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', sep=False, compounded=True, **kwargs):
+            mode='basic', sep=False, compounded=True,
+            trading_year_days=252, **kwargs):
+
+    win_year, _ = _get_trading_periods(trading_year_days)
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -336,8 +351,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~~~~~~~~~'] = blank
 
-    metrics['Sharpe'] = _stats.sharpe(df, rf)
-    metrics['Sortino'] = _stats.sortino(df, rf)
+    metrics['Sharpe'] = _stats.sharpe(df, rf, win_year)
+    metrics['Sortino'] = _stats.sortino(df, rf, win_year)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
 
     metrics['~~~~~~~~'] = blank
@@ -345,9 +360,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns']) * pct
+        ret_vol = _stats.volatility(df['returns'], win_year) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark']) * pct
+            bench_vol = _stats.volatility(df['benchmark'], win_year) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:
@@ -449,7 +464,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
         if "benchmark" in df:
             metrics['~~~~~~~'] = blank
-            greeks = _stats.greeks(df['returns'], df['benchmark'])
+            greeks = _stats.greeks(df['returns'], df['benchmark'], win_year)
             metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
             metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
 
@@ -502,7 +517,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          rolling_period=126):
+          trading_year_days=252):
+
+    win_year, win_half_year = _get_trading_periods(trading_year_days)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -545,21 +562,22 @@ def plots(returns, benchmark=None, grayscale=False,
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
+                            window1=win_year, window2=win_half_year,
                             figsize=(figsize[0], figsize[0]*.3),
                             show=True, ylabel=False)
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
         figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
-        period=rolling_period)
+        period=win_half_year)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False, period=rolling_period)
+                          show=True, ylabel=False, period=win_half_year)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False, period=rolling_period)
+                           show=True, ylabel=False, period=win_half_year)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),

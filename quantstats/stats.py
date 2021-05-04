@@ -205,7 +205,7 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     Args:
         * returns (Series, DataFrame): Input return series
         * rf (float): Risk-free rate expressed as a yearly (annualized) return
-        * periods (int): Frequency of returns (252 for daily, 12 for monthly)
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
         * annualize: return annualize sharpe?
     """
 
