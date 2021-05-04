@@ -36,8 +36,6 @@ import seaborn as _sns
 from .. import (
     stats as _stats, utils as _utils,
 )
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 _sns.set(font_scale=1.1, rc={
@@ -348,12 +346,14 @@ def plot_histogram(returns, resample="M", bins=20,
     ax.axvline(returns.mean(), ls="--", lw=1.5,
                color=colors[2], zorder=2, label="Average")
 
-    _sns.distplot(returns, bins=bins,
-                  axlabel="", color=colors[0], hist_kws=dict(alpha=1),
+    _sns.histplot(returns, bins=bins,
+                  color=colors[0],
+                  alpha=1,
                   kde=kde,
-                  # , label="Kernel Estimate"
-                  kde_kws=dict(color='black', alpha=.7),
+                  stat="density",
                   ax=ax)
+    _sns.kdeplot(returns, color='black', linewidth=1.5)
+
 
     ax.xaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
