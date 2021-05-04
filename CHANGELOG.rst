@@ -1,6 +1,13 @@
 Change Log
 ===========
 
+0.0.34
+------
+- Fixed bug in ``stats.consecutive_wins()`` and ``stats.consecutive_losses()``
+- Fixed seaborn's depreated ``distplot`` warning
+- Improved annualization by passing ``trading_year_days``
+
+
 0.0.33
 ------
 - Added option to pass the number of days per year in reports, so you can now use ``trading_year_days=365`` if you're trading crypto, or any other number for intl. markets.
