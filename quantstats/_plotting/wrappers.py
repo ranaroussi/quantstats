@@ -502,11 +502,11 @@ def rolling_volatility(returns, benchmark=None,
                        subtitle=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns)
-    returns = returns.rolling(period).std() * _np.sqrt(252)
+    returns = returns.rolling(period).std() * _np.sqrt(period)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        benchmark = benchmark.rolling(period).std() * _np.sqrt(252)
+        benchmark = benchmark.rolling(period).std() * _np.sqrt(period)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
