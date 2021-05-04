@@ -161,21 +161,24 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
-                              show=False, ylabel=False, period=win_half_year)
+                              show=False, ylabel=False, period=win_half_year,
+                              trading_year_days=win_year)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
-                          show=False, ylabel=False, period=win_half_year)
+                          show=False, ylabel=False, period=win_half_year,
+                          trading_year_days=win_year)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False, period=win_half_year)
+                           show=False, ylabel=False, period=win_half_year,
+                           trading_year_days=win_year)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -351,8 +354,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~~~~~~~~~'] = blank
 
-    metrics['Sharpe'] = _stats.sharpe(df, rf, win_year)
-    metrics['Sortino'] = _stats.sortino(df, rf, win_year)
+    metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True, win_year)
+    metrics['Sortino'] = _stats.sortino(df, rf, win_year, True, win_year)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
 
     metrics['~~~~~~~~'] = blank
@@ -360,9 +363,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns'], win_year) * pct
+        ret_vol = _stats.volatility(df['returns'], win_year, True, win_year) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark'], win_year) * pct
+            bench_vol = _stats.volatility(df['benchmark'], win_year, True, win_year) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:

@@ -497,16 +497,17 @@ def rolling_beta(returns, benchmark,
 
 def rolling_volatility(returns, benchmark=None,
                        period=126, period_label="6-Months",
+                       trading_year_days=252,
                        lw=1.5, fontname='Arial', grayscale=False,
                        figsize=(10, 3), ylabel="Volatility",
                        subtitle=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns)
-    returns = returns.rolling(period).std() * _np.sqrt(period)
+    returns = returns.rolling(period).std() * _np.sqrt(trading_year_days)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        benchmark = benchmark.rolling(period).std() * _np.sqrt(period)
+        benchmark = benchmark.rolling(period).std() * _np.sqrt(trading_year_days)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
@@ -525,19 +526,22 @@ def rolling_volatility(returns, benchmark=None,
 
 def rolling_sharpe(returns, benchmark=None, rf=0.,
                    period=126, period_label="6-Months",
+                   trading_year_days=252,
                    lw=1.25, fontname='Arial', grayscale=False,
                    figsize=(10, 3), ylabel="Sharpe",
                    subtitle=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / returns.rolling(period).std()
-    returns = returns * _np.sqrt(1 if period is None else period)
+    returns = returns * _np.sqrt(
+        1 if trading_year_days is None else trading_year_days)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         benchmark = benchmark.rolling(
             period).mean() / benchmark.rolling(period).std()
-        benchmark = benchmark * _np.sqrt(1 if period is None else period)
+        benchmark = benchmark * _np.sqrt(
+            1 if trading_year_days is None else trading_year_days)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
@@ -556,6 +560,7 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
 
 def rolling_sortino(returns, benchmark=None, rf=0.,
                     period=126, period_label="6-Months",
+                    trading_year_days=252,
                     lw=1.25, fontname='Arial', grayscale=False,
                     figsize=(10, 3), ylabel="Sortino",
                     subtitle=True, savefig=None, show=True):
@@ -563,13 +568,15 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
     returns = _utils._prepare_returns(returns, rf)
     returns = returns.rolling(period).mean() / \
         returns[returns < 0].rolling(period).std()
-    returns = returns * _np.sqrt(1 if period is None else period)
+    returns = returns * _np.sqrt(
+        1 if trading_year_days is None else trading_year_days)
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         benchmark = benchmark.rolling(period).mean() / benchmark[
             benchmark < 0].rolling(period).std()
-        benchmark = benchmark * _np.sqrt(1 if period is None else period)
+        benchmark = benchmark * _np.sqrt(
+            1 if trading_year_days is None else trading_year_days)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),

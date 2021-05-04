@@ -176,26 +176,26 @@ def avg_loss(returns, aggregate=None, compounded=True):
     return returns[returns < 0].dropna().mean()
 
 
-def volatility(returns, periods=252, annualize=True):
+def volatility(returns, periods=252, annualize=True, trading_year_days=252):
     """ calculates the volatility of returns for a period """
     std = _utils._prepare_returns(returns).std()
     if annualize:
-        return std * _np.sqrt(periods)
+        return std * _np.sqrt(trading_year_days)
 
     return std
 
 
-def implied_volatility(returns, periods=252, annualize=True):
+def implied_volatility(returns, periods=252, annualize=True, trading_year_days=252):
     """ calculates the implied volatility of returns for a period """
     logret = _utils.log_returns(returns)
     if annualize:
-        return logret.rolling(periods).std() * _np.sqrt(periods)
+        return logret.rolling(periods).std() * _np.sqrt(trading_year_days)
     return logret.std()
 
 
 # ======= METRICS =======
 
-def sharpe(returns, rf=0., periods=252, annualize=True):
+def sharpe(returns, rf=0., periods=252, annualize=True, trading_year_days=252):
     """
     calculates the sharpe ratio of access returns
 
@@ -216,12 +216,13 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     res = returns.mean() / returns.std()
 
     if annualize:
-        return res * _np.sqrt(1 if periods is None else periods)
+        return res * _np.sqrt(
+            1 if trading_year_days is None else trading_year_days)
 
     return res
 
 
-def sortino(returns, rf=0, periods=252, annualize=True):
+def sortino(returns, rf=0, periods=252, annualize=True, trading_year_days=252):
     """
     calculates the sortino ratio of access returns
 
@@ -241,18 +242,21 @@ def sortino(returns, rf=0, periods=252, annualize=True):
     res = returns.mean() / _np.sqrt(downside)
 
     if annualize:
-        return res * _np.sqrt(1 if periods is None else periods)
+        return res * _np.sqrt(
+            1 if trading_year_days is None else trading_year_days)
 
     return res
 
 
-def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
+def adjusted_sortino(returns, rf=0, periods=252, annualize=True, trading_year_days=252):
     """
     Jack Schwager's version of the Sortino ratio allows for
     direct comparisons to the Sharpe. See here for more info:
     https://archive.is/wip/2rwFW
     """
-    data = sortino(returns, rf=0, periods=periods, annualize=annualize)
+    data = sortino(
+        returns, rf=0, periods=periods, annualize=annualize,
+        trading_year_days=trading_year_days)
     return data / _sqrt(2)
 
 
