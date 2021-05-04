@@ -92,7 +92,7 @@ def consecutive_wins(returns, aggregate=None, compounded=True):
     """ returns the maximum consecutive wins by day/month/week/quarter/year """
     returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded) > 0
-    return _utils.count_consecutive(returns).max()
+    return _utils._count_consecutive(returns).max()
 
 
 def consecutive_losses(returns, aggregate=None, compounded=True):
@@ -102,7 +102,7 @@ def consecutive_losses(returns, aggregate=None, compounded=True):
     """
     returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded) < 0
-    return _utils.count_consecutive(returns).max()
+    return _utils._count_consecutive(returns).max()
 
 
 def exposure(returns):
