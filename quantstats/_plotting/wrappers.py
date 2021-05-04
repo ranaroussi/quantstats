@@ -359,12 +359,12 @@ def yearly_returns(returns, benchmark=None,
             benchmark, returns.index).resample('A').apply(
                 _stats.compsum).resample('A').last()
 
-    returns = _utils._prepare_returns(returns).resample('A') 
-    if compounded: 
-        returns = returns.apply(_stats.compsum) 
-    else: 
-        returns = returns.apply(_df.cumsum) 
-    returns = returns.resample('A').last() 
+    returns = _utils._prepare_returns(returns).resample('A')
+    if compounded:
+        returns = returns.apply(_stats.compsum)
+    else:
+        returns = returns.apply(_df.cumsum)
+    returns = returns.resample('A').last()
 
     fig = _core.plot_returns_bars(returns, benchmark,
                                   fontname=fontname,
