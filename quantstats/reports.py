@@ -152,7 +152,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         figfile = _utils._file_stream()
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             figsize=(8, 3), subtitle=False,
-                            window1=win_year, window2=win_half_year,
+                            window1=win_half_year, window2=win_year,
                             savefig={'fname': figfile, 'format': figfmt},
                             show=False, ylabel=False)
         tpl = tpl.replace('{{rolling_beta}}', _embed_figure(figfile, figfmt))
@@ -565,22 +565,24 @@ def plots(returns, benchmark=None, grayscale=False,
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
-                            window1=win_year, window2=win_half_year,
+                            window1=win_half_year, window2=win_year,
                             figsize=(figsize[0], figsize[0]*.3),
                             show=True, ylabel=False)
 
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
         figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
-        period=win_half_year)
+        period=win_half_year, trading_year_days=win_year)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
-                          show=True, ylabel=False, period=win_half_year)
+                          show=True, ylabel=False, period=win_half_year,
+                          trading_year_days=win_year)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.3),
-                           show=True, ylabel=False, period=win_half_year)
+                           show=True, ylabel=False, period=win_half_year,
+                           trading_year_days=win_year)
 
     _plots.drawdowns_periods(returns, grayscale=grayscale,
                              figsize=(figsize[0], figsize[0]*.5),
