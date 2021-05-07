@@ -572,7 +572,7 @@ def plots(returns, benchmark=None, grayscale=False,
     _plots.rolling_volatility(
         returns, benchmark, grayscale=grayscale,
         figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
-        period=win_half_year)
+        period=win_half_year, trading_year_days=win_year)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(figsize[0], figsize[0]*.3),
