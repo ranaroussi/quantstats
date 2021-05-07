@@ -565,7 +565,7 @@ def plots(returns, benchmark=None, grayscale=False,
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
-                            window1=win_year, window2=win_half_year,
+                            window1=win_half_year, window2=win_year,
                             figsize=(figsize[0], figsize[0]*.3),
                             show=True, ylabel=False)
 
