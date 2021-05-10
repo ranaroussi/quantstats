@@ -26,6 +26,7 @@ requirements:
     - pip
     - python
     - scipy >=1.2.0
+    - empyrical >=0.5.5
   run:
     - pandas >=0.24.0
     - numpy >=1.16.5
@@ -37,6 +38,7 @@ requirements:
     - pip
     - python
     - scipy >=1.2.0
+    - empyrical >=0.5.5
 
 test:
   imports:

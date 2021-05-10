@@ -25,6 +25,7 @@ from matplotlib.ticker import (
     FuncFormatter as _FuncFormatter
 )
 
+from empyrical import roll_sortino_ratio as _roll_sortino_ratio
 import numpy as _np
 from pandas import DataFrame as _df
 import seaborn as _sns
@@ -566,17 +567,12 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
                     subtitle=True, savefig=None, show=True):
 
     returns = _utils._prepare_returns(returns, rf)
-    returns = returns.rolling(period).mean() / \
-        returns[returns < 0].rolling(period).std()
-    returns = returns * _np.sqrt(
-        1 if trading_year_days is None else trading_year_days)
+    returns = _roll_sortino_ratio(returns, period, required_return=rf,
+                                  annualization=trading_year_days)
 
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
-        benchmark = benchmark.rolling(period).mean() / benchmark[
-            benchmark < 0].rolling(period).std()
-        benchmark = benchmark * _np.sqrt(
-            1 if trading_year_days is None else trading_year_days)
+        benchmark = _roll_sortino_ratio(benchmark, period, required_return=rf,
+                                        annualization=trading_year_days)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
