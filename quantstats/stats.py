@@ -334,8 +334,8 @@ def calmar(returns):
 
 def ulcer_index(returns, rf=0):
     """ calculates the ulcer index score (downside risk measurment) """
-    returns = _utils._prepare_returns(returns, rf)
-    dd = 1. - returns/returns.cummax()
+
+    dd = to_drawdown_series(returns)
     return _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
 
 
@@ -344,15 +344,24 @@ def ulcer_performance_index(returns, rf=0):
     calculates the ulcer index score
     (downside risk measurment)
     """
-    returns = _utils._prepare_returns(returns, rf)
-    dd = 1. - returns/returns.cummax()
-    ulcer = _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
-    return returns.mean() / ulcer
+
+    return comp(returns) / ulcer_index(returns)
 
 
 def upi(returns, rf=0):
     """ shorthand for ulcer_performance_index() """
     return ulcer_performance_index(returns, rf)
+
+
+def serenity_index(returns, rf=0):
+    """
+    calculates the serenity index score
+    (https://www.keyquant.com/Download/GetFile?Filename=%5CPublications%5CKeyQuant_WhitePaper_APT_Part1.pdf)
+    """
+
+    dd = to_drawdown_series(returns)
+    pitfall = - cvar(dd) / returns.std()
+    return comp(returns) / ( ulcer_index(returns) * pitfall )  
 
 
 def risk_of_ruin(returns):
@@ -508,9 +517,9 @@ def max_drawdown(prices):
     return (prices / prices.expanding(min_periods=0).max()).min() - 1
 
 
-def to_drawdown_series(prices):
-    """ convert price series to drawdown series """
-    prices = _utils._prepare_prices(prices)
+def to_drawdown_series(returns):
+    """ convert returns series to drawdown series """
+    prices = _utils._prepare_prices(returns)
     dd = prices / _np.maximum.accumulate(prices) - 1.
     return dd.replace([_np.inf, -_np.inf, -0], 0)
 
