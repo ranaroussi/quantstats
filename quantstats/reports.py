@@ -432,14 +432,17 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     d = today - _td(12*365/12)
     metrics['1Y %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
+    d = today - _td(3*365)
     metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-3, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
+    d = today - _td(5*365)
     metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-5, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
+    d = today - _td(10*365)
     metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-10, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
     metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
