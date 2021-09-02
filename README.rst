@@ -11,7 +11,7 @@
     :alt: PyPi status
 
 .. image:: https://img.shields.io/travis/ranaroussi/quantstats/main.svg?maxAge=1
-    :target: https://travis-ci.com/ranaroussi/quantstats
+    :target: https://travis-ci.com/github/ranaroussi/quantstats
     :alt: Travis-CI build status
 
 .. image:: https://img.shields.io/pypi/dm/quantstats.svg?maxAge=2592000&label=installs&color=%2327B1FF
