@@ -1,6 +1,14 @@
 Change Log
 ===========
 
+0.0.35
+------
+- Passing correct rolling windows in ``rolling_beta()``
+- Added Serenity Index
+- Passing ``trading_year_days`` to method ``metrics``
+- Fixed "day is out of range for month" error
+
+
 0.0.34
 ------
 - Fixed bug in ``stats.consecutive_wins()`` and ``stats.consecutive_losses()``
