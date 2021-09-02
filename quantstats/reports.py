@@ -68,7 +68,8 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     mtrx = metrics(returns=returns, benchmark=benchmark,
                    rf=rf, display=False, mode='full',
                    sep=True, internal="True",
-                   compounded=compounded)[2:]
+                   compounded=compounded,
+                   trading_year_days=trading_year_days)[2:]
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
@@ -224,7 +225,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
          trading_year_days=252):
-
+    
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
         by='max drawdown', ascending=True)[:5]
@@ -237,7 +238,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         iDisplay(metrics(returns=returns, benchmark=benchmark,
                          rf=rf, display=display, mode='full',
-                         compounded=compounded))
+                         compounded=compounded,
+                         trading_year_days=trading_year_days))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         if dd_info.empty:
             iDisplay(iHTML("<p>(no drawdowns)</p>"))
@@ -249,7 +251,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='full',
-                compounded=compounded)
+                compounded=compounded,
+                trading_year_days=trading_year_days)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         if dd_info.empty:
@@ -273,13 +276,15 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
-                compounded=compounded)
+                compounded=compounded,
+                trading_year_days=trading_year_days)
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
-                compounded=compounded)
+                compounded=compounded,
+                trading_year_days=trading_year_days)
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
@@ -427,14 +432,17 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     d = today - _td(12*365/12)
     metrics['1Y %'] = comp_func(
         df[df.index >= _dt(d.year, d.month, d.day)]) * pct
+    d = today - _td(3*365)
     metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-3, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
+    d = today - _td(5*365)
     metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-5, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
+    d = today - _td(10*365)
     metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(today.year-10, today.month, today.day)
+        df[df.index >= _dt(d.year, d.month, d.day)
            ], 0., compounded) * pct
     metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
@@ -454,6 +462,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics[ix] = row
     metrics['Recovery Factor'] = _stats.recovery_factor(df)
     metrics['Ulcer Index'] = _stats.ulcer_index(df, rf)
+    metrics['Serenity Index'] = _stats.serenity_index(df, rf)
 
     # win rate
     if mode.lower() == 'full':
