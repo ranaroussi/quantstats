@@ -225,7 +225,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
          trading_year_days=252):
-
+    
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
         by='max drawdown', ascending=True)[:5]
@@ -462,6 +462,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics[ix] = row
     metrics['Recovery Factor'] = _stats.recovery_factor(df)
     metrics['Ulcer Index'] = _stats.ulcer_index(df, rf)
+    metrics['Serenity Index'] = _stats.serenity_index(df, rf)
 
     # win rate
     if mode.lower() == 'full':
