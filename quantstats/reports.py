@@ -327,6 +327,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     # pct multiplier
     pct = 100 if display or "internal" in kwargs else 1
+    if kwargs.get("as_pct", False):
+        pct = 100
 
     # return df
     dd = _calc_dd(df, display=(display or "internal" in kwargs))
