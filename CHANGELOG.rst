@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.36
+------
+- Added ``as_pct`` params to ``reports.metrics()`` for when you need display data as DataFrame
+
+
 0.0.35
 ------
 - Passing correct rolling windows in ``rolling_beta()``
