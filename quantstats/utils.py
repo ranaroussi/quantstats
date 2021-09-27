@@ -319,7 +319,7 @@ def make_index(ticker_weights, rebalance=None, period="max"):
         ticker_returns = download_returns(ticker, period)
         if index is None:
             # Set the returns to this return series if it's empty
-            index = ticker_returns
+            index = ticker_returns * ticker_weight
         else:
             # Otherwise, add weighted return
             index += ticker_returns * ticker_weight
