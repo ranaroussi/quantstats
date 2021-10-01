@@ -46,6 +46,30 @@ def comp(returns):
     return returns.add(1).prod() - 1
 
 
+def distribution(returns, compounded=True):
+    def get_outliers(data):
+        # https://datascience.stackexchange.com/a/57199
+        Q1 = data.quantile(0.25)
+        Q3 = data.quantile(0.75)
+        IQR = Q3 - Q1  # IQR is interquartile range.
+        filtered = (data >= Q1 - 1.5 * IQR) & (data <= Q3 + 1.5 * IQR)
+        return {
+            "values": data.loc[filtered].tolist(),
+            "outliers": data.loc[~filtered].tolist(),
+        }
+
+    apply_fnc = comp if compounded else _np.sum
+    daily = _utils._prepare_returns(returns.dropna())
+
+    return {
+        "Daily": get_outliers(daily),
+        "Weekly": get_outliers(daily.resample('W-MON').apply(apply_fnc)),
+        "mMonthly": get_outliers(daily.resample('M').apply(apply_fnc)),
+        "Auarterly": get_outliers(daily.resample('Q').apply(apply_fnc)),
+        "Yearly": get_outliers(daily.resample('A').apply(apply_fnc))
+    }
+
+
 def expected_return(returns, aggregate=None, compounded=True):
     """
     returns the expected return for a given period
