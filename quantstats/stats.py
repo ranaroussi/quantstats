@@ -209,6 +209,14 @@ def volatility(returns, periods=252, annualize=True):
     return std
 
 
+def rolling_volatility(returns, rolling_period=126, periods_per_year=252,
+                       prepare_returns=True):
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns, rolling_period)
+
+    return returns.rolling(rolling_period).std() * _np.sqrt(periods_per_year)
+
+
 def implied_volatility(returns, periods=252, annualize=True):
     """ calculates the implied volatility of returns for a period """
     logret = _utils.log_returns(returns)
@@ -246,6 +254,26 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
     return res
 
 
+def rolling_sharpe(returns, rf=0., rolling_period=126,
+                   periods_per_year=252, annualize=True,
+                   prepare_returns=True):
+
+    if rf != 0 and rolling_period is None:
+        raise Exception('Must provide periods if rf != 0')
+
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns, rf, rolling_period)
+
+    res = returns.rolling(rolling_period).mean() / \
+        returns.rolling(rolling_period).std()
+
+    if annualize:
+        res = res * _np.sqrt(
+            1 if periods_per_year is None else periods_per_year)
+
+    return res
+
+
 def sortino(returns, rf=0, periods=252, annualize=True):
     """
     calculates the sortino ratio of access returns
@@ -269,6 +297,22 @@ def sortino(returns, rf=0, periods=252, annualize=True):
         return res * _np.sqrt(
             1 if periods is None else periods)
 
+    return res
+
+
+def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True,
+                    periods_per_year=252, **kwargs):
+    if rf != 0 and rolling_period is None:
+        raise Exception('Must provide periods if rf != 0')
+
+    if kwargs.get("prepare_returns", True):
+        returns = _utils._prepare_returns(returns, rf, rolling_period)
+
+    downside = (returns[returns < 0] ** 2).sum() / len(returns)
+    res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)
+    if annualize:
+        res = res * _np.sqrt(
+            1 if periods_per_year is None else periods_per_year)
     return res
 
 
