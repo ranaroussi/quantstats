@@ -259,6 +259,34 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
     return data / _sqrt(2)
 
 
+def omega(returns, rf=0.0, required_return=0.0, periods=252):
+    """
+    Determines the Omega ratio of a strategy.
+    See https://en.wikipedia.org/wiki/Omega_ratio for more details.
+    """
+    if len(returns) < 2:
+        return _np.nan
+
+    if required_return <= -1:
+        return _np.nan
+
+    returns = _utils._prepare_returns(returns, rf, periods)
+
+    if periods == 1:
+        return_threshold = required_return
+    else:
+        return_threshold = (1 + required_return) ** (1. / periods) - 1
+
+    returns_less_thresh = returns - rf - return_threshold
+    numer = returns_less_thresh[returns_less_thresh > 0.0].sum().values[0]
+    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
+
+    if denom > 0.0:
+        return numer / denom
+    else:
+        return _np.nan
+
+
 def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     """
     Jack Schwager's GPR. See here for more info:

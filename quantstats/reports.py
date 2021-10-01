@@ -364,6 +364,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True)
     metrics['Sortino'] = _stats.sortino(df, rf, win_year, True)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
+    metrics['Omega (0﹪)'] = _stats.omega(df, rf, 0., win_year)
 
     metrics['~~~~~~~~'] = blank
     metrics['Max Drawdown %'] = blank
