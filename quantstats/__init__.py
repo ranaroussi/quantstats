@@ -55,9 +55,13 @@ def extend_pandas():
     _po.avg_win = stats.avg_win
     _po.avg_loss = stats.avg_loss
     _po.volatility = stats.volatility
+    _po.rolling_volatility = stats.rolling_volatility
     _po.implied_volatility = stats.implied_volatility
     _po.sharpe = stats.sharpe
+    _po.rolling_sharpe = stats.rolling_sharpe
     _po.sortino = stats.sortino
+    _po.rolling_sortino = stats.rolling_sortino
+    _po.omega = stats.omega
     _po.cagr = stats.cagr
     _po.rar = stats.rar
     _po.skew = stats.skew
