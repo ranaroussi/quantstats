@@ -532,9 +532,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          trading_year_days=252):
+          periods_per_year=252):
 
-    win_year, win_half_year = _get_trading_periods(trading_year_days)
+    win_year, win_half_year = _get_trading_periods(periods_per_year)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
