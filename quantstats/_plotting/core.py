@@ -580,7 +580,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle("Top %.0f Drawdown Periods\n" %
+    fig.suptitle("Worst %.0f Drawdown Periods\n" %
                  periods, y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
     if subtitle:
