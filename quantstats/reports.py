@@ -40,17 +40,17 @@ except ImportError:
     pass
 
 
-def _get_trading_periods(trading_year_days=252):
-    half_year = _ceil(trading_year_days/2)
-    return trading_year_days, half_year
+def _get_trading_periods(periods_per_year=252):
+    half_year = _ceil(periods_per_year/2)
+    return periods_per_year, half_year
 
 
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
-         trading_year_days=252, download_filename='quantstats-tearsheet.html',
+         periods_per_year=252, download_filename='quantstats-tearsheet.html',
          figfmt='svg', template_path=None):
 
-    win_year, win_half_year = _get_trading_periods(trading_year_days)
+    win_year, win_half_year = _get_trading_periods(periods_per_year)
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -69,7 +69,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                    rf=rf, display=False, mode='full',
                    sep=True, internal="True",
                    compounded=compounded,
-                   trading_year_days=trading_year_days)[2:]
+                   periods_per_year=periods_per_year)[2:]
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
@@ -163,7 +163,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
                               show=False, ylabel=False, period=win_half_year,
-                              trading_year_days=win_year)
+                              periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -171,7 +171,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
                           show=False, ylabel=False, period=win_half_year,
-                          trading_year_days=win_year)
+                          periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -179,7 +179,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
                            show=False, ylabel=False, period=win_half_year,
-                           trading_year_days=win_year)
+                           periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
@@ -224,8 +224,8 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
-         trading_year_days=252):
-    
+         periods_per_year=252):
+
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
         by='max drawdown', ascending=True)[:5]
@@ -239,7 +239,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         iDisplay(metrics(returns=returns, benchmark=benchmark,
                          rf=rf, display=display, mode='full',
                          compounded=compounded,
-                         trading_year_days=trading_year_days))
+                         periods_per_year=periods_per_year))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         if dd_info.empty:
             iDisplay(iHTML("<p>(no drawdowns)</p>"))
@@ -252,7 +252,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='full',
                 compounded=compounded,
-                trading_year_days=trading_year_days)
+                periods_per_year=periods_per_year)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         if dd_info.empty:
@@ -265,40 +265,40 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='full',
-          trading_year_days=trading_year_days)
+          periods_per_year=periods_per_year)
 
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
           figsize=(8, 5), display=True, compounded=True,
-          trading_year_days=252):
+          periods_per_year=252):
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
-                trading_year_days=trading_year_days)
+                periods_per_year=periods_per_year)
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
-                trading_year_days=trading_year_days)
+                periods_per_year=periods_per_year)
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
 
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='basic',
-          trading_year_days=trading_year_days)
+          periods_per_year=periods_per_year)
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
             mode='basic', sep=False, compounded=True,
-            trading_year_days=252, **kwargs):
+            periods_per_year=252, **kwargs):
 
-    win_year, _ = _get_trading_periods(trading_year_days)
+    win_year, _ = _get_trading_periods(periods_per_year)
 
     if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         raise ValueError("`returns` must be a pandas Series, "
@@ -361,8 +361,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~~~~~~~~~'] = blank
 
-    metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True, win_year)
-    metrics['Sortino'] = _stats.sortino(df, rf, win_year, True, win_year)
+    metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True)
+    metrics['Sortino'] = _stats.sortino(df, rf, win_year, True)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
 
     metrics['~~~~~~~~'] = blank
@@ -370,9 +370,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(df['returns'], win_year, True, win_year) * pct
+        ret_vol = _stats.volatility(df['returns'], win_year, True) * pct
         if "benchmark" in df:
-            bench_vol = _stats.volatility(df['benchmark'], win_year, True, win_year) * pct
+            bench_vol = _stats.volatility(df['benchmark'], win_year, True) * pct
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(df['returns'], df['benchmark'])
         else:
