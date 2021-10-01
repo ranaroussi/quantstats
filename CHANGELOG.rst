@@ -1,6 +1,14 @@
 Change Log
 ===========
 
+0.0.37
+------
+- added ``stats.rolling_sharpe()``, ``stats.rolling sortino``, ``stats.and rolling_volatility()``
+- Added ``stats.distribution()``
+- Added Omega ratio
+- BREAKING CHANGE: Eenamed ``trading_year_days`` param to ``periods_per_year``
+- Misc code cleanup and speedups
+
 0.0.36
 ------
 - Added ``as_pct`` params to ``reports.metrics()`` for when you need display data as DataFrame
