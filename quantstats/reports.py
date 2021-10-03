@@ -327,7 +327,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             raise ValueError("`returns` needs to be a Pandas Series. DataFrame was passed")
         returns = returns[returns.columns[0]]
 
-    df = _pd.DataFrame({"returns": _utils._prepare_returns(returns, rf)})
+    df = _pd.DataFrame({"returns": _utils._prepare_returns(returns)})
 
     if benchmark is not None:
         blank = ['', '']
