@@ -242,9 +242,26 @@ def implied_volatility(returns, periods=252, annualize=True):
     return logret.std()
 
 
+def autocorr_penalty(returns, prepare_returns=False):
+    """
+    metric to account for auto correlation
+    """
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns)
+
+    if isinstance(returns, _pd.DataFrame):
+        returns = returns[returns.columns[0]]
+
+    # returns.to_csv('/Users/ran/Desktop/test.csv')
+    num = len(returns)
+    coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
+    corr = [((num - x)/num) * coef ** x for x in range(1, num)]
+    return _np.sqrt(1 + 2 * _np.sum(corr))
+
+
 # ======= METRICS =======
 
-def sharpe(returns, rf=0., periods=252, annualize=True):
+def sharpe(returns, rf=0., periods=252, annualize=True, smart=False):
     """
     calculates the sharpe ratio of access returns
 
@@ -256,19 +273,28 @@ def sharpe(returns, rf=0., periods=252, annualize=True):
         * rf (float): Risk-free rate expressed as a yearly (annualized) return
         * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
         * annualize: return annualize sharpe?
+        * smart: return smart sharpe ratio
     """
 
     if rf != 0 and periods is None:
         raise Exception('Must provide periods if rf != 0')
 
     returns = _utils._prepare_returns(returns, rf, periods)
-    res = returns.mean() / returns.std()
+    divisor = returns.std(ddof=1)
+    if smart:
+        # penalize sharpe with auto correlation
+        divisor = divisor * autocorr_penalty(returns)
+    res = returns.mean() / divisor
 
     if annualize:
         return res * _np.sqrt(
             1 if periods is None else periods)
 
     return res
+
+
+def smart_sharpe(returns, rf=0., periods=252, annualize=True):
+    return sharpe(returns, rf, periods, annualize, True)
 
 
 def rolling_sharpe(returns, rf=0., rolling_period=126,
@@ -291,7 +317,7 @@ def rolling_sharpe(returns, rf=0., rolling_period=126,
     return res
 
 
-def sortino(returns, rf=0, periods=252, annualize=True):
+def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     """
     calculates the sortino ratio of access returns
 
@@ -307,14 +333,23 @@ def sortino(returns, rf=0, periods=252, annualize=True):
 
     returns = _utils._prepare_returns(returns, rf, periods)
 
-    downside = (returns[returns < 0] ** 2).sum() / len(returns)
-    res = returns.mean() / _np.sqrt(downside)
+    downside = _np.sqrt((returns[returns < 0] ** 2).sum() / len(returns))
+
+    if smart:
+        # penalize sortino with auto correlation
+        downside = downside * autocorr_penalty(returns)
+
+    res = returns.mean() / downside
 
     if annualize:
         return res * _np.sqrt(
             1 if periods is None else periods)
 
     return res
+
+
+def smart_sortino(returns, rf=0, periods=252, annualize=True):
+    return sortino(returns, rf, periods, annualize, True)
 
 
 def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True,
@@ -333,14 +368,14 @@ def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True,
     return res
 
 
-def adjusted_sortino(returns, rf=0, periods=252, annualize=True):
+def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     """
     Jack Schwager's version of the Sortino ratio allows for
     direct comparisons to the Sharpe. See here for more info:
     https://archive.is/wip/2rwFW
     """
     data = sortino(
-        returns, rf=0, periods=periods, annualize=annualize)
+        returns, rf=0, periods=periods, annualize=annualize, smart=smart)
     return data / _sqrt(2)
 
 
@@ -362,7 +397,7 @@ def omega(returns, rf=0.0, required_return=0.0, periods=252):
     else:
         return_threshold = (1 + required_return) ** (1. / periods) - 1
 
-    returns_less_thresh = returns - rf - return_threshold
+    returns_less_thresh = returns - return_threshold
     numer = returns_less_thresh[returns_less_thresh > 0.0].sum().values[0]
     denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
 

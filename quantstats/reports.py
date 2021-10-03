@@ -373,9 +373,15 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['~~~~~~~~~~~~~~'] = blank
 
     metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True)
+    if mode.lower() == 'full':
+        metrics['Smart Sharpe'] = _stats.smart_sharpe(df, rf, win_year, True)
     metrics['Sortino'] = _stats.sortino(df, rf, win_year, True)
+    if mode.lower() == 'full':
+        metrics['Smart Sortino'] = _stats.smart_sortino(df, rf, win_year, True)
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
-    metrics['Omega (0﹪)'] = _stats.omega(df, rf, 0., win_year)
+    if mode.lower() == 'full':
+        metrics['Smart Sortino/√2'] = metrics['Smart Sortino'] / _sqrt(2)
+    metrics['Omega'] = _stats.omega(df, rf, 0., win_year)
 
     metrics['~~~~~~~~'] = blank
     metrics['Max Drawdown %'] = blank

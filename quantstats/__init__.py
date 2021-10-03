@@ -58,8 +58,11 @@ def extend_pandas():
     _po.rolling_volatility = stats.rolling_volatility
     _po.implied_volatility = stats.implied_volatility
     _po.sharpe = stats.sharpe
+    _po.smart_sharpe = stats.smart_sharpe
     _po.rolling_sharpe = stats.rolling_sharpe
     _po.sortino = stats.sortino
+    _po.smart_sortino = stats.smart_sortino
+    _po.adjusted_sortino = stats.adjusted_sortino
     _po.rolling_sortino = stats.rolling_sortino
     _po.omega = stats.omega
     _po.cagr = stats.cagr
