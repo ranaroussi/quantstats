@@ -1,9 +1,13 @@
 Change Log
 ===========
 
+0.0.38
+------
+- added ``stats.smart_sharpe()`` and ``stats.smart_sortino()``
+
 0.0.37
 ------
-- added ``stats.rolling_sharpe()``, ``stats.rolling sortino``, ``stats.and rolling_volatility()``
+- added ``stats.rolling_sharpe()``, ``stats.rolling_sortino()``, ``stats.and rolling_volatility()``
 - Added ``stats.distribution()``
 - Added Omega ratio
 - BREAKING CHANGE: Eenamed ``trading_year_days`` param to ``periods_per_year``
