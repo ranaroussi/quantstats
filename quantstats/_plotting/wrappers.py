@@ -530,9 +530,8 @@ def rolling_volatility(returns, benchmark=None,
 
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        returns = _stats.rolling_volatility(
-            returns, period, periods_per_year,
-            prepare_returns=False)
+        benchmark = _stats.rolling_volatility(
+            benchmark, period, periods_per_year, prepare_returns=False)
 
     fig = _core.plot_rolling_stats(returns, benchmark,
                                    hline=returns.mean(),
