@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.39
+------
+- Fixed ``plots.rolling_volatility()`` benchmark display (bug introduced in 0.0.37)
+
 0.0.38
 ------
 - added ``stats.smart_sharpe()`` and ``stats.smart_sortino()``
