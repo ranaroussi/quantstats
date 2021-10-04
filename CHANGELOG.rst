@@ -1,6 +1,11 @@
 Change Log
 ===========
 
+0.0.40
+------
+- Added rebalance option to ``utils.make_index()``
+- Added option to add ``log_scale=True/False` to ``plots.snapshot()``
+
 0.0.39
 ------
 - Fixed ``plots.rolling_volatility()`` benchmark display (bug introduced in 0.0.37)
