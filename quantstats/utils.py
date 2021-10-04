@@ -308,18 +308,18 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def make_index(ticker_weights, rebalance=None, period="max", returns=None):
-    """ 
-    Makes an index out of the given tickers and weights. 
+def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
+    """
+    Makes an index out of the given tickers and weights.
     Optionally you can pass a dataframe with the returns.
     If returns is not given it try to download them with yfinance
-    
+
     Args:
-        * ticker_weights (Dict): A python dict with tickers as keys 
+        * ticker_weights (Dict): A python dict with tickers as keys
             and weights as values
-        * rebalance: Not implemented
+        * rebalance: Pandas resample interval or None for never
         * period: time period of the returns to be downloaded
-        * returns (Series, DataFrame): Optional. Returns If provided, 
+        * returns (Series, DataFrame): Optional. Returns If provided,
             it will fist check if returns for the given ticker are in
             this dataframe, if not it will try to download them with
             yfinance
@@ -328,6 +328,7 @@ def make_index(ticker_weights, rebalance=None, period="max", returns=None):
     """
     # Declare a returns variable
     index = None
+    portfolio = {}
 
     # Iterate over weights
     for ticker, ticker_weight in ticker_weights.items():
@@ -335,15 +336,44 @@ def make_index(ticker_weights, rebalance=None, period="max", returns=None):
             # Download the returns for this ticker, e.g. GOOG
             ticker_returns = download_returns(ticker, period)
         else:
-            ticker_returns = returns[ticker]           
-        if index is None:
-            # Set the returns to this return series if it's empty
-            index = ticker_returns * ticker_weight
-        else:
-            # Otherwise, add weighted return
-            index += ticker_returns * ticker_weight
-    # Return total index
-    return index
+            ticker_returns = returns[ticker]
+
+        portfolio[ticker] = ticker_returns
+
+    # index members time-series
+    index = _pd.DataFrame(portfolio).dropna()
+
+    # no rebalance?
+    if rebalance is None:
+        for ticker, weight in ticker_weights.items():
+            index[ticker] = weight * index[ticker]
+        return index.sum(axis=1)
+
+    last_day = index.index[-1]
+
+    # rebalance marker
+    rbdf = index.resample(rebalance).first()
+    rbdf['break'] = rbdf.index.strftime('%s')
+
+    # index returns with rebalance markers
+    index = _pd.concat([index, rbdf['break']], axis=1)
+
+    # mark first day day
+    index['first_day'] = _pd.isna(index['break']) & ~_pd.isna(index['break'].shift(1))
+    index.loc[index.index[0], 'first_day'] = True
+
+    # multiply first day of each rebalance period by the weight
+    for ticker, weight in ticker_weights.items():
+        index[ticker] = _np.where(
+            index['first_day'], weight * index[ticker], index[ticker])
+
+    # drop first marker
+    index.drop(columns=['first_day'], inplace=True)
+
+    # drop when all are NaN
+    index.dropna(how="all", inplace=True)
+    return index[index.index <= last_day].sum(axis=1)
+
 
 
 def make_portfolio(returns, start_balance=1e5,
