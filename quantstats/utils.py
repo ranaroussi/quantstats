@@ -308,15 +308,34 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def make_index(ticker_weights, rebalance=None, period="max"):
-    """ Makes an index out of the given tickers and weights. """
+def make_index(ticker_weights, rebalance=None, period="max", returns=None):
+    """ 
+    Makes an index out of the given tickers and weights. 
+    Optionally you can pass a dataframe with the returns.
+    If returns is not given it try to download them with yfinance
+    
+    Args:
+        * ticker_weights (Dict): A python dict with tickers as keys 
+            and weights as values
+        * rebalance: Not implemented
+        * period: time period of the returns to be downloaded
+        * returns (Series, DataFrame): Optional. Returns If provided, 
+            it will fist check if returns for the given ticker are in
+            this dataframe, if not it will try to download them with
+            yfinance
+    Returns:
+        * index_returns (Series, DataFrame): Returns for the index
+    """
     # Declare a returns variable
     index = None
 
     # Iterate over weights
     for ticker, ticker_weight in ticker_weights.items():
-        # Download the returns for this ticker, e.g. GOOG
-        ticker_returns = download_returns(ticker, period)
+        if (returns is None) or (ticker not in returns.columns):
+            # Download the returns for this ticker, e.g. GOOG
+            ticker_returns = download_returns(ticker, period)
+        else:
+            ticker_returns = returns[ticker]           
         if index is None:
             # Set the returns to this return series if it's empty
             index = ticker_returns * ticker_weight
