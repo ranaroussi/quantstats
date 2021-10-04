@@ -60,7 +60,8 @@ def to_plotly(fig):
 
 def snapshot(returns, grayscale=False, figsize=(10, 8),
              title='Portfolio Summary', fontname='Arial', lw=1.5,
-             mode="comp", subtitle=True, savefig=None, show=True):
+             mode="comp", subtitle=True, savefig=None, show=True,
+             log_scale=False):
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
 
@@ -97,6 +98,8 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
                  lw=1 if grayscale else lw, zorder=1)
     axes[0].axhline(0, color='silver', lw=1, zorder=0)
 
+    axes[0].set_yscale("symlog" if log_scale else "linear")
+
     dd = _stats.to_drawdown_series(returns) * 100
     ddmin = _utils._round_to_closest(abs(dd.min()), 5)
     ddmin_ticks = 5
@@ -115,11 +118,15 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     if not grayscale:
         axes[1].fill_between(dd.index, 0, dd, color=colors[2], alpha=.1)
 
+    axes[1].set_yscale("symlog" if log_scale else "linear")
+
     axes[2].set_ylabel('Daily Return', fontname=fontname,
                        fontweight='bold', fontsize=12)
     axes[2].plot(returns * 100, color=colors[0], lw=0.5, zorder=1)
     axes[2].axhline(0, color='silver', lw=1, zorder=0)
     axes[2].axhline(0, color=colors[-1], linestyle='--', lw=1, zorder=2)
+
+    axes[2].set_yscale("symlog" if log_scale else "linear")
 
     retmax = _utils._round_to_closest(returns.max() * 100, 5)
     retmin = _utils._round_to_closest(returns.min() * 100, 5)
