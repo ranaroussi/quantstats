@@ -580,7 +580,7 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle("Top %.0f Drawdown Periods\n" %
+    fig.suptitle("Worst %.0f Drawdown Periods\n" %
                  periods, y=.99, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
     if subtitle:
@@ -661,19 +661,19 @@ def plot_distribution(returns, figsize=(10, 6),
     apply_fnc = _stats.comp if compounded else _np.sum
 
     port['Weekly'] = port['Daily'].resample(
-        'W-MON').apply(apply_fnc).resample('W-MON').last()
+        'W-MON').apply(apply_fnc)
     port['Weekly'].ffill(inplace=True)
 
     port['Monthly'] = port['Daily'].resample(
-        'M').apply(apply_fnc).resample('M').last()
+        'M').apply(apply_fnc)
     port['Monthly'].ffill(inplace=True)
 
     port['Quarterly'] = port['Daily'].resample(
-        'Q').apply(apply_fnc).resample('Q').last()
+        'Q').apply(apply_fnc)
     port['Quarterly'].ffill(inplace=True)
 
     port['Yearly'] = port['Daily'].resample(
-        'A').apply(apply_fnc).resample('A').last()
+        'A').apply(apply_fnc)
     port['Yearly'].ffill(inplace=True)
 
     fig, ax = _plt.subplots(figsize=figsize)
