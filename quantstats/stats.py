@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from warnings import warn
 import pandas as _pd
 import numpy as _np
 from math import ceil as _ceil, sqrt as _sqrt
@@ -57,6 +58,16 @@ def distribution(returns, compounded=True, prepare_returns=True):
             "values": data.loc[filtered].tolist(),
             "outliers": data.loc[~filtered].tolist(),
         }
+
+    if isinstance(returns, _pd.DataFrame):
+        warn("Pandas DataFrame was passed (Series expeted). "
+             "Only first column will be used.")
+        returns = returns.copy()
+        returns.columns = map(str.lower, returns.columns)
+        if len(returns.columns) > 1 and 'close' in returns.columns:
+            returns = returns['close']
+        else:
+            returns = returns[returns.columns[0]]
 
     apply_fnc = comp if compounded else _np.sum
     daily = returns.dropna()
@@ -875,6 +886,9 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
 def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     """ calculates monthly returns """
     if isinstance(returns, _pd.DataFrame):
+        warn("Pandas DataFrame was passed (Series expeted). "
+             "Only first column will be used.")
+        returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)
         if len(returns.columns) > 1 and 'close' in returns.columns:
             returns = returns['close']
