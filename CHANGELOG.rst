@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.42
+------
+- Usability improvements
+
 0.0.41
 ------
 - Typos fixed
