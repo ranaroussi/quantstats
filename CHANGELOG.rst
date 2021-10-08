@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.41
+------
+- Typos fixed
+
 0.0.40
 ------
 - Added rebalance option to ``utils.make_index()``
@@ -26,7 +30,6 @@ Change Log
 ------
 - Added ``as_pct`` params to ``reports.metrics()`` for when you need display data as DataFrame
 
-
 0.0.35
 ------
 - Passing correct rolling windows in ``rolling_beta()``
@@ -34,13 +37,11 @@ Change Log
 - Passing ``trading_year_days`` to method ``metrics``
 - Fixed "day is out of range for month" error
 
-
 0.0.34
 ------
 - Fixed bug in ``stats.consecutive_wins()`` and ``stats.consecutive_losses()``
 - Fixed seaborn's depreated ``distplot`` warning
 - Improved annualization by passing ``trading_year_days``
-
 
 0.0.33
 ------
