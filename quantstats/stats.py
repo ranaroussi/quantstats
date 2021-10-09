@@ -192,9 +192,7 @@ def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
 
 
 def avg_return(returns, aggregate=None, compounded=True, prepare_returns=True):
-    """
-    calculates the average return/trade return for a period
-    """
+    """ calculates the average return/trade return for a period """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     if aggregate:
@@ -254,9 +252,7 @@ def implied_volatility(returns, periods=252, annualize=True):
 
 
 def autocorr_penalty(returns, prepare_returns=False):
-    """
-    metric to account for auto correlation
-    """
+    """ metric to account for auto correlation """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
@@ -436,7 +432,6 @@ def cagr(returns, rf=0., compounded=True):
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
-
     total = _utils._prepare_returns(returns, rf)
     if compounded:
         total = comp(total)
@@ -497,7 +492,6 @@ def calmar(returns, prepare_returns=True):
 
 def ulcer_index(returns):
     """ calculates the ulcer index score (downside risk measurment) """
-
     dd = to_drawdown_series(returns)
     return _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
 
@@ -507,7 +501,6 @@ def ulcer_performance_index(returns, rf=0):
     calculates the ulcer index score
     (downside risk measurment)
     """
-
     return (comp(returns)-rf) / ulcer_index(returns)
 
 
@@ -521,10 +514,9 @@ def serenity_index(returns, rf=0):
     calculates the serenity index score
     (https://www.keyquant.com/Download/GetFile?Filename=%5CPublications%5CKeyQuant_WhitePaper_APT_Part1.pdf)
     """
-
     dd = to_drawdown_series(returns)
     pitfall = - cvar(dd) / returns.std()
-    return (comp(returns)-rf) / ( ulcer_index(returns) * pitfall )
+    return (comp(returns)-rf) / (ulcer_index(returns) * pitfall)
 
 
 def risk_of_ruin(returns, prepare_returns=True):
@@ -812,7 +804,6 @@ def information_ratio(returns, benchmark, prepare_returns=True):
 
 def greeks(returns, benchmark, periods=252., prepare_returns=True):
     """ calculates alpha and beta of the portfolio """
-
     # ----------------------------
     # data cleanup
     if prepare_returns:
