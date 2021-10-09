@@ -254,6 +254,10 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.):
         benchmark = benchmark[benchmark.columns[0]].copy()
 
     if isinstance(period, _pd.DatetimeIndex):
+        # Adjust Benchmark to Strategy frequency
+        benchmark_prices = to_prices(benchmark, base=1)
+        new_index = _pd.date_range(start=period[0], end=period[-1], freq='D')
+        benchmark = benchmark_prices.reindex(new_index, method='bfill').reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
     return _prepare_returns(benchmark.dropna(), rf=rf)

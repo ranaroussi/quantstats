@@ -48,7 +48,7 @@ def _get_trading_periods(periods_per_year=252):
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          periods_per_year=252, download_filename='quantstats-tearsheet.html',
-         figfmt='svg', template_path=None):
+         figfmt='svg', template_path=None, comparable=False):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -61,6 +61,13 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         f.close()
 
     returns = _utils._prepare_returns(returns)
+    if benchmark is not None:
+        blank = ['', '']
+        benchmark = _utils._prepare_benchmark(
+            benchmark, returns.index, rf)
+        if comparable is True:
+            returns = returns.loc[max(returns.ne(0).idxmax(),benchmark.ne(0).idxmax()):]
+            benchmark = benchmark.loc[max(returns.ne(0).idxmax(),benchmark.ne(0).idxmax()):]
 
     date_range = returns.index.strftime('%e %b, %Y')
     tpl = tpl.replace('{{date_range}}', date_range[0] + ' - ' + date_range[-1])
@@ -316,7 +323,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                          "but a multi-column DataFrame was passed")
 
     if benchmark is not None:
-        if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
+        if isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
             raise ValueError("`benchmark` must be a pandas Series, "
                              "but a multi-column DataFrame was passed")
 
