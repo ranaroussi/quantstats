@@ -62,11 +62,10 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
-        blank = ['', '']
         benchmark = _utils._prepare_benchmark(
             benchmark, returns.index, rf)
         if comparable is True:
-            returns = returns.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):    ]
+            returns = returns.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
             benchmark = benchmark.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
 
     date_range = returns.index.strftime('%e %b, %Y')
@@ -322,10 +321,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         raise ValueError("`returns` must be a pandas Series, "
                          "but a multi-column DataFrame was passed")
 
-    if benchmark is not None:
-        if isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
-            raise ValueError("`benchmark` must be a pandas Series, "
-                             "but a multi-column DataFrame was passed")
+    if benchmark is not None and isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
+        raise ValueError("`benchmark` must be a pandas Series, "
+                         "but a multi-column DataFrame was passed")
 
     blank = ['']
 
