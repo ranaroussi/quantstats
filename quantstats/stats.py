@@ -495,7 +495,7 @@ def calmar(returns, prepare_returns=True):
     return cagr_ratio / abs(max_dd)
 
 
-def ulcer_index(returns, rf=0):
+def ulcer_index(returns):
     """ calculates the ulcer index score (downside risk measurment) """
 
     dd = to_drawdown_series(returns)
@@ -508,7 +508,7 @@ def ulcer_performance_index(returns, rf=0):
     (downside risk measurment)
     """
 
-    return comp(returns) / ulcer_index(returns)
+    return (comp(returns)-rf) / ulcer_index(returns)
 
 
 def upi(returns, rf=0):
@@ -524,7 +524,7 @@ def serenity_index(returns, rf=0):
 
     dd = to_drawdown_series(returns)
     pitfall = - cvar(dd) / returns.std()
-    return comp(returns) / ( ulcer_index(returns) * pitfall )
+    return (comp(returns)-rf) / ( ulcer_index(returns) * pitfall )
 
 
 def risk_of_ruin(returns, prepare_returns=True):

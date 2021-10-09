@@ -379,7 +379,6 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
     return index[index.index <= last_day].sum(axis=1)
 
 
-
 def make_portfolio(returns, start_balance=1e5,
                    mode="comp", round_to=None):
     """ Calculates compounded value of portfolio """
