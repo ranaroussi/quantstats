@@ -57,7 +57,7 @@ def _pandas_current_month(df):
 
 
 def multi_shift(df, shift=3):
-    """ Get last N rows relative to another row in pandas """
+    """Get last N rows relative to another row in pandas"""
     if isinstance(df, _pd.Series):
         df = _pd.DataFrame(df)
 
@@ -270,7 +270,7 @@ def _round_to_closest(val, res, decimals=None):
 
 
 def _file_stream():
-    """ Returns a file stream """
+    """Returns a file stream"""
     return _io.BytesIO()
 
 

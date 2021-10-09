@@ -480,7 +480,7 @@ def kurtosis(returns, prepare_returns=True):
 
 
 def calmar(returns, prepare_returns=True):
-    """ Calculates the calmar ratio (CAGR% / MaxDD%) """
+    """Calculates the calmar ratio (CAGR% / MaxDD%)"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     cagr_ratio = cagr(returns)
