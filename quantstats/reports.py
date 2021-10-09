@@ -66,8 +66,8 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         benchmark = _utils._prepare_benchmark(
             benchmark, returns.index, rf)
         if comparable is True:
-            returns = returns.loc[max(returns.ne(0).idxmax(),benchmark.ne(0).idxmax()): ]
-            benchmark = benchmark.loc[max(returns.ne(0).idxmax(),benchmark.ne(0).idxmax()): ]
+            returns = returns.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):    ]
+            benchmark = benchmark.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
 
     date_range = returns.index.strftime('%e %b, %Y')
     tpl = tpl.replace('{{date_range}}', date_range[0] + ' - ' + date_range[-1])
