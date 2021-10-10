@@ -321,7 +321,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         raise ValueError("`returns` must be a pandas Series, "
                          "but a multi-column DataFrame was passed")
 
-    if benchmark is not None and isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
+    if benchmark is not None \
+            and isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
         raise ValueError("`benchmark` must be a pandas Series, "
                          "but a multi-column DataFrame was passed")
 

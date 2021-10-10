@@ -380,7 +380,7 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     https://archive.is/wip/2rwFW
     """
     data = sortino(
-        returns, rf=0, periods=periods, annualize=annualize, smart=smart)
+        returns, rf, periods=periods, annualize=annualize, smart=smart)
     return data / _sqrt(2)
 
 
@@ -408,8 +408,8 @@ def omega(returns, rf=0.0, required_return=0.0, periods=252):
 
     if denom > 0.0:
         return numer / denom
-    else:
-        return _np.nan
+
+    return _np.nan
 
 
 def gain_to_pain_ratio(returns, rf=0, resolution="D"):

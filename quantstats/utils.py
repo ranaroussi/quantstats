@@ -256,7 +256,8 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.):
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
         new_index = _pd.date_range(start=period[0], end=period[-1], freq='D')
-        benchmark = benchmark_prices.reindex(new_index, method='bfill').reindex(period).pct_change().fillna(0)
+        benchmark = benchmark_prices.reindex(new_index, method='bfill') \
+            .reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
     return _prepare_returns(benchmark.dropna(), rf=rf)
@@ -334,7 +335,7 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
     portfolio = {}
 
     # Iterate over weights
-    for ticker, ticker_weight in ticker_weights.items():
+    for ticker, _unused_ticker_weight in ticker_weights.items():
         if (returns is None) or (ticker not in returns.columns):
             # Download the returns for this ticker, e.g. GOOG
             ticker_returns = download_returns(ticker, period)
