@@ -237,6 +237,8 @@ def download_returns(ticker, period="max"):
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.):
+def _prepare_benchmark(benchmark=None, period="max", rf=0.,
+                       prepare_returns=True):
     """
     Fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
@@ -260,7 +262,9 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.):
             .reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
-    return _prepare_returns(benchmark.dropna(), rf=rf)
+    if prepare_returns:
+        return _prepare_returns(benchmark.dropna(), rf=rf)
+    return benchmark.dropna()
 
 
 def _round_to_closest(val, res, decimals=None):

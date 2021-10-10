@@ -77,7 +77,9 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                    rf=rf, display=False, mode='full',
                    sep=True, internal="True",
                    compounded=compounded,
-                   periods_per_year=periods_per_year)[2:]
+                   periods_per_year=periods_per_year,
+                   prepare_returns=False)[2:]
+
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
@@ -258,7 +260,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         iDisplay(metrics(returns=returns, benchmark=benchmark,
                          rf=rf, display=display, mode='full',
                          compounded=compounded,
-                         periods_per_year=periods_per_year))
+                         periods_per_year=periods_per_year,
+                         prepare_returns=False))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         if dd_info.empty:
             iDisplay(iHTML("<p>(no drawdowns)</p>"))
@@ -271,7 +274,8 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='full',
                 compounded=compounded,
-                periods_per_year=periods_per_year)
+                periods_per_year=periods_per_year,
+                prepare_returns=False)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         if dd_info.empty:
@@ -284,7 +288,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='full',
-          periods_per_year=periods_per_year)
+          periods_per_year=periods_per_year, prepare_returns=False)
 
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
@@ -296,26 +300,30 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
-                periods_per_year=periods_per_year)
+                periods_per_year=periods_per_year,
+                prepare_returns=False)
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
-                periods_per_year=periods_per_year)
+                periods_per_year=periods_per_year,
+                prepare_returns=False)
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
 
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='basic',
-          periods_per_year=periods_per_year)
+          periods_per_year=periods_per_year,
+          prepare_returns=False)
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
             mode='basic', sep=False, compounded=True,
-            periods_per_year=252, **kwargs):
+            periods_per_year=252, prepare_returns=True,
+            match_dates=False, **kwargs):
 
     win_year, _ = _get_trading_periods(periods_per_year)
 
@@ -565,11 +573,12 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          periods_per_year=252):
+          periods_per_year=252, prepare_returns=True, match_dates=False):
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
-    returns = _utils._prepare_returns(returns)
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
