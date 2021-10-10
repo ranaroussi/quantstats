@@ -45,10 +45,19 @@ def _get_trading_periods(periods_per_year=252):
     return periods_per_year, half_year
 
 
+def _match_dates(returns, benchmark):
+    returns = returns.loc[
+        max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
+    benchmark = benchmark.loc[
+        max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
+
+    return returns, benchmark
+
+
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          periods_per_year=252, download_filename='quantstats-tearsheet.html',
-         figfmt='svg', template_path=None, comparable=False):
+         figfmt='svg', template_path=None, match_dates=False):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -60,13 +69,12 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         tpl = f.read()
         f.close()
 
+    # prepare timeseries
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(
-            benchmark, returns.index, rf)
-        if comparable is True:
-            returns = returns.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
-            benchmark = benchmark.loc[max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        if match_dates is True:
+            returns, benchmark = _match_dates(returns, benchmark)
 
     date_range = returns.index.strftime('%e %b, %Y')
     tpl = tpl.replace('{{date_range}}', date_range[0] + ' - ' + date_range[-1])
@@ -245,7 +253,14 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
-         periods_per_year=252):
+         periods_per_year=252, match_dates=False):
+
+    # prepare timeseries
+    returns = _utils._prepare_returns(returns)
+    if benchmark is not None:
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        if match_dates is True:
+            returns, benchmark = _match_dates(returns, benchmark)
 
     dd = _stats.to_drawdown_series(returns)
     dd_info = _stats.drawdown_details(dd).sort_values(
@@ -293,7 +308,14 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
           figsize=(8, 5), display=True, compounded=True,
-          periods_per_year=252):
+          periods_per_year=252, match_dates=False):
+
+    # prepare timeseries
+    returns = _utils._prepare_returns(returns)
+    if benchmark is not None:
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        if match_dates is True:
+            returns, benchmark = _match_dates(returns, benchmark)
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
@@ -343,12 +365,18 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             raise ValueError("`returns` needs to be a Pandas Series. DataFrame was passed")
         returns = returns[returns.columns[0]]
 
-    df = _pd.DataFrame({"returns": _utils._prepare_returns(returns)})
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns)
+
+    df = _pd.DataFrame({"returns": returns})
 
     if benchmark is not None:
         blank = ['', '']
-        df["benchmark"] = _utils._prepare_benchmark(
-            benchmark, returns.index, rf)
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        if match_dates is True:
+            returns, benchmark = _match_dates(returns, benchmark)
+        df["returns"] = returns
+        df["benchmark"] = benchmark
 
     df = df.fillna(0)
 
@@ -591,6 +619,12 @@ def plots(returns, benchmark=None, grayscale=False,
                                compounded=compounded)
 
         return
+
+    # prepare timeseries
+    if benchmark is not None:
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+        if match_dates is True:
+            returns, benchmark = _match_dates(returns, benchmark)
 
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(figsize[0], figsize[0]*.6),

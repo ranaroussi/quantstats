@@ -236,7 +236,6 @@ def download_returns(ticker, period="max"):
     return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
 
 
-def _prepare_benchmark(benchmark=None, period="max", rf=0.):
 def _prepare_benchmark(benchmark=None, period="max", rf=0.,
                        prepare_returns=True):
     """
@@ -254,7 +253,9 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.,
     elif isinstance(benchmark, _pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]].copy()
 
-    if isinstance(period, _pd.DatetimeIndex):
+    if isinstance(period, _pd.DatetimeIndex) \
+        and set(period) != set(benchmark.index):
+
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
         new_index = _pd.date_range(start=period[0], end=period[-1], freq='D')
