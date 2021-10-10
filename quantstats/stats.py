@@ -365,7 +365,9 @@ def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True,
     if kwargs.get("prepare_returns", True):
         returns = _utils._prepare_returns(returns, rf, rolling_period)
 
-    downside = (returns[returns < 0] ** 2).sum() / len(returns)
+    downside = returns.rolling(rolling_period).apply(
+        lambda x: (x.values[x.values < 0]**2).sum()) / rolling_period
+
     res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)
     if annualize:
         res = res * _np.sqrt(
