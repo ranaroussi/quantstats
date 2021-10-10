@@ -57,7 +57,7 @@ def _pandas_current_month(df):
 
 
 def multi_shift(df, shift=3):
-    """ get last N rows relative to another row in pandas """
+    """Get last N rows relative to another row in pandas"""
     if isinstance(df, _pd.Series):
         df = _pd.DataFrame(df)
 
@@ -68,12 +68,12 @@ def multi_shift(df, shift=3):
 
 
 def to_returns(prices, rf=0.):
-    """ Calculates the simple arithmetic returns of a price series """
+    """Calculates the simple arithmetic returns of a price series"""
     return _prepare_returns(prices, rf)
 
 
 def to_prices(returns, base=1e5):
-    """ Converts returns series to price data """
+    """Converts returns series to price data"""
     returns = returns.copy().fillna(0).replace(
         [_np.inf, -_np.inf], float('NaN'))
 
@@ -81,12 +81,12 @@ def to_prices(returns, base=1e5):
 
 
 def log_returns(returns, rf=0., nperiods=None):
-    """ shorthand for to_log_returns """
+    """Shorthand for to_log_returns"""
     return to_log_returns(returns, rf, nperiods)
 
 
 def to_log_returns(returns, rf=0., nperiods=None):
-    """ Converts returns series to log returns """
+    """Converts returns series to log returns"""
     returns = _prepare_returns(returns, rf, nperiods)
     try:
         return _np.log(returns+1).replace([_np.inf, -_np.inf], float('NaN'))
@@ -95,7 +95,7 @@ def to_log_returns(returns, rf=0., nperiods=None):
 
 
 def exponential_stdev(returns, window=30, is_halflife=False):
-    """ Returns series representing exponential volatility of returns """
+    """Returns series representing exponential volatility of returns"""
     returns = _prepare_returns(returns)
     halflife = window if is_halflife else None
     return returns.ewm(com=None, span=window,
@@ -114,7 +114,7 @@ def rebase(prices, base=100.):
 
 
 def group_returns(returns, groupby, compounded=False):
-    """ summarize returns
+    """Summarize returns
     group_returns(df, df.index.year)
     group_returns(df, [df.index.year, df.index.month])
     """
@@ -124,8 +124,7 @@ def group_returns(returns, groupby, compounded=False):
 
 
 def aggregate_returns(returns, period=None, compounded=True):
-    """ Aggregates returns based on date periods """
-
+    """Aggregates returns based on date periods"""
     if period is None or 'day' in period:
         return returns
     index = returns.index
@@ -187,7 +186,7 @@ def to_excess_returns(returns, rf, nperiods=None):
 
 
 def _prepare_prices(data, base=1.):
-    """ Converts return data into prices + cleanup """
+    """Converts return data into prices + cleanup"""
     data = data.copy()
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
@@ -207,7 +206,7 @@ def _prepare_prices(data, base=1.):
 
 
 def _prepare_returns(data, rf=0., nperiods=None):
-    """ Converts price data into returns + cleanup """
+    """Converts price data into returns + cleanup"""
     data = data.copy()
 
     if isinstance(data, _pd.DataFrame):
@@ -239,7 +238,7 @@ def download_returns(ticker, period="max"):
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.):
     """
-    fetch benchmark if ticker is provided, and pass through
+    Fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
 
     period can be options or (expected) _pd.DatetimeIndex range
@@ -254,25 +253,30 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.):
         benchmark = benchmark[benchmark.columns[0]].copy()
 
     if isinstance(period, _pd.DatetimeIndex):
+        # Adjust Benchmark to Strategy frequency
+        benchmark_prices = to_prices(benchmark, base=1)
+        new_index = _pd.date_range(start=period[0], end=period[-1], freq='D')
+        benchmark = benchmark_prices.reindex(new_index, method='bfill') \
+            .reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
     return _prepare_returns(benchmark.dropna(), rf=rf)
 
 
 def _round_to_closest(val, res, decimals=None):
-    """ round to closest resolution """
+    """Round to closest resolution"""
     if decimals is None and "." in str(res):
         decimals = len(str(res).split('.')[1])
     return round(round(val / res) * res, decimals)
 
 
 def _file_stream():
-    """ Returns a file stream """
+    """Returns a file stream"""
     return _io.BytesIO()
 
 
 def _in_notebook(matplotlib_inline=False):
-    """ Identify enviroment (notebook, terminal, etc) """
+    """Identify enviroment (notebook, terminal, etc)"""
     try:
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
@@ -291,7 +295,7 @@ def _in_notebook(matplotlib_inline=False):
 
 
 def _count_consecutive(data):
-    """ Counts consecutive data (like cumsum() with reset on zeroes) """
+    """Counts consecutive data (like cumsum() with reset on zeroes)"""
     def _count(data):
         return data * (data.groupby(
             (data != data.shift(1)).cumsum()).cumcount() + 1)
@@ -304,7 +308,7 @@ def _count_consecutive(data):
 
 
 def _score_str(val):
-    """ Returns + sign for positive values (used in plots) """
+    """Returns + sign for positive values (used in plots)"""
     return ("" if "-" in val else "+") + str(val)
 
 
@@ -331,7 +335,7 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
     portfolio = {}
 
     # Iterate over weights
-    for ticker, ticker_weight in ticker_weights.items():
+    for ticker, _unused_ticker_weight in ticker_weights.items():
         if (returns is None) or (ticker not in returns.columns):
             # Download the returns for this ticker, e.g. GOOG
             ticker_returns = download_returns(ticker, period)
@@ -375,10 +379,9 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
     return index[index.index <= last_day].sum(axis=1)
 
 
-
 def make_portfolio(returns, start_balance=1e5,
                    mode="comp", round_to=None):
-    """ Calculates compounded value of portfolio """
+    """Calculates compounded value of portfolio"""
     returns = _prepare_returns(returns)
 
     if mode.lower() in ["cumsum", "sum"]:
@@ -408,7 +411,7 @@ def make_portfolio(returns, start_balance=1e5,
 
 
 def _flatten_dataframe(df, set_index=None):
-    """ Dirty method for flattening multi-index dataframe """
+    """Dirty method for flattening multi-index dataframe"""
     s_buf = _io.StringIO()
     df.to_csv(s_buf)
     s_buf.seek(0)

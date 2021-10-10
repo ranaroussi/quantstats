@@ -33,7 +33,7 @@ utils._in_notebook(matplotlib_inline=True)
 
 def extend_pandas():
     """
-    extends pandas by exposing methods to be used like:
+    Extends pandas by exposing methods to be used like:
     df.sharpe(), df.best('day'), ...
     """
     from pandas.core.base import PandasObject as _po

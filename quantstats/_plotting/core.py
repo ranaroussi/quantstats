@@ -354,7 +354,6 @@ def plot_histogram(returns, resample="M", bins=20,
                   ax=ax)
     _sns.kdeplot(returns, color='black', linewidth=1.5)
 
-
     ax.xaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
 
