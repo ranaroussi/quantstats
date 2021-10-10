@@ -340,7 +340,7 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
     portfolio = {}
 
     # Iterate over weights
-    for ticker, _unused_ticker_weight in ticker_weights.items():
+    for ticker in ticker_weights.keys():
         if (returns is None) or (ticker not in returns.columns):
             # Download the returns for this ticker, e.g. GOOG
             ticker_returns = download_returns(ticker, period)
