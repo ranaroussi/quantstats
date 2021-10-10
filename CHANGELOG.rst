@@ -1,6 +1,13 @@
 Change Log
 ===========
 
+0.0.43
+------
+- Fixed ``stats.rolling_sortino()`` calculations
+- Added ``match_dates`` flag to reports to make strategy and benchmark comparible by syncing their dates and frequency
+- Added ``prepare_returns`` flag to ``utils._prepare_benchmark()``
+- Misc code cleanup and speedups
+
 0.0.42
 ------
 - Usability improvements
@@ -20,7 +27,7 @@ Change Log
 
 0.0.38
 ------
-- added ``stats.smart_sharpe()`` and ``stats.smart_sortino()``
+- Added ``stats.smart_sharpe()`` and ``stats.smart_sortino()``
 
 0.0.37
 ------
