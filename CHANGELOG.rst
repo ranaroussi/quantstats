@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.44
+------
+- Match dates logic on ``utils.make_index()``
+
 0.0.43
 ------
 - Fixed ``stats.rolling_sortino()`` calculations
