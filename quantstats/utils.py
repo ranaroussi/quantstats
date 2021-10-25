@@ -317,7 +317,7 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
+def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match_dates=False):
     """
     Makes an index out of the given tickers and weights.
     Optionally you can pass a dataframe with the returns.
@@ -351,6 +351,9 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None):
 
     # index members time-series
     index = _pd.DataFrame(portfolio).dropna()
+
+    if match_dates:
+        index=index[max(index.ne(0).idxmax()):]
 
     # no rebalance?
     if rebalance is None:
