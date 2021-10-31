@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.45
+------
+- Fixed ``stats.rolling_sharpe()`` parameter mismatch
+
 0.0.44
 ------
 - Match dates logic on ``utils.make_index()``
