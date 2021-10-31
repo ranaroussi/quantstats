@@ -304,7 +304,7 @@ def smart_sharpe(returns, rf=0., periods=252, annualize=True):
 
 
 def rolling_sharpe(returns, rf=0., rolling_period=126,
-                   periods_per_year=252, annualize=True,
+                   annualize=True, periods_per_year=252,
                    prepare_returns=True):
 
     if rf != 0 and rolling_period is None:
