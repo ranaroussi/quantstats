@@ -349,10 +349,6 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     win_year, _ = _get_trading_periods(periods_per_year)
 
-    if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
-        raise ValueError("`returns` must be a pandas Series, "
-                         "but a multi-column DataFrame was passed")
-
     if benchmark is not None \
             and isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
         raise ValueError("`benchmark` must be a pandas Series, "
@@ -362,7 +358,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1:
-            raise ValueError("`returns` needs to be a Pandas Series. DataFrame was passed")
+            raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
         returns = returns[returns.columns[0]]
 
     if prepare_returns:
