@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.46
+------
+- Misc buf fixes and speedups
+
 0.0.45
 ------
 - Fixed ``stats.rolling_sharpe()`` parameter mismatch
