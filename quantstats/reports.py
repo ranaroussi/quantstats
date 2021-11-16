@@ -382,7 +382,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         pct = 100
 
     # return df
-    dd = _calc_dd(df, display=(display or "internal" in kwargs))
+    dd = _calc_dd(df, display=(display or "internal" in kwargs),
+                  as_pct=kwargs.get("as_pct", False))
 
     metrics = _pd.DataFrame()
 
@@ -694,7 +695,7 @@ def plots(returns, benchmark=None, grayscale=False,
                         prepare_returns=False)
 
 
-def _calc_dd(df, display=True):
+def _calc_dd(df, display=True, as_pct=False):
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
@@ -706,17 +707,14 @@ def _calc_dd(df, display=True):
     else:
         ret_dd = dd_info
 
-    # pct multiplier
-    pct = 1 if display else 100
-
     dd_stats = {
         'returns': {
             'Max Drawdown %': ret_dd.sort_values(
                 by='max drawdown', ascending=True
-            )['max drawdown'].values[0] / pct,
+            )['max drawdown'].values[0] / 100,
             'Longest DD Days': str(_np.round(ret_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': ret_dd['max drawdown'].mean() / pct,
+            'Avg. Drawdown %': ret_dd['max drawdown'].mean(),
             'Avg. Drawdown Days': str(_np.round(ret_dd['days'].mean()))
         }
     }
@@ -725,16 +723,20 @@ def _calc_dd(df, display=True):
         dd_stats['benchmark'] = {
             'Max Drawdown %': bench_dd.sort_values(
                 by='max drawdown', ascending=True
-            )['max drawdown'].values[0] / pct,
+            )['max drawdown'].values[0] / 100,
             'Longest DD Days': str(_np.round(bench_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': bench_dd['max drawdown'].mean() / pct,
+            'Avg. Drawdown %': bench_dd['max drawdown'].mean(),
             'Avg. Drawdown Days': str(_np.round(bench_dd['days'].mean()))
         }
 
+    # pct multiplier
+    pct = 100 if display or as_pct else 1
+
     dd_stats = _pd.DataFrame(dd_stats).T
-    dd_stats['Max Drawdown %'] = dd_stats['Max Drawdown %'].astype(float)
-    dd_stats['Avg. Drawdown %'] = dd_stats['Avg. Drawdown %'].astype(float)
+    dd_stats['Max Drawdown %'] = dd_stats['Max Drawdown %'].astype(float) * pct
+    dd_stats['Avg. Drawdown %'] = dd_stats['Avg. Drawdown %'].astype(float) * pct
+
     return dd_stats.T
 
 
