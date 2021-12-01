@@ -1,9 +1,13 @@
 Change Log
 ===========
 
+0.0.47
+------
+- Fixed average DD display bug
+
 0.0.46
 ------
-- Misc buf fixes and speedups
+- Misc bug fixes and speedups
 
 0.0.45
 ------
