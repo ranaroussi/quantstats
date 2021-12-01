@@ -714,7 +714,7 @@ def _calc_dd(df, display=True, as_pct=False):
             )['max drawdown'].values[0] / 100,
             'Longest DD Days': str(_np.round(ret_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': ret_dd['max drawdown'].mean(),
+            'Avg. Drawdown %': ret_dd['max drawdown'].mean() / 100,
             'Avg. Drawdown Days': str(_np.round(ret_dd['days'].mean()))
         }
     }
@@ -726,7 +726,7 @@ def _calc_dd(df, display=True, as_pct=False):
             )['max drawdown'].values[0] / 100,
             'Longest DD Days': str(_np.round(bench_dd.sort_values(
                 by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': bench_dd['max drawdown'].mean(),
+            'Avg. Drawdown %': bench_dd['max drawdown'].mean() / 100,
             'Avg. Drawdown Days': str(_np.round(bench_dd['days'].mean()))
         }
 
