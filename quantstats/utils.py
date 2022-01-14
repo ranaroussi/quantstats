@@ -23,6 +23,7 @@ import pandas as _pd
 import numpy as _np
 import yfinance as _yf
 from . import stats as _stats
+import inspect
 
 
 def _mtd(df):
@@ -208,7 +209,7 @@ def _prepare_prices(data, base=1.):
 def _prepare_returns(data, rf=0., nperiods=None):
     """Converts price data into returns + cleanup"""
     data = data.copy()
-
+    function = inspect.stack()[1][3]
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 and data[col].dropna().max() > 1:
@@ -222,9 +223,15 @@ def _prepare_returns(data, rf=0., nperiods=None):
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace(
             [_np.inf, -_np.inf], float('NaN'))
+    unnecessary_function_calls = ['_prepare_benchmark',
+                                  'cagr',
+                                  'gain_to_pain_ratio',
+                                  'rolling_volatility',]
 
-    if rf > 0:
-        return to_excess_returns(data, rf, nperiods)
+
+    if function not in unnecessary_function_calls:
+        if rf > 0:
+            return to_excess_returns(data, rf, nperiods)
     return data
 
 
