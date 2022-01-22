@@ -1,4 +1,4 @@
-.. image:: https://img.shields.io/badge/python-3.5+-blue.svg?style=flat
+.. image:: https://img.shields.io/badge/python-3.6+-blue.svg?style=flat
     :target: https://pypi.python.org/pypi/quantstats
     :alt: Python version
 
