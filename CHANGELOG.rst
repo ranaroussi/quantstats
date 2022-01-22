@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.48
+------
+- Fixed RF display bug
+
 0.0.47
 ------
 - Fixed average DD display bug
