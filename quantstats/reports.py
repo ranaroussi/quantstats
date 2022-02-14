@@ -263,9 +263,10 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
             returns, benchmark = _match_dates(returns, benchmark)
 
     dd = _stats.to_drawdown_series(returns)
-    dd_info = _stats.drawdown_details(dd).sort_values(
-        by='max drawdown', ascending=True)[:5]
-
+    col = _stats.drawdown_details(dd).columns[4]
+    dd_info = _stats.drawdown_details(dd).sort_values(by = col, 
+                                                       ascending = True)[:5]
+     
     if not dd_info.empty:
         dd_info.index = range(1, min(6, len(dd_info)+1))
         dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
