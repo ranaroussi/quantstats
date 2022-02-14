@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.50
+------
+- Fixed a bug when reporting the max drawdown
+
 0.0.49
 ------
 - Fixed an issue with saving the HTML report as a file
