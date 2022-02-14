@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.49
+------
+- Fixed an issue with saving the HTML report as a file
+
 0.0.48
 ------
 - Fixed RF display bug
