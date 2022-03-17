@@ -500,10 +500,10 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     d = today - relativedelta(years=1)
     metrics['1Y %'] = comp_func(df[df.index >= d]) * pct
     
-    d = today - relativedelta(years=3)
+    d = today - relativedelta(months=35)
     metrics['3Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
     
-    d = today - relativedelta(years=5)
+    d = today - relativedelta(months=59)
     metrics['5Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
     
     d = today - relativedelta(years=10)
