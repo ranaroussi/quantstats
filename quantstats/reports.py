@@ -264,9 +264,9 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
     dd = _stats.to_drawdown_series(returns)
     col = _stats.drawdown_details(dd).columns[4]
-    dd_info = _stats.drawdown_details(dd).sort_values(by = col, 
+    dd_info = _stats.drawdown_details(dd).sort_values(by = col,
                                                        ascending = True)[:5]
-     
+
     if not dd_info.empty:
         dd_info.index = range(1, min(6, len(dd_info)+1))
         dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
@@ -415,14 +415,22 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['~~~~~~~~~~~~~~'] = blank
 
     metrics['Sharpe'] = _stats.sharpe(df, rf, win_year, True)
+    metrics['Prob. Sharpe Ratio %'] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
     if mode.lower() == 'full':
         metrics['Smart Sharpe'] = _stats.smart_sharpe(df, rf, win_year, True)
+        # metrics['Prob. Smart Sharpe Ratio %'] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False, True) * pct
+
     metrics['Sortino'] = _stats.sortino(df, rf, win_year, True)
     if mode.lower() == 'full':
+        # metrics['Prob. Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False) * pct
         metrics['Smart Sortino'] = _stats.smart_sortino(df, rf, win_year, True)
+        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False, True) * pct
+
     metrics['Sortino/√2'] = metrics['Sortino'] / _sqrt(2)
     if mode.lower() == 'full':
+        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics['Smart Sortino/√2'] = metrics['Smart Sortino'] / _sqrt(2)
+        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
     metrics['Omega'] = _stats.omega(df, rf, 0., win_year)
 
     metrics['~~~~~~~~'] = blank

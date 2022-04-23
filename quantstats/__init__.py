@@ -99,6 +99,10 @@ def extend_pandas():
     _po.monthly_returns = stats.monthly_returns
     _po.pct_rank = stats.pct_rank
 
+    _po.probabilistic_sharpe_ratio = stats.probabilistic_sharpe_ratio
+    _po.probabilistic_sortino_ratio = stats.probabilistic_sortino_ratio
+    _po.probabilistic_adjusted_sortino_ratio = stats.probabilistic_adjusted_sortino_ratio
+
     # methods from utils
     _po.to_returns = utils.to_returns
     _po.to_prices = utils.to_prices

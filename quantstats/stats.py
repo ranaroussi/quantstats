@@ -386,6 +386,48 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     return data / _sqrt(2)
 
 
+def probabilistic_ratio(series, rf=0., base="sharpe", periods=252, annualize=False, smart=False):
+
+    if base.lower() == "sharpe":
+        base = sharpe(series, periods=periods, annualize=False, smart=smart)
+    elif base.lower() == "sortino":
+        base = sortino(series, periods=periods, annualize=False, smart=smart)
+    elif base.lower() == "adjusted_sortino":
+        base = adjusted_sortino(series, periods=periods,
+                                annualize=False, smart=smart)
+    else:
+        raise Exception(
+            '`metric` must be either `sharpe`, `sortino`, or `adjusted_sortino`')
+    skew_no = skew(series, prepare_returns=False)
+    kurtosis_no = kurtosis(series, prepare_returns=False)
+
+    n = len(series)
+
+    sigma_sr = ((1/(n-1)) * (1 + 0.5 * base**2 +
+                skew_no * base + (kurtosis_no/4) * base**2)) ** 0.5
+    ratio = (base - rf) / sigma_sr
+    psr = _norm.cdf(ratio)
+
+    if annualize:
+        return psr * (252 ** 0.5)
+    return psr
+
+
+def probabilistic_sharpe_ratio(series, rf=0., periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(series, rf, base="sharpe", periods=periods,
+                               annualize=annualize, smart=smart)
+
+
+def probabilistic_sortino_ratio(series, rf=0., periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(series, rf, base="sortino", periods=periods,
+                               annualize=annualize, smart=smart)
+
+
+def probabilistic_adjusted_sortino_ratio(series, rf=0., periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(series, rf, base="adjusted_sortino", periods=periods,
+                               annualize=annualize, smart=smart)
+
+
 def omega(returns, rf=0.0, required_return=0.0, periods=252):
     """
     Determines the Omega ratio of a strategy.
@@ -406,7 +448,8 @@ def omega(returns, rf=0.0, required_return=0.0, periods=252):
 
     returns_less_thresh = returns - return_threshold
     numer = returns_less_thresh[returns_less_thresh > 0.0].sum().values[0]
-    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
+    denom = -1.0 * \
+        returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
 
     if denom > 0.0:
         return numer / denom
