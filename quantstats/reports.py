@@ -503,24 +503,24 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     d = today - relativedelta(months=3)
     metrics['3M %'] = comp_func(df[df.index >= d]) * pct
-    
+
     d = today - relativedelta(months=6)
     metrics['6M %'] = comp_func(df[df.index >= d]) * pct
-    
+
     metrics['YTD %'] = comp_func(df[df.index >= _dt(today.year, 1, 1)]) * pct
-    
+
     d = today - relativedelta(years=1)
     metrics['1Y %'] = comp_func(df[df.index >= d]) * pct
-    
+
     d = today - relativedelta(months=35)
     metrics['3Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
-    
+
     d = today - relativedelta(months=59)
     metrics['5Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
-    
+
     d = today - relativedelta(years=10)
     metrics['10Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
-    
+
     metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
     # best/worst
