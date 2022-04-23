@@ -478,6 +478,10 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics['~~~~~~'] = blank
 
+    if mode.lower() == 'full':
+        metrics['Max Consecutive Wins *int'] = _stats.consecutive_wins(df)
+        metrics['Max Consecutive Losses *int'] = _stats.consecutive_losses(df)
+
     metrics['Gain/Pain Ratio'] = _stats.gain_to_pain_ratio(df, rf)
     metrics['Gain/Pain (1M)'] = _stats.gain_to_pain_ratio(df, rf, "M")
     # if mode.lower() == 'full':
