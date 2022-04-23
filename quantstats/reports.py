@@ -561,6 +561,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
             metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
             metrics['Correlation'] = [str(round(df['benchmark'].corr(df['returns']) * pct, 2))+'%', '-']
+            metrics['Treynor Ratio'] = [str(round(_stats.treynor_ratio(df['returns'], df['benchmark'], win_year, rf)*pct, 2))+'%', '-']
 
     # prepare for display
     for col in metrics.columns:

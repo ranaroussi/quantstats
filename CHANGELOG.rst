@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.52
+------
+- Added Treynor ratio
+
 0.0.51
 ------
 - Added max consecutive wins/losses to full report

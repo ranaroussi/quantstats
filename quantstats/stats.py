@@ -428,6 +428,24 @@ def probabilistic_adjusted_sortino_ratio(series, rf=0., periods=252, annualize=F
                                annualize=annualize, smart=smart)
 
 
+def treynor_ratio(returns, benchmark, periods=252., rf=0.):
+    """
+    Calculates the Treynor ratio
+
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * benchmatk (String, Series, DataFrame): Benchmark to compare beta to
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+    """
+    if isinstance(returns, _pd.DataFrame):
+        returns = returns[returns.columns[0]]
+
+    beta = greeks(returns, benchmark, periods=periods).to_dict().get('beta', 0)
+    if beta == 0:
+        return 0
+    return (comp(returns) - rf) / beta
+
+
 def omega(returns, rf=0.0, required_return=0.0, periods=252):
     """
     Determines the Omega ratio of a strategy.
