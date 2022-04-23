@@ -5,3 +5,4 @@ matplotlib>=3.0.0
 scipy>=1.2.0
 tabulate>=0.8.0
 yfinance>=0.1.70
+dateutil>=2.0
