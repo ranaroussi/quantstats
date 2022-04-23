@@ -595,6 +595,12 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     else:
         metrics.columns = ['Strategy']
 
+    # cleanups
+    metrics.replace([-0, '-0'], 0, inplace=True)
+    metrics.replace([_np.nan, -_np.nan, _np.inf, -_np.inf,
+                     '-nan%', 'nan%', '-nan', 'nan',
+                    '-inf%', 'inf%', '-inf', 'inf'], '-', inplace=True)
+
     if display:
         print(_tabulate(metrics, headers="keys", tablefmt='simple'))
         return None
