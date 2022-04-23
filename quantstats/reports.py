@@ -31,6 +31,7 @@ from . import (
     __version__, stats as _stats,
     utils as _utils, plots as _plots
 )
+from dateutil.relativedelta import relativedelta
 
 try:
     from IPython.core.display import (
@@ -72,6 +73,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
+        tpl = tpl.replace('{{benchmark_title}}', f"Benchmark is {benchmark}")
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
@@ -494,34 +496,28 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     comp_func = _stats.comp if compounded else _np.sum
 
     today = df.index[-1]  # _dt.today()
-    metrics['MTD %'] = comp_func(
-        df[df.index >= _dt(today.year, today.month, 1)]) * pct
+    metrics['MTD %'] = comp_func(df[df.index >= _dt(today.year, today.month, 1)]) * pct
 
-    d = today - _td(3*365/12)
-    metrics['3M %'] = comp_func(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
-
-    d = today - _td(6*365/12)
-    metrics['6M %'] = comp_func(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
-
+    d = today - relativedelta(months=3)
+    metrics['3M %'] = comp_func(df[df.index >= d]) * pct
+    
+    d = today - relativedelta(months=6)
+    metrics['6M %'] = comp_func(df[df.index >= d]) * pct
+    
     metrics['YTD %'] = comp_func(df[df.index >= _dt(today.year, 1, 1)]) * pct
-
-    d = today - _td(12*365/12)
-    metrics['1Y %'] = comp_func(
-        df[df.index >= _dt(d.year, d.month, d.day)]) * pct
-    d = today - _td(3*365)
-    metrics['3Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(d.year, d.month, d.day)
-           ], 0., compounded) * pct
-    d = today - _td(5*365)
-    metrics['5Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(d.year, d.month, d.day)
-           ], 0., compounded) * pct
-    d = today - _td(10*365)
-    metrics['10Y (ann.) %'] = _stats.cagr(
-        df[df.index >= _dt(d.year, d.month, d.day)
-           ], 0., compounded) * pct
+    
+    d = today - relativedelta(years=1)
+    metrics['1Y %'] = comp_func(df[df.index >= d]) * pct
+    
+    d = today - relativedelta(months=35)
+    metrics['3Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
+    
+    d = today - relativedelta(months=59)
+    metrics['5Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
+    
+    d = today - relativedelta(years=10)
+    metrics['10Y (ann.) %'] = _stats.cagr(df[df.index >= d], 0., compounded) * pct
+    
     metrics['All-time (ann.) %'] = _stats.cagr(df, 0., compounded) * pct
 
     # best/worst
