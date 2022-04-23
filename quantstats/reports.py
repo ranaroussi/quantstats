@@ -552,10 +552,11 @@ def metrics(returns, benchmark=None, rf=0., display=True,
         metrics['Win Year %%'] = _stats.win_rate(df, aggregate='A', prepare_returns=False) * pct
 
         if "benchmark" in df:
-            metrics['~~~~~~~'] = blank
+            metrics['~~~~~~~~~~~~'] = blank
             greeks = _stats.greeks(df['returns'], df['benchmark'], win_year, prepare_returns=False)
             metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
             metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
+            metrics['Correlation'] = [str(round(df['benchmark'].corr(df['returns']) * pct, 2))+'%', '-']
 
     # prepare for display
     for col in metrics.columns:
@@ -565,6 +566,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                 metrics[col] = metrics[col].astype(str)
         except Exception:
             pass
+        if (display or "internal" in kwargs) and "*int" in col:
+            metrics[col] = metrics[col].str.replace('.0', '', regex=False)
+            metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
         if (display or "internal" in kwargs) and "%" in col:
             metrics[col] = metrics[col] + '%'
     try:
