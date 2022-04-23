@@ -1,6 +1,15 @@
 Change Log
 ===========
 
+0.0.51
+------
+- Added max consecutive wins/losses to full report
+- Added “correlation to benchmark” to report
+- Cleanup inf/nan from reports
+- Added benchmark name to stats column and html report
+- Added probabilistic sharpe/sortino ratios
+- Fix relative dates calculations
+
 0.0.50
 ------
 - Fixed a bug when reporting the max drawdown
