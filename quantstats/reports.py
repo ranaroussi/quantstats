@@ -352,10 +352,13 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     win_year, _ = _get_trading_periods(periods_per_year)
 
-    if benchmark is not None \
-            and isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
-        raise ValueError("`benchmark` must be a pandas Series, "
-                         "but a multi-column DataFrame was passed")
+    benchmark_col = 'Benchmark'
+    if benchmark is not None:
+        if isinstance(benchmark, str):
+            benchmark_col = f'Benchmark ({benchmark.upper()})'
+        elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
+            raise ValueError("`benchmark` must be a pandas Series, "
+                             "but a multi-column DataFrame was passed")
 
     blank = ['']
 
@@ -588,7 +591,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics = metrics.T
 
     if "benchmark" in df:
-        metrics.columns = ['Strategy', 'Benchmark']
+        metrics.columns = ['Strategy', benchmark_col]
     else:
         metrics.columns = ['Strategy']
 
