@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.53
+------
+- Added information ratio to reports
+
 0.0.52
 ------
 - Added Treynor ratio

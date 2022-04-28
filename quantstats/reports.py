@@ -451,6 +451,8 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
             metrics['R^2'] = _stats.r_squared(
                 df['returns'], df['benchmark'], prepare_returns=False)
+            metrics['Information Ratio'] = _stats.information_ratio(
+                df['returns'], df['benchmark'], prepare_returns=False)
         else:
             metrics['Volatility (ann.) %'] = [ret_vol]
 
@@ -616,6 +618,12 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     if not sep:
         metrics = metrics[metrics.index != '']
+
+    # remove spaces from column names
+    metrics = metrics.T
+    metrics.columns = [c.replace(' %', '').replace(' *int', '').strip() for c in metrics.columns]
+    metrics = metrics.T
+
     return metrics
 
 

@@ -906,7 +906,7 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     return _pd.DataFrame(index=returns.index, data={
         "beta": beta,
         "alpha": alpha
-    }).fillna(0)
+    })
 
 
 def compare(returns, benchmark, aggregate=None, compounded=True,
