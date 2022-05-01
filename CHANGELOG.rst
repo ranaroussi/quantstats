@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.55
+-----
+- Fix for benchmark name in html report when supplied by the user
+
 0.0.54
 ------
 - Fixed dependency name in requirements.txt
