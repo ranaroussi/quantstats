@@ -74,7 +74,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
         
-         def get_benchmark_title(bench):
+        def get_benchmark_title(bench):
             if isinstance(bench, str):
                 return bench
             elif isinstance(bench, _pd.Series):
