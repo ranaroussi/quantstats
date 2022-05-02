@@ -72,19 +72,17 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
+
     if benchmark is not None:
-        
-        def get_benchmark_title(bench):
-            if isinstance(bench, str):
-                return bench
-            elif isinstance(bench, _pd.Series):
-                return bench.name
-            elif isinstance(bench, _pd.DataFrame):
-                return bench[bench.columns[0]].name
-            else:
-                raise ValueError("Can't infer benchmark title")
-                
-        tpl = tpl.replace('{{benchmark_title}}', f"Benchmark is {get_benchmark_title(benchmark)} | ")
+        benchmark_title = "Benchmark"
+        if isinstance(benchmark, str):
+            benchmark_title = benchmark
+        elif isinstance(benchmark, _pd.Series):
+            benchmark_title = benchmark.name
+        elif isinstance(benchmark, _pd.DataFrame):
+            benchmark_title = benchmark[benchmark.columns[0]].name
+               
+        tpl = tpl.replace('{{benchmark_title}}', f"Benchmark is {benchmark_title.upper()} | ")
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
