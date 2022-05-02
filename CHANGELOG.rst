@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.56
+-----
+- Added option to explicitly provide the benchmark title via `benchmark_title=...`
+
 0.0.55
 -----
 - Fix for benchmark name in html report when supplied by the user
