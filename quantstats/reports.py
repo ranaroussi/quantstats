@@ -58,7 +58,7 @@ def _match_dates(returns, benchmark):
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          periods_per_year=252, download_filename='quantstats-tearsheet.html',
-         figfmt='svg', template_path=None, match_dates=False):
+         figfmt='svg', template_path=None, match_dates=False, **kwargs):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`file` must be specified")
@@ -74,14 +74,15 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     returns = _utils._prepare_returns(returns)
 
     if benchmark is not None:
-        benchmark_title = "Benchmark"
-        if isinstance(benchmark, str):
-            benchmark_title = benchmark
-        elif isinstance(benchmark, _pd.Series):
-            benchmark_title = benchmark.name
-        elif isinstance(benchmark, _pd.DataFrame):
-            benchmark_title = benchmark[benchmark.columns[0]].name
-               
+        benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
+        if kwargs.get('benchmark_title') is None:
+            if isinstance(benchmark, str):
+                benchmark_title = benchmark
+            elif isinstance(benchmark, _pd.Series):
+                benchmark_title = benchmark.name
+            elif isinstance(benchmark, _pd.DataFrame):
+                benchmark_title = benchmark[benchmark.columns[0]].name
+
         tpl = tpl.replace('{{benchmark_title}}', f"Benchmark is {benchmark_title.upper()} | ")
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
