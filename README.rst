@@ -96,7 +96,7 @@ Creating a report
 
 You can create 7 different report tearsheets:
 
-1. ``qs.reports.metrics(mode='basic|full", ...)`` - shows basic/full metrics
+1. ``qs.stats.metrics(mode='basic|full", ...)`` - shows basic/full metrics
 2. ``qs.reports.plots(mode='basic|full", ...)`` - shows basic/full plots
 3. ``qs.reports.basic(...)`` - shows basic metrics and plots
 4. ``qs.reports.full(...)`` - shows full metrics and plots
