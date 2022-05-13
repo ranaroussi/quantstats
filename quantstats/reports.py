@@ -82,7 +82,7 @@ def generate_report(df,
 
     result_df = [p for p in pool.map(calculate_metrics_in_pool, tickers)]
 
-    return pd.concat(result_df, axis=1).T
+    return _pd.concat(result_df, axis=1).T
 
 
 def html(returns, benchmark=None, rf=0., grayscale=False,
