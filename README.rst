@@ -269,13 +269,6 @@ If you'd like to contribute, a great place to look is the
 `issues marked with help-wanted <https://github.com/ranaroussi/quantstats/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22>`_.
 
 
-Known Issues
-------------
-
-For some reason, I couldn't find a way to tell seaborn not to return the
-monthly returns heatmap when instructed to save - so even if you save the plot (by passing ``savefig={...}``) it will still show the plot.
-
-
 Legal Stuff
 ------------
 
