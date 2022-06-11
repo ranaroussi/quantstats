@@ -1344,7 +1344,7 @@ def _calc_dd(df, display=True, as_pct=False):
     else:
         ret_dd = dd_info
 
-    ddstats = {
+    dd_stats = {
         'returns': {
             'Max Drawdown %': (
                 ret_dd['max drawdown'].min() / 100
@@ -1358,7 +1358,7 @@ def _calc_dd(df, display=True, as_pct=False):
     }
     if "benchmark" in df and (dd_info.columns, pd.MultiIndex):
         bench_dd = dd_info['benchmark'].sort_values(by='max drawdown')
-        ddstats['benchmark'] = {
+        dd_stats['benchmark'] = {
             'Max Drawdown %': (
                 bench_dd['max drawdown'].min() / 100
             ),
@@ -1372,11 +1372,11 @@ def _calc_dd(df, display=True, as_pct=False):
     # pct multiplier
     pct = 100 if display or as_pct else 1
 
-    ddstats = pd.DataFrame(ddstats).T
-    ddstats['Max Drawdown %'] = ddstats['Max Drawdown %'].astype(float) * pct
-    ddstats['Avg. Drawdown %'] = ddstats['Avg. Drawdown %'].astype(float) * pct
+    dd_stats = pd.DataFrame(dd_stats).T
+    dd_stats['Max Drawdown %'] = dd_stats['Max Drawdown %'].astype(float) * pct
+    dd_stats['Avg. Drawdown %'] = dd_stats['Avg. Drawdown %'].astype(float) * pct
 
-    return ddstats.T
+    return dd_stats.T
 
 
 def _html_table(obj, showindex="default"):
