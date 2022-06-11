@@ -99,7 +99,10 @@ def html(
             f'Benchmark is {benchmark_title.upper()} | '
         )
 
-        if benchmark_is_prices:
+        if (
+            isinstance(benchmark, (pd.Series, pd.DataFrame)) and
+            benchmark_is_prices
+        ):
             benchmark = benchmark.pct_change()
 
         benchmark = (
