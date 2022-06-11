@@ -19,8 +19,8 @@
 # limitations under the License.
 
 try:
-    from pandas.plotting import register_matplotlib_converters as _rmc
-    _rmc()
+    from pandas.plotting import register_matplotlib_converters as rmc
+    rmc()
 except ImportError:
     pass
 

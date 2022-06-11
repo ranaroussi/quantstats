@@ -16,32 +16,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import io as _io
-import datetime as _dt
-import pandas as _pd
-import numpy as _np
-import yfinance as _yf
-from . import stats as _stats
+#
 import inspect
+import io
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+
+from datetime import datetime
+
+from . import stats
 
 
 def _mtd(df):
-    return df[df.index >= _dt.datetime.now(
+    return df[df.index >= datetime.now(
     ).strftime('%Y-%m-01')]
 
 
 def _qtd(df):
-    date = _dt.datetime.now()
+    date = datetime.now()
     for q in [1, 4, 7, 10]:
         if date.month <= q:
-            return df[df.index >= _dt.datetime(
+            return df[df.index >= datetime(
                 date.year, q, 1).strftime('%Y-%m-01')]
     return df[df.index >= date.strftime('%Y-%m-01')]
 
 
 def _ytd(df):
-    return df[df.index >= _dt.datetime.now(
+    return df[df.index >= datetime.now(
     ).strftime('%Y-01-01')]
 
 
@@ -52,20 +55,23 @@ def _pandas_date(df, dates):
 
 
 def _pandas_current_month(df):
-    n = _dt.datetime.now()
-    daterange = _pd.date_range(_dt.date(n.year, n.month, 1), n)
+    n = pd.Timestamp.now()
+    daterange = pd.date_range(
+        start=f'{n.year}-{n.month}-1',
+        end=n,
+    )
     return df[df.index.isin(daterange)]
 
 
 def multi_shift(df, shift=3):
     """Get last N rows relative to another row in pandas"""
-    if isinstance(df, _pd.Series):
-        df = _pd.DataFrame(df)
+    if isinstance(df, pd.Series):
+        df = pd.DataFrame(df)
 
-    dfs = [df.shift(i) for i in _np.arange(shift)]
+    dfs = [df.shift(i) for i in np.arange(shift)]
     for ix, dfi in enumerate(dfs[1:]):
         dfs[ix + 1].columns = [str(col) for col in dfi.columns + str(ix + 1)]
-    return _pd.concat(dfs, 1, sort=True)
+    return pd.concat(dfs, 1, sort=True)
 
 
 def to_returns(prices, rf=0.):
@@ -76,9 +82,9 @@ def to_returns(prices, rf=0.):
 def to_prices(returns, base=1e5):
     """Converts returns series to price data"""
     returns = returns.copy().fillna(0).replace(
-        [_np.inf, -_np.inf], float('NaN'))
+        [np.inf, -np.inf], float('NaN'))
 
-    return base + base * _stats.compsum(returns)
+    return base + base * stats.compsum(returns)
 
 
 def log_returns(returns, rf=0., nperiods=None):
@@ -90,7 +96,7 @@ def to_log_returns(returns, rf=0., nperiods=None):
     """Converts returns series to log returns"""
     returns = _prepare_returns(returns, rf, nperiods)
     try:
-        return _np.log(returns+1).replace([_np.inf, -_np.inf], float('NaN'))
+        return np.log(returns+1).replace([np.inf, -np.inf], float('NaN'))
     except Exception:
         return 0.
 
@@ -120,7 +126,7 @@ def group_returns(returns, groupby, compounded=False):
     group_returns(df, [df.index.year, df.index.month])
     """
     if compounded:
-        return returns.groupby(groupby).apply(_stats.comp)
+        return returns.groupby(groupby).apply(stats.comp)
     return returns.groupby(groupby).sum()
 
 
@@ -181,7 +187,7 @@ def to_excess_returns(returns, rf, nperiods=None):
 
     if nperiods is not None:
         # deannualize
-        rf = _np.power(1 + rf, 1. / nperiods) - 1.
+        rf = np.power(1 + rf, 1. / nperiods) - 1.
 
     return returns - rf
 
@@ -189,19 +195,18 @@ def to_excess_returns(returns, rf, nperiods=None):
 def _prepare_prices(data, base=1.):
     """Converts return data into prices + cleanup"""
     data = data.copy()
-    if isinstance(data, _pd.DataFrame):
+    if isinstance(data, pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
                 data[col] = to_prices(data[col], base)
 
     # is it returns?
-    # elif data.min() < 0 and data.max() < 1:
     elif data.min() < 0 or data.max() < 1:
         data = to_prices(data, base)
 
-    if isinstance(data, (_pd.DataFrame, _pd.Series)):
+    if isinstance(data, (pd.DataFrame, pd.Series)):
         data = data.fillna(0).replace(
-            [_np.inf, -_np.inf], float('NaN'))
+            [np.inf, -np.inf], float('NaN'))
 
     return data
 
@@ -209,8 +214,10 @@ def _prepare_prices(data, base=1.):
 def _prepare_returns(data, rf=0., nperiods=None):
     """Converts price data into returns + cleanup"""
     data = data.copy()
+    # TODO:
+    # this is crazy fragile! Should be made explicit.
     function = inspect.stack()[1][3]
-    if isinstance(data, _pd.DataFrame):
+    if isinstance(data, pd.DataFrame):
         for col in data.columns:
             if data[col].dropna().min() >= 0 and data[col].dropna().max() > 1:
                 data[col] = data[col].pct_change()
@@ -218,29 +225,40 @@ def _prepare_returns(data, rf=0., nperiods=None):
         data = data.pct_change()
 
     # cleanup data
-    data = data.replace([_np.inf, -_np.inf], float('NaN'))
+    data = data.replace([np.inf, -np.inf], float('NaN'))
 
-    if isinstance(data, (_pd.DataFrame, _pd.Series)):
+    if isinstance(data, (pd.DataFrame, pd.Series)):
         data = data.fillna(0).replace(
-            [_np.inf, -_np.inf], float('NaN'))
-    unnecessary_function_calls = ['_prepare_benchmark',
-                                  'cagr',
-                                  'gain_to_pain_ratio',
-                                  'rolling_volatility',]
+            [np.inf, -np.inf], float('NaN'))
+    unnecessary_function_calls = [
+        '_prepare_benchmark',
+        'cagr',
+        'gain_to_pain_ratio',
+        'rolling_volatility',
+    ]
 
+    if (
+        function not in unnecessary_function_calls and
+        rf > 0
+    ):
+        return to_excess_returns(data, rf, nperiods)
 
-    if function not in unnecessary_function_calls:
-        if rf > 0:
-            return to_excess_returns(data, rf, nperiods)
     return data
 
 
 def download_returns(ticker, period="max"):
-    if isinstance(period, _pd.DatetimeIndex):
+    if isinstance(period, pd.DatetimeIndex):
         p = {"start": period[0]}
     else:
         p = {"period": period}
-    return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
+
+    return (
+        yf
+        .Ticker(ticker)
+        .history(**p)
+        ['Close']
+        .pct_change()
+    )
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.,
@@ -249,7 +267,7 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.,
     Fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
 
-    period can be options or (expected) _pd.DatetimeIndex range
+    period can be options or (expected) pd.DatetimeIndex range
     """
     if benchmark is None:
         return None
@@ -257,17 +275,27 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.,
     if isinstance(benchmark, str):
         benchmark = download_returns(benchmark)
 
-    elif isinstance(benchmark, _pd.DataFrame):
+    elif isinstance(benchmark, pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]].copy()
 
-    if isinstance(period, _pd.DatetimeIndex) \
-        and set(period) != set(benchmark.index):
+    if (
+        isinstance(period, pd.DatetimeIndex) and
+        set(period) != set(benchmark.index)
+    ):
 
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
-        new_index = _pd.date_range(start=period[0], end=period[-1], freq='D')
-        benchmark = benchmark_prices.reindex(new_index, method='bfill') \
-            .reindex(period).pct_change().fillna(0)
+        new_index = pd.date_range(start=period[0], end=period[-1], freq='D')
+        benchmark = (
+            benchmark_prices
+            .reindex(
+                new_index,
+                method='bfill',
+            )
+            .reindex(period)
+            .pct_change()
+            .fillna(0)
+        )
         benchmark = benchmark[benchmark.index.isin(period)]
 
     if prepare_returns:
@@ -284,7 +312,7 @@ def _round_to_closest(val, res, decimals=None):
 
 def _file_stream():
     """Returns a file stream"""
-    return _io.BytesIO()
+    return io.BytesIO()
 
 
 def _in_notebook(matplotlib_inline=False):
@@ -308,11 +336,12 @@ def _in_notebook(matplotlib_inline=False):
 
 def _count_consecutive(data):
     """Counts consecutive data (like cumsum() with reset on zeroes)"""
+
     def _count(data):
         return data * (data.groupby(
             (data != data.shift(1)).cumsum()).cumcount() + 1)
 
-    if isinstance(data, _pd.DataFrame):
+    if isinstance(data, pd.DataFrame):
         for col in data.columns:
             data[col] = _count(data[col])
         return data
@@ -324,7 +353,13 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match_dates=False):
+def make_index(
+    ticker_weights,
+    rebalance="1M",
+    period="max",
+    returns=None,
+    match_dates=False,
+):
     """
     Makes an index out of the given tickers and weights.
     Optionally you can pass a dataframe with the returns.
@@ -357,10 +392,10 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match
         portfolio[ticker] = ticker_returns
 
     # index members time-series
-    index = _pd.DataFrame(portfolio).dropna()
+    index = pd.DataFrame(portfolio).dropna()
 
     if match_dates:
-        index=index[max(index.ne(0).idxmax()):]
+        index = index[max(index.ne(0).idxmax()):]
 
     # no rebalance?
     if rebalance is None:
@@ -375,15 +410,15 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match
     rbdf['break'] = rbdf.index.strftime('%s')
 
     # index returns with rebalance markers
-    index = _pd.concat([index, rbdf['break']], axis=1)
+    index = pd.concat([index, rbdf['break']], axis=1)
 
     # mark first day day
-    index['first_day'] = _pd.isna(index['break']) & ~_pd.isna(index['break'].shift(1))
+    index['first_day'] = pd.isna(index['break']) & ~pd.isna(index['break'].shift(1))
     index.loc[index.index[0], 'first_day'] = True
 
     # multiply first day of each rebalance period by the weight
     for ticker, weight in ticker_weights.items():
-        index[ticker] = _np.where(
+        index[ticker] = np.where(
             index['first_day'], weight * index[ticker], index[ticker])
 
     # drop first marker
@@ -410,28 +445,32 @@ def make_portfolio(returns, start_balance=1e5,
         p1 = start_balance + comp_rev.cumsum()
 
     # add day before with starting balance
-    p0 = _pd.Series(data=start_balance,
-                    index=p1.index + _pd.Timedelta(days=-1))[:1]
+    p0 = (
+        pd.Series(
+            data=start_balance,
+            index=p1.index + pd.Timedelta(days=-1),
+        )[:1]
+    )
 
-    portfolio = _pd.concat([p0, p1])
+    portfolio = pd.concat([p0, p1])
 
-    if isinstance(returns, _pd.DataFrame):
+    if isinstance(returns, pd.DataFrame):
         portfolio.loc[:1, :] = start_balance
         portfolio.drop(columns=[0], inplace=True)
 
     if round_to:
-        portfolio = _np.round(portfolio, round_to)
+        portfolio = np.round(portfolio, round_to)
 
     return portfolio
 
 
 def _flatten_dataframe(df, set_index=None):
     """Dirty method for flattening multi-index dataframe"""
-    s_buf = _io.StringIO()
+    s_buf = io.StringIO()
     df.to_csv(s_buf)
     s_buf.seek(0)
 
-    df = _pd.read_csv(s_buf)
+    df = pd.read_csv(s_buf)
     if set_index is not None:
         df.set_index(set_index, inplace=True)
 

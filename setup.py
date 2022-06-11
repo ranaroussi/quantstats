@@ -9,7 +9,6 @@ by providing them with in-depth analytics and risk metrics.
 """
 
 from setuptools import setup, find_packages
-# from codecs import open
 import io
 from os import path
 
@@ -40,10 +39,6 @@ setup(
     license='Apache Software License',
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
-        # 'Development Status :: 1 - Planning',
-        # 'Development Status :: 2 - Pre-Alpha',
-        # 'Development Status :: 3 - Alpha',
-        # 'Development Status :: 4 - Beta',
         'Development Status :: 5 - Production/Stable',
 
         'Operating System :: OS Independent',
@@ -60,7 +55,6 @@ setup(
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Scientific/Engineering :: Mathematics',
 
-        # 'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -79,7 +73,4 @@ setup(
     },
 
     include_package_data=True,
-    # package_data={
-    #     'static': 'quantstats/report.html*'
-    # },
 )
