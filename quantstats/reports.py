@@ -40,7 +40,9 @@ except ImportError:
 
 from . import __version__, stats, utils, plots
 
-PTH = os.path.abspath(__file__)
+PTH = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
 
 def _get_trading_periods(periods_per_year=252):
