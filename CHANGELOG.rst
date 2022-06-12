@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.57
+-----
+- Fixed `sigma` calculation in `stats.probabilistic_ratio()`
+
 0.0.56
 -----
 - Added option to explicitly provide the benchmark title via `benchmark_title=...`
