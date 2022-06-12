@@ -62,7 +62,7 @@ def _match_dates(returns, benchmark):
 def html(
     returns: pd.Series,
     benchmark: Union[pd.Series, pd.DataFrame, str, None] = None,
-    benchmark_is_prices: bool = True,
+    benchmark_is_prices: bool = False,
     theme: Union[str, dict] = 'default',
     rf: float = 0,
     title: str = 'Strategy Tearsheet',
@@ -547,7 +547,8 @@ def html(
 
 def full(
     returns: pd.Series,
-    benchmark: Union[pd.Series, str, None] = None,
+    benchmark: Union[pd.Series, pd.DataFrame, str, None] = None,
+    benchmark_is_prices: bool = False,
     theme: Union[str, dict] = 'default',
     rf: float = 0,
     figsize: Tuple[float] = (8, 5),
@@ -558,8 +559,22 @@ def full(
 ) -> None:
     # prepare timeseries
     returns = utils._prepare_returns(returns)
+
     if benchmark is not None:
-        benchmark = utils._prepare_benchmark(benchmark, returns.index, rf)
+        if (
+            isinstance(benchmark, (pd.Series, pd.DataFrame)) and
+            benchmark_is_prices
+        ):
+            benchmark = benchmark.pct_change()
+
+        benchmark = (
+            utils
+            ._prepare_benchmark(
+                benchmark,
+                returns.index,
+                rf,
+            )
+        )
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
@@ -570,7 +585,7 @@ def full(
         .drawdown_details(dd)
         .sort_values(
             by=col,
-            scending=True,
+            ascending=True,
         )
         [:5]
     )
@@ -580,11 +595,18 @@ def full(
 
     if utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
-        iDisplay(metrics(returns=returns, benchmark=benchmark,
-                         rf=rf, display=display, mode='full',
-                         compounded=compounded,
-                         periods_per_year=periods_per_year,
-                         prepare_returns=False))
+        iDisplay(
+            metrics(
+                returns=returns,
+                benchmark=benchmark,
+                rf=rf,
+                display=display,
+                mode='full',
+                compounded=compounded,
+                periods_per_year=periods_per_year,
+                prepare_returns=False,
+            )
+        )
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         if dd_info.empty:
             iDisplay(iHTML("<p>(no drawdowns)</p>"))
@@ -594,11 +616,16 @@ def full(
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
-        metrics(returns=returns, benchmark=benchmark,
-                rf=rf, display=display, mode='full',
-                compounded=compounded,
-                periods_per_year=periods_per_year,
-                prepare_returns=False)
+        metrics(
+            returns=returns,
+            benchmark=benchmark,
+            rf=rf,
+            display=display,
+            mode='full',
+            compounded=compounded,
+            periods_per_year=periods_per_year,
+            prepare_returns=False,
+        )
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         if dd_info.empty:
@@ -628,13 +655,28 @@ def full(
     )
 
 
-def basic(returns, benchmark=None, rf=0., theme='default',
-          figsize=(8, 5), display=True, compounded=True,
-          periods_per_year=252, match_dates=False):
-
+def basic(
+    returns: pd.Series,
+    benchmark: Union[pd.Series, pd.DataFrame, str, None] = None,
+    benchmark_is_prices: bool = True,
+    theme: Union[str, dict] = 'default',
+    rf: float = 0,
+    figsize: Tuple[float] = (8, 5),
+    display: bool = True,
+    compounded: bool = True,
+    periods_per_year: int = 252,
+    match_dates: bool = False,
+) -> None:
     # prepare timeseries
     returns = utils._prepare_returns(returns)
+
     if benchmark is not None:
+        if (
+            isinstance(benchmark, (pd.Series, pd.DataFrame)) and
+            benchmark_is_prices
+        ):
+            benchmark = benchmark.pct_change()
+
         benchmark = utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
@@ -679,17 +721,33 @@ def basic(returns, benchmark=None, rf=0., theme='default',
     )
 
 
-def metrics(returns, benchmark=None, rf=0., display=True,
-            mode='basic', sep=False, compounded=True,
-            periods_per_year=252, prepare_returns=True,
-            match_dates=False, **kwargs):
-
+def metrics(
+    returns: pd.Series,
+    benchmark: Union[pd.Series, pd.DataFrame, str, None] = None,
+    benchmark_is_prices: bool = False,
+    rf: float = 0,
+    display: bool = True,
+    mode: str = 'basic',
+    sep: bool = False,
+    compounded: bool = True,
+    periods_per_year: int = 252,
+    prepare_returns: bool = True,
+    match_dates: bool = False,
+    **kwargs,
+) -> pd.DataFrame:
     win_year, _ = _get_trading_periods(periods_per_year)
 
     benchmark_col = 'Benchmark'
     if benchmark is not None:
+        if (
+            isinstance(benchmark, (pd.Series, pd.DataFrame)) and
+            benchmark_is_prices
+        ):
+            benchmark = benchmark.pct_change()
+
         if isinstance(benchmark, str):
             benchmark_col = f'Benchmark ({benchmark.upper()})'
+
         elif isinstance(benchmark, pd.DataFrame) and len(benchmark.columns) > 1:
             raise ValueError(
                 "`benchmark` must be a pandas Series, "
@@ -1161,6 +1219,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 def create_plots(
     returns: pd.Series,
     benchmark: Union[pd.Series, str, None] = None,
+    benchmark_is_prices: bool = False,
     theme: Union[str, dict] = 'default',
     figsize: Tuple[float] = (8, 5),
     mode: str = 'basic',
@@ -1197,6 +1256,12 @@ def create_plots(
 
     # prepare timeseries
     if benchmark is not None:
+        if (
+            isinstance(benchmark, (pd.Series, pd.DataFrame)) and
+            benchmark_is_prices
+        ):
+            benchmark = benchmark.pct_change()
+
         benchmark = utils._prepare_benchmark(benchmark, returns.index)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
@@ -1337,7 +1402,11 @@ def create_plots(
     )
 
 
-def _calc_dd(df, display=True, as_pct=False):
+def _calc_dd(
+    df: pd.DataFrame,
+    display: bool = True,
+    as_pct: bool = False,
+) -> pd.DataFrame:
     dd = stats.to_drawdown_series(df)
     dd_info = stats.drawdown_details(dd)
 
