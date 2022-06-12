@@ -403,8 +403,9 @@ def probabilistic_ratio(series, rf=0., base="sharpe", periods=252, annualize=Fal
 
     n = len(series)
 
-    sigma_sr = ((1/(n-1)) * (1 + 0.5 * base**2 +
-                skew_no * base + (kurtosis_no/4) * base**2)) ** 0.5
+    sigma_sr = _np.sqrt((1 + (0.5 * base ** 2) - (skew_no * base) +
+                       (((kurtosis_no - 3) / 4) * base ** 2)) / (n - 1))
+
     ratio = (base - rf) / sigma_sr
     psr = _norm.cdf(ratio)
 
