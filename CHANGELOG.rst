@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.58
+-----
+- Run fillna(0) on plot's beta (issue #193)
+
 0.0.57
 -----
 - Fixed `sigma` calculation in `stats.probabilistic_ratio()`
