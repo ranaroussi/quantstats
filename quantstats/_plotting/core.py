@@ -503,7 +503,7 @@ def plot_rolling_beta(returns, benchmark,
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
 
-    beta = _stats.rolling_greeks(returns, benchmark, window1)['beta']
+    beta = _stats.rolling_greeks(returns, benchmark, window1)['beta'].fillna(0)
     ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
 
     if window2:
