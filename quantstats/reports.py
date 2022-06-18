@@ -73,6 +73,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
 
+    strategy_title = kwargs.get('strategy_title', 'Strategy')
     if benchmark is not None:
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
         if kwargs.get('benchmark_title') is None:
@@ -98,7 +99,9 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                    sep=True, internal="True",
                    compounded=compounded,
                    periods_per_year=periods_per_year,
-                   prepare_returns=False)[2:]
+                   prepare_returns=False,
+                   benchmark_title=benchmark_title,
+                   strategy_title=strategy_title)[2:]
 
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
@@ -111,7 +114,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         yoy = _stats.compare(
             returns, benchmark, "A", compounded=compounded,
             prepare_returns=False)
-        yoy.columns = ['Benchmark', 'Strategy', 'Multiplier', 'Won']
+        yoy.columns = [benchmark_title, strategy_title, 'Multiplier', 'Won']
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
@@ -265,7 +268,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
-         periods_per_year=252, match_dates=False):
+         periods_per_year=252, match_dates=False, **kwargs):
 
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
@@ -273,6 +276,10 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
+
+    if benchmark is not None:
+        benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
+    strategy_title = kwargs.get('strategy_title', 'Strategy')
 
     dd = _stats.to_drawdown_series(returns)
     col = _stats.drawdown_details(dd).columns[4]
@@ -289,7 +296,9 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                          rf=rf, display=display, mode='full',
                          compounded=compounded,
                          periods_per_year=periods_per_year,
-                         prepare_returns=False))
+                         prepare_returns=False,
+                         benchmark_title=benchmark_title,
+                         strategy_title=strategy_title))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
         if dd_info.empty:
             iDisplay(iHTML("<p>(no drawdowns)</p>"))
@@ -303,7 +312,9 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                 rf=rf, display=display, mode='full',
                 compounded=compounded,
                 periods_per_year=periods_per_year,
-                prepare_returns=False)
+                prepare_returns=False,
+                benchmark_title=benchmark_title,
+                strategy_title=strategy_title)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
         if dd_info.empty:
@@ -321,7 +332,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
           figsize=(8, 5), display=True, compounded=True,
-          periods_per_year=252, match_dates=False):
+          periods_per_year=252, match_dates=False, **kwargs):
 
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
@@ -330,13 +341,18 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
+    if benchmark is not None:
+        benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
+    strategy_title = kwargs.get('strategy_title', 'Strategy')
+
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
         metrics(returns=returns, benchmark=benchmark,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
                 periods_per_year=periods_per_year,
-                prepare_returns=False)
+                prepare_returns=False,
+                benchmark_title=benchmark_title, strategy_title=strategy_title)
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
         print('[Performance Metrics]\n')
@@ -344,7 +360,8 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
                 rf=rf, display=display, mode='basic',
                 compounded=compounded,
                 periods_per_year=periods_per_year,
-                prepare_returns=False)
+                prepare_returns=False,
+                benchmark_title=benchmark_title, strategy_title=strategy_title)
 
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
@@ -362,13 +379,15 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     win_year, _ = _get_trading_periods(periods_per_year)
 
-    benchmark_col = 'Benchmark'
     if benchmark is not None:
         if isinstance(benchmark, str):
             benchmark_col = f'Benchmark ({benchmark.upper()})'
         elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
             raise ValueError("`benchmark` must be a pandas Series, "
                              "but a multi-column DataFrame was passed")
+
+    benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
+    strategy_colname = kwargs.get("strategy_title", "Strategy")
 
     blank = ['']
 
@@ -612,15 +631,19 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics = metrics.T
 
     if "benchmark" in df:
-        metrics.columns = ['Strategy', benchmark_col]
+        metrics.columns = [strategy_colname, benchmark_colname]
     else:
-        metrics.columns = ['Strategy']
+        metrics.columns = [strategy_colname]
 
     # cleanups
     metrics.replace([-0, '-0'], 0, inplace=True)
     metrics.replace([_np.nan, -_np.nan, _np.inf, -_np.inf,
                      '-nan%', 'nan%', '-nan', 'nan',
                     '-inf%', 'inf%', '-inf', 'inf'], '-', inplace=True)
+
+    # move benchmark to be the first column always if present
+    if "benchmark" in df:
+        metrics = metrics[[benchmark_colname] + [col for col in metrics.columns if col != benchmark_colname]]
 
     if display:
         print(_tabulate(metrics, headers="keys", tablefmt='simple'))
