@@ -620,11 +620,11 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
         return fig
 
 
-def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
+def monthly_heatmap(returns, benchmark, annot_size=10, figsize=(10, 5),
                     cbar=True, square=False,
                     compounded=True, eoy=False,
                     grayscale=False, fontname='Arial',
-                    ylabel=True, savefig=None, show=True):
+                    ylabel=True, savefig=None, show=True, active=False):
 
     # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = 'gray' if grayscale else 'RdYlGn'
@@ -652,15 +652,26 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    ax.set_title('      Monthly Returns (%)\n', fontsize=14, y=.995,
-                 fontname=fontname, fontweight='bold', color='black')
-
     # _sns.set(font_scale=.9)
-    ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
-                      annot_kws={"size": annot_size},
-                      fmt="0.2f", linewidths=0.5,
-                      square=square, cbar=cbar, cmap=cmap,
-                      cbar_kws={'format': '%.0f%%'})
+    if active and benchmark is not None:
+        ax.set_title('Monthly Active Returns (%)\n', fontsize=14, y=.995,
+                     fontname=fontname, fontweight='bold', color='black')
+        benchmark = _stats.monthly_returns(benchmark, eoy=eoy,
+                                           compounded=compounded) * 100
+        active_returns = returns - benchmark
+        ax = _sns.heatmap(active_returns, ax=ax, annot=True, center=0,
+                          annot_kws={"size": annot_size},
+                          fmt="0.2f", linewidths=0.5,
+                          square=square, cbar=cbar, cmap=cmap,
+                          cbar_kws={'format': '%.0f%%'})
+    else:
+        ax.set_title('Monthly Returns (%)\n', fontsize=14, y=.995,
+                     fontname=fontname, fontweight='bold', color='black')
+        ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
+                          annot_kws={"size": annot_size},
+                          fmt="0.2f", linewidths=0.5,
+                          square=square, cbar=cbar, cmap=cmap,
+                          cbar_kws={'format': '%.0f%%'})
     # _sns.set(font_scale=1)
 
     # align plot to match other

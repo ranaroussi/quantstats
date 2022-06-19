@@ -243,11 +243,12 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                     show=False, ylabel=False)
     tpl = tpl.replace('{{dd_plot}}', _embed_figure(figfile, figfmt))
 
+    active = kwargs.get('active_returns_heatmap', 'False')
     figfile = _utils._file_stream()
-    _plots.monthly_heatmap(returns, grayscale=grayscale,
+    _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
                            figsize=(8, 4), cbar=False,
                            savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False, compounded=compounded)
+                           show=False, ylabel=False, compounded=compounded, active=active)
     tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
