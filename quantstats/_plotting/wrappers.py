@@ -423,13 +423,15 @@ def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
         return fig
 
 
-def histogram(returns, resample='M', fontname='Arial',
+def histogram(returns, benchmark, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5), ylabel=True,
               subtitle=True, compounded=True, savefig=None, show=True,
               prepare_returns=True):
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
+        if benchmark is not None:
+            benchmark = _utils._prepare_returns(benchmark)
 
     if resample == 'W':
         title = "Weekly "
@@ -443,6 +445,7 @@ def histogram(returns, resample='M', fontname='Arial',
         title = ""
 
     return _core.plot_histogram(returns,
+                                benchmark,
                                 resample=resample,
                                 grayscale=grayscale,
                                 fontname=fontname,

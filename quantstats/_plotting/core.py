@@ -311,7 +311,7 @@ def plot_timeseries(returns, benchmark=None,
     return None
 
 
-def plot_histogram(returns, resample="M", bins=20,
+def plot_histogram(returns, benchmark, resample="M", bins=20,
                    fontname='Arial', grayscale=False,
                    title="Returns", kde=True, figsize=(10, 6),
                    ylabel=True, subtitle=True, compounded=True,
@@ -322,8 +322,12 @@ def plot_histogram(returns, resample="M", bins=20,
         colors = ['silver', 'gray', 'black']
 
     apply_fnc = _stats.comp if compounded else _np.sum
+    if benchmark is not None:
+        benchmark = benchmark.fillna(0).resample(resample).apply(
+                              apply_fnc).resample(resample).last()
+
     returns = returns.fillna(0).resample(resample).apply(
-        apply_fnc).resample(resample).last()
+                      apply_fnc).resample(resample).last()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines['top'].set_visible(False)
@@ -343,30 +347,39 @@ def plot_histogram(returns, resample="M", bins=20,
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    ax.axvline(returns.mean(), ls="--", lw=1.5,
-               color=colors[2], zorder=2, label="Average")
+    # Why do we need average?
+    # ax.axvline(returns.mean(), ls="--", lw=1.5,
+    #            zorder=2, label="Average")
 
-    _sns.histplot(returns, bins=bins,
-                  color=colors[0],
-                  alpha=1,
-                  kde=kde,
-                  stat="density",
-                  ax=ax)
-    _sns.kdeplot(returns, color='black', linewidth=1.5)
+    if benchmark is not None:
+        combined_returns = benchmark.to_frame().join(returns.to_frame()) \
+                           .stack().reset_index() \
+                           .rename(columns={'level_1': 'Portfolio', 0: 'Returns'})
+
+        _sns.histplot(data=combined_returns, x='Returns',
+                      bins=bins, alpha=0.4, kde=kde,
+                      stat="density", hue='Portfolio',
+                      ax=ax)
+    else:
+        combined_returns = returns.copy()
+        _sns.histplot(data=combined_returns, bins=bins,
+                      alpha=0.4, kde=kde,
+                      stat="density",
+                      ax=ax)
+        ax.legend(fontsize=12)
 
     ax.xaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
 
-    ax.axhline(0.01, lw=1, color="#000000", zorder=2)
-    ax.axvline(0, lw=1, color="#000000", zorder=2)
+    # Removed static lines for clarity
+    # ax.axhline(0.01, lw=1, color="#000000", zorder=2)
+    # ax.axvline(0, lw=1, color="#000000", zorder=2)
 
     ax.set_xlabel('')
     if ylabel:
         ax.set_ylabel("Occurrences", fontname=fontname,
                       fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
-
-    ax.legend(fontsize=12)
 
     # fig.autofmt_xdate()
 

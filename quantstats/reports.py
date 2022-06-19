@@ -179,7 +179,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{eoy_returns}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.histogram(returns, grayscale=grayscale,
+    _plots.histogram(returns, benchmark, grayscale=grayscale,
                      figsize=(8, 4), subtitle=False,
                      savefig={'fname': figfile, 'format': figfmt},
                      show=False, ylabel=False, compounded=compounded,
@@ -251,6 +251,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
+
     _plots.distribution(returns, grayscale=grayscale,
                         figsize=(8, 4), subtitle=False,
                         savefig={'fname': figfile, 'format': figfmt},
