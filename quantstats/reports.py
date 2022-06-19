@@ -144,6 +144,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
     tpl = tpl.replace('{{dd_info}}', _html_table(dd_info, False))
 
+    active = kwargs.get('active_returns', 'False')
     # plots
     figfile = _utils._file_stream()
     _plots.returns(returns, benchmark, grayscale=grayscale,
@@ -187,11 +188,11 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{monthly_dist}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.daily_returns(returns, grayscale=grayscale,
+    _plots.daily_returns(returns, benchmark, grayscale=grayscale,
                          figsize=(8, 3), subtitle=False,
                          savefig={'fname': figfile, 'format': figfmt},
                          show=False, ylabel=False,
-                         prepare_returns=False)
+                         prepare_returns=False, active=active)
     tpl = tpl.replace('{{daily_returns}}', _embed_figure(figfile, figfmt))
 
     if benchmark is not None:
@@ -243,7 +244,6 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                     show=False, ylabel=False)
     tpl = tpl.replace('{{dd_plot}}', _embed_figure(figfile, figfmt))
 
-    active = kwargs.get('active_returns_heatmap', 'False')
     figfile = _utils._file_stream()
     _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
                            figsize=(8, 4), cbar=False,

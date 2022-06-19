@@ -334,17 +334,22 @@ def log_returns(returns, benchmark=None,
         return fig
 
 
-def daily_returns(returns,
+def daily_returns(returns, benchmark,
                   grayscale=False, figsize=(10, 4),
                   fontname='Arial', lw=0.5,
                   log_scale=False, ylabel="Returns",
                   subtitle=True, savefig=None, show=True,
-                  prepare_returns=True):
+                  prepare_returns=True, active=False):
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
+        if active and benchmark is not None:
+            benchmark = _utils._prepare_returns(benchmark)
+            returns = returns - benchmark
 
-    fig = _core.plot_timeseries(returns, None, 'Daily Returns',
+    plot_title = 'Daily Active Returns' if active else 'Daily Returns'
+
+    fig = _core.plot_timeseries(returns, None, plot_title,
                                 ylabel=ylabel,
                                 match_volatility=False,
                                 log_scale=log_scale,
