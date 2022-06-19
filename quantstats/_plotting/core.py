@@ -707,7 +707,7 @@ def plot_distribution(returns, figsize=(10, 6),
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    _sns.boxplot(data=port, ax=ax, palette=tuple(colors[:5]))
+    port.boxplot(ax=ax)#, colo=tuple(colors[:5]))
 
     ax.yaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
