@@ -83,10 +83,10 @@ def plot_returns_bars(returns, benchmark=None,
 
     # ---------------
     colors, _, _ = _get_colors(grayscale)
-    df = _pd.DataFrame(index=returns.index, data={returns_label: returns})
+    df = _pd.DataFrame(index=returns.index, data={returns.name: returns})
     if isinstance(benchmark, _pd.Series):
-        df['Benchmark'] = benchmark[benchmark.index.isin(returns.index)]
-        df = df[['Benchmark', returns_label]]
+        df[benchmark.name] = benchmark[benchmark.index.isin(returns.index)]
+        df = df[[benchmark.name, returns.name]]
 
     df = df.dropna()
     if resample is not None:
@@ -243,10 +243,10 @@ def plot_timeseries(returns, benchmark=None,
     ax.set_facecolor('white')
 
     if isinstance(benchmark, _pd.Series):
-        ax.plot(benchmark, lw=lw, ls=ls, label="Benchmark", color=colors[0])
+        ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
 
     alpha = .25 if grayscale else 1
-    ax.plot(returns, lw=lw, label=returns_label, color=colors[1], alpha=alpha)
+    ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
 
     if fill:
         ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=.25)
@@ -416,11 +416,11 @@ def plot_rolling_stats(returns, benchmark=None, title="",
     if isinstance(benchmark, _pd.Series):
         df['Benchmark'] = benchmark[benchmark.index.isin(returns.index)]
         df = df[['Benchmark', returns_label]].dropna()
-        ax.plot(df['Benchmark'], lw=lw, label="Benchmark",
+        ax.plot(df['Benchmark'], lw=lw, label=benchmark.name,
                 color=colors[0], alpha=.8)
 
     ax.plot(df[returns_label].dropna(), lw=lw,
-            label=returns_label, color=colors[1])
+            label=returns.name, color=colors[1])
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
@@ -700,7 +700,7 @@ def plot_distribution(returns, figsize=(10, 6),
         lambda x, loc: "{:,}%".format(int(x*100))))
 
     if ylabel:
-        ax.set_ylabel('Rerurns', fontname=fontname,
+        ax.set_ylabel('Returns', fontname=fontname,
                       fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 

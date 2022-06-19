@@ -94,6 +94,10 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{title}}', title)
     tpl = tpl.replace('{{v}}', __version__)
 
+    if benchmark is not None:
+        benchmark.name = benchmark_title
+    returns.name = strategy_title
+
     mtrx = metrics(returns=returns, benchmark=benchmark,
                    rf=rf, display=False, mode='full',
                    sep=True, internal="True",
