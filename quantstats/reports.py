@@ -668,7 +668,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          periods_per_year=252, prepare_returns=True, match_dates=False):
+          periods_per_year=252, prepare_returns=True, match_dates=False, active=False):
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
@@ -680,10 +680,10 @@ def plots(returns, benchmark=None, grayscale=False,
                         figsize=(figsize[0], figsize[0]),
                         show=True, mode=("comp" if compounded else "sum"))
 
-        _plots.monthly_heatmap(returns, grayscale=grayscale,
+        _plots.monthly_heatmap(returns, None, grayscale=grayscale,
                                figsize=(figsize[0], figsize[0]*.5),
                                show=True, ylabel=False,
-                               compounded=compounded)
+                               compounded=compounded, active=False)
 
         return
 
@@ -716,15 +716,15 @@ def plots(returns, benchmark=None, grayscale=False,
                           show=True, ylabel=False,
                           prepare_returns=False)
 
-    _plots.histogram(returns, grayscale=grayscale,
+    _plots.histogram(returns, benchmark, grayscale=grayscale,
                      figsize=(figsize[0], figsize[0]*.5),
                      show=True, ylabel=False,
                      prepare_returns=False)
 
-    _plots.daily_returns(returns, grayscale=grayscale,
+    _plots.daily_returns(returns, benchmark, grayscale=grayscale,
                          figsize=(figsize[0], figsize[0]*.3),
                          show=True, ylabel=False,
-                         prepare_returns=False)
+                         prepare_returns=False, active=active)
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
@@ -755,11 +755,11 @@ def plots(returns, benchmark=None, grayscale=False,
                     figsize=(figsize[0], figsize[0]*.4),
                     show=True, ylabel=False)
 
-    _plots.monthly_heatmap(returns, grayscale=grayscale,
+    _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
                            figsize=(figsize[0], figsize[0]*.5),
-                           show=True, ylabel=False)
+                           show=True, ylabel=False, active=active)
 
-    _plots.distribution(returns, grayscale=grayscale,
+    _plots.distribution(returns, benchmark, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]*.5),
                         show=True, ylabel=False,
                         prepare_returns=False)
