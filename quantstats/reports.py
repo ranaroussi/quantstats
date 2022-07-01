@@ -755,9 +755,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                 metrics['Beta'] = [str(round(g['beta'], 2)) for g in greeks] + ['-']
                 metrics['Alpha'] = [str(round(g['alpha'], 2)) for g in greeks] + ['-']
                 metrics['Correlation'] = ([str(round(df['benchmark'].corr(df[strategy_col]) * pct, 2)) + '%'
-                                          for strategy_col in df_strategy_columns]) +  ['-']
+                                          for strategy_col in df_strategy_columns]) + ['-']
                 metrics['Treynor Ratio'] = ([str(round(_stats.treynor_ratio(df[strategy_col], df['benchmark'], win_year, rf) * pct, 2)) + '%'
-                                            for strategy_col in df_strategy_columns]) +  ['-']
+                                            for strategy_col in df_strategy_columns]) + ['-']
 
     # prepare for display
     for col in metrics.columns:
