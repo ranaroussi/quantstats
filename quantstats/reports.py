@@ -26,12 +26,15 @@ from datetime import (
 )
 from base64 import b64encode as _b64encode
 import re as _regex
+
+import pandas as pd
 from tabulate import tabulate as _tabulate
 from . import (
     __version__, stats as _stats,
     utils as _utils, plots as _plots
 )
 from dateutil.relativedelta import relativedelta
+from io import StringIO
 
 try:
     from IPython.core.display import (
@@ -88,6 +91,8 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
+    else:
+        benchmark_title = None
 
     date_range = returns.index.strftime('%e %b, %Y')
     tpl = tpl.replace('{{date_range}}', date_range[0] + ' - ' + date_range[-1])
@@ -96,7 +101,10 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     if benchmark is not None:
         benchmark.name = benchmark_title
-    returns.name = strategy_title
+    if isinstance(returns, _pd.Series):
+        returns.name = strategy_title
+    elif isinstance(returns, _pd.DataFrame):
+        returns.columns = strategy_title
 
     mtrx = metrics(returns=returns, benchmark=benchmark,
                    rf=rf, display=False, mode='full',
@@ -109,6 +117,13 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
+    if isinstance(returns, _pd.DataFrame):
+        num_cols = len(returns.columns)
+        for i in reversed(range(num_cols+1, num_cols + 3)):
+            str_td = "<td></td>" * i
+            tpl = tpl.replace(f'<tr>{str_td}</tr>',
+                              '<tr><td colspan="{}"><hr></td></tr>'.format(i))
+
     tpl = tpl.replace('<tr><td></td><td></td><td></td></tr>',
                       '<tr><td colspan="3"><hr></td></tr>')
     tpl = tpl.replace('<tr><td></td><td></td></tr>',
@@ -118,7 +133,10 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         yoy = _stats.compare(
             returns, benchmark, "A", compounded=compounded,
             prepare_returns=False)
-        yoy.columns = [benchmark_title, strategy_title, 'Multiplier', 'Won']
+        if isinstance(returns, _pd.Series):
+            yoy.columns = [benchmark_title, strategy_title, 'Multiplier', 'Won']
+        elif isinstance(returns, _pd.DataFrame):
+            yoy.columns = list(_pd.core.common.flatten([benchmark_title, strategy_title]))
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
@@ -126,23 +144,43 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         # pct multiplier
         yoy = _pd.DataFrame(
             _utils.group_returns(returns, returns.index.year) * 100)
-        yoy.columns = ['Return']
-        yoy['Cumulative'] = _utils.group_returns(
-            returns, returns.index.year, True)
-        yoy['Return'] = yoy['Return'].round(2).astype(str) + '%'
-        yoy['Cumulative'] = (yoy['Cumulative'] *
-                             100).round(2).astype(str) + '%'
+        if isinstance(returns, _pd.Series):
+            yoy.columns = ['Return']
+            yoy['Cumulative'] = _utils.group_returns(
+                returns, returns.index.year, True)
+            yoy['Return'] = yoy['Return'].round(2).astype(str) + '%'
+            yoy['Cumulative'] = (yoy['Cumulative'] *
+                                 100).round(2).astype(str) + '%'
+        elif isinstance(returns, _pd.DataFrame):
+            # Don't show cumulative for multiple strategy portfolios
+            # just show compounded like when we have a benchmark
+            yoy.columns = list(_pd.core.common.flatten(strategy_title))
+
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
 
-    dd = _stats.to_drawdown_series(returns)
-    dd_info = _stats.drawdown_details(dd).sort_values(
-        by='max drawdown', ascending=True)[:10]
+    if isinstance(returns, _pd.Series):
+        dd = _stats.to_drawdown_series(returns)
+        dd_info = _stats.drawdown_details(dd).sort_values(
+            by='max drawdown', ascending=True)[:10]
+        dd_info = dd_info[['start', 'end', 'max drawdown', 'days']]
+        dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
+        tpl = tpl.replace('{{dd_info}}', _html_table(dd_info, False))
+    elif isinstance(returns, _pd.DataFrame):
+        dd_info_list = []
+        for col in returns.columns:
+            dd = _stats.to_drawdown_series(returns[col])
+            dd_info = _stats.drawdown_details(dd).sort_values(
+                by='max drawdown', ascending=True)[:10]
+            dd_info = dd_info[['start', 'end', 'max drawdown', 'days']]
+            dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
+            dd_info_list.append(_html_table(dd_info, False))
 
-    dd_info = dd_info[['start', 'end', 'max drawdown', 'days']]
-    dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
-    tpl = tpl.replace('{{dd_info}}', _html_table(dd_info, False))
+        dd_html_table = ""
+        for html_str, col in zip(dd_info_list, returns.columns):
+            dd_html_table = dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
+        tpl = tpl.replace('{{dd_info}}', dd_html_table)
 
     active = kwargs.get('active_returns', 'False')
     # plots
@@ -230,12 +268,23 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.drawdowns_periods(returns, grayscale=grayscale,
-                             figsize=(8, 4), subtitle=False,
-                             savefig={'fname': figfile, 'format': figfmt},
-                             show=False, ylabel=False, compounded=compounded,
-                             prepare_returns=False)
-    tpl = tpl.replace('{{dd_periods}}', _embed_figure(figfile, figfmt))
+    if isinstance(returns, _pd.Series):
+        _plots.drawdowns_periods(returns, grayscale=grayscale,
+                                 figsize=(8, 4), subtitle=False, title=returns.name,
+                                 savefig={'fname': figfile, 'format': figfmt},
+                                 show=False, ylabel=False, compounded=compounded,
+                                 prepare_returns=False)
+        tpl = tpl.replace('{{dd_periods}}', _embed_figure(figfile, figfmt))
+    elif isinstance(returns, _pd.DataFrame):
+        embed = []
+        for col in returns.columns:
+            _plots.drawdowns_periods(returns[col], grayscale=grayscale,
+                                     figsize=(8, 4), subtitle=False, title=col,
+                                     savefig={'fname': figfile, 'format': figfmt},
+                                     show=False, ylabel=False, compounded=compounded,
+                                     prepare_returns=False)
+            embed.append(figfile)
+        tpl = tpl.replace('{{dd_periods}}', _embed_figure(embed, figfmt))
 
     figfile = _utils._file_stream()
     _plots.drawdown(returns, grayscale=grayscale,
@@ -245,20 +294,41 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     tpl = tpl.replace('{{dd_plot}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
-    _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
-                           figsize=(8, 4), cbar=False,
-                           savefig={'fname': figfile, 'format': figfmt},
-                           show=False, ylabel=False, compounded=compounded, active=active)
-    tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
+    if isinstance(returns, _pd.Series):
+        _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
+                               figsize=(8, 4), cbar=False, returns_label=returns.name,
+                               savefig={'fname': figfile, 'format': figfmt},
+                               show=False, ylabel=False, compounded=compounded, active=active)
+        tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
+    elif isinstance(returns, _pd.DataFrame):
+        embed = []
+        for col in returns.columns:
+            _plots.monthly_heatmap(returns[col], benchmark, grayscale=grayscale,
+                                   figsize=(8, 4), cbar=False, returns_label=col,
+                                   savefig={'fname': figfile, 'format': figfmt},
+                                   show=False, ylabel=False, compounded=compounded, active=active)
+            embed.append(figfile)
+        tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(embed, figfmt))
 
     figfile = _utils._file_stream()
 
-    _plots.distribution(returns, grayscale=grayscale,
-                        figsize=(8, 4), subtitle=False,
-                        savefig={'fname': figfile, 'format': figfmt},
-                        show=False, ylabel=False, compounded=compounded,
-                        prepare_returns=False)
-    tpl = tpl.replace('{{returns_dist}}', _embed_figure(figfile, figfmt))
+    if isinstance(returns, _pd.Series):
+        _plots.distribution(returns, grayscale=grayscale,
+                            figsize=(8, 4), subtitle=False, title=returns.name,
+                            savefig={'fname': figfile, 'format': figfmt},
+                            show=False, ylabel=False, compounded=compounded,
+                            prepare_returns=False)
+        tpl = tpl.replace('{{returns_dist}}', _embed_figure(figfile, figfmt))
+    elif isinstance(returns, _pd.DataFrame):
+        embed = []
+        for col in returns.columns:
+            _plots.distribution(returns[col], grayscale=grayscale,
+                                figsize=(8, 4), subtitle=False, title=col,
+                                savefig={'fname': figfile, 'format': figfmt},
+                                show=False, ylabel=False, compounded=compounded,
+                                prepare_returns=False)
+            embed.append(figfile)
+        tpl = tpl.replace('{{returns_dist}}', _embed_figure(embed, figfmt))
 
     tpl = _regex.sub(r'\{\{(.*?)\}\}', '', tpl)
     tpl = tpl.replace('white-space:pre;', '')
@@ -283,18 +353,38 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
+    benchmark_title = None
     if benchmark is not None:
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
     strategy_title = kwargs.get('strategy_title', 'Strategy')
+    active = kwargs.get('active_returns', 'False')
+
+    if benchmark is not None:
+        benchmark.name = benchmark_title
+    if isinstance(returns, _pd.Series):
+        returns.name = strategy_title
+    elif isinstance(returns, _pd.DataFrame):
+        returns.columns = strategy_title
 
     dd = _stats.to_drawdown_series(returns)
-    col = _stats.drawdown_details(dd).columns[4]
-    dd_info = _stats.drawdown_details(dd).sort_values(by = col,
-                                                       ascending = True)[:5]
 
-    if not dd_info.empty:
-        dd_info.index = range(1, min(6, len(dd_info)+1))
-        dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+    if isinstance(dd, _pd.Series):
+        col = _stats.drawdown_details(dd).columns[4]
+        dd_info = _stats.drawdown_details(dd).sort_values(by=col,
+                                                          ascending=True)[:5]
+        if not dd_info.empty:
+            dd_info.index = range(1, min(6, len(dd_info) + 1))
+            dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+    elif isinstance(dd, _pd.DataFrame):
+        col = _stats.drawdown_details(dd).columns.get_level_values(1)[4]
+        dd_info_dict = {}
+        for ptf in dd.columns:
+            dd_info = _stats.drawdown_details(dd[ptf]).sort_values(by=col,
+                                                                   ascending=True)[:5]
+            if not dd_info.empty:
+                dd_info.index = range(1, min(6, len(dd_info) + 1))
+                dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+            dd_info_dict[ptf] = dd_info
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
@@ -306,10 +396,19 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                          benchmark_title=benchmark_title,
                          strategy_title=strategy_title))
         iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
-        if dd_info.empty:
-            iDisplay(iHTML("<p>(no drawdowns)</p>"))
-        else:
-            iDisplay(dd_info)
+
+        if isinstance(dd, _pd.Series):
+            if dd_info.empty:
+                iDisplay(iHTML("<p>(no drawdowns)</p>"))
+            else:
+                iDisplay(dd_info)
+        elif isinstance(dd, _pd.DataFrame):
+            for ptf, dd_info in dd_info_dict.items():
+                if dd_info.empty:
+                    iDisplay(iHTML("<p>(no drawdowns)</p>"))
+                else:
+                    iDisplay(iHTML("<p><h5>%s</h5></p>" % ptf))
+                    iDisplay(dd_info)
 
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
     else:
@@ -323,17 +422,28 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                 strategy_title=strategy_title)
         print('\n\n')
         print('[5 Worst Drawdowns]\n')
-        if dd_info.empty:
-            print("(no drawdowns)")
-        else:
-            print(_tabulate(dd_info, headers="keys",
-                            tablefmt='simple', floatfmt=".2f"))
+        if isinstance(dd, _pd.Series):
+            if dd_info.empty:
+                print("(no drawdowns)")
+            else:
+                print(_tabulate(dd_info, headers="keys",
+                                tablefmt='simple', floatfmt=".2f"))
+        elif isinstance(dd, _pd.DataFrame):
+            for ptf, dd_info in dd_info_dict.items():
+                if dd_info.empty:
+                    print("(no drawdowns)")
+                else:
+                    print(f"{ptf}\n")
+                    print(_tabulate(dd_info, headers="keys",
+                                    tablefmt='simple', floatfmt=".2f"))
+
         print('\n\n')
         print('[Strategy Visualization]\nvia Matplotlib')
 
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='full',
-          periods_per_year=periods_per_year, prepare_returns=False)
+          periods_per_year=periods_per_year, prepare_returns=False,
+          benchmark_title=benchmark_title, strategy_title=strategy_title, active=active)
 
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
@@ -347,9 +457,11 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
+    benchmark_title = None
     if benchmark is not None:
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
     strategy_title = kwargs.get('strategy_title', 'Strategy')
+    active = kwargs.get('active_returns', 'False')
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
@@ -375,7 +487,8 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
     plots(returns=returns, benchmark=benchmark,
           grayscale=grayscale, figsize=figsize, mode='basic',
           periods_per_year=periods_per_year,
-          prepare_returns=False)
+          prepare_returns=False, benchmark_title=benchmark_title,
+          strategy_title=strategy_title, active=active)
 
 
 def metrics(returns, benchmark=None, rf=0., display=True,
@@ -395,25 +508,38 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
 
-    blank = ['']
-
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1:
-            raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
-        returns = returns[returns.columns[0]]
+            blank = [''] * len(returns.columns)
+    else:
+        blank = ['']
+
+    # if isinstance(returns, _pd.DataFrame):
+    #     if len(returns.columns) > 1:
+    #         raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
+    #     returns = returns[returns.columns[0]]
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    df = _pd.DataFrame({"returns": returns})
+    if isinstance(returns, _pd.Series):
+        df = _pd.DataFrame({"returns": returns})
+    elif isinstance(returns, _pd.DataFrame):
+        df = _pd.DataFrame({"returns_" + str(i + 1): returns[strategy_col]
+                            for i, strategy_col in enumerate(returns.columns)})
 
     if benchmark is not None:
-        blank = ['', '']
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
-        df["returns"] = returns
         df["benchmark"] = benchmark
+        if isinstance(returns, _pd.Series):
+            blank = ['', '']
+            df["returns"] = returns
+        elif isinstance(returns, _pd.DataFrame):
+            blank = [''] * len(returns.columns) + ['']
+            for i, strategy_col in enumerate(returns.columns):
+                df["returns_" + str(i+1)] = returns[strategy_col]
 
     df = df.fillna(0)
 
@@ -428,9 +554,15 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     metrics = _pd.DataFrame()
 
-    s_start = {'returns': df['returns'].index.strftime('%Y-%m-%d')[0]}
-    s_end = {'returns': df['returns'].index.strftime('%Y-%m-%d')[-1]}
-    s_rf = {'returns': rf}
+    if isinstance(returns, _pd.Series):
+        s_start = {'returns': df['returns'].index.strftime('%Y-%m-%d')[0]}
+        s_end = {'returns': df['returns'].index.strftime('%Y-%m-%d')[-1]}
+        s_rf = {'returns': rf}
+    elif isinstance(returns, _pd.DataFrame):
+        df_strategy_columns = [col for col in df.columns if col != "benchmark"]
+        s_start = {strategy_col: df[strategy_col].index.strftime('%Y-%m-%d')[0] for strategy_col in df_strategy_columns}
+        s_end = {strategy_col: df[strategy_col].index.strftime('%Y-%m-%d')[-1] for strategy_col in df_strategy_columns}
+        s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
 
     if "benchmark" in df:
         s_start['benchmark'] = df['benchmark'].index.strftime('%Y-%m-%d')[0]
@@ -445,8 +577,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['~'] = blank
 
     if compounded:
-        metrics['Cumulative Return %'] = (
-            _stats.comp(df) * pct).map('{:,.2f}'.format)
+        metrics['Cumulative Return %'] = (_stats.comp(df) * pct).map('{:,.2f}'.format)
     else:
         metrics['Total Return %'] = (df.sum() * pct).map('{:,.2f}'.format)
 
@@ -478,18 +609,37 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics['Longest DD Days'] = blank
 
     if mode.lower() == 'full':
-        ret_vol = _stats.volatility(
-            df['returns'], win_year, True, prepare_returns=False) * pct
+        if isinstance(returns, _pd.Series):
+            ret_vol = _stats.volatility(
+                df['returns'], win_year, True, prepare_returns=False) * pct
+        elif isinstance(returns, _pd.DataFrame):
+            ret_vol = ([_stats.volatility(df[strategy_col], win_year, True, prepare_returns=False) * pct
+                       for strategy_col in df_strategy_columns])
         if "benchmark" in df:
             bench_vol = _stats.volatility(
                 df['benchmark'], win_year, True, prepare_returns=False) * pct
-            metrics['Volatility (ann.) %'] = [ret_vol, bench_vol]
-            metrics['R^2'] = _stats.r_squared(
-                df['returns'], df['benchmark'], prepare_returns=False)
-            metrics['Information Ratio'] = _stats.information_ratio(
-                df['returns'], df['benchmark'], prepare_returns=False)
+
+            vol_ = [ret_vol, bench_vol]
+            if isinstance(ret_vol, list):
+                metrics['Volatility (ann.) %'] = list(_pd.core.common.flatten(vol_))
+            else:
+                metrics['Volatility (ann.) %'] = vol_
+
+            if isinstance(returns, _pd.Series):
+                metrics['R^2'] = _stats.r_squared(
+                    df['returns'], df['benchmark'], prepare_returns=False)
+                metrics['Information Ratio'] = _stats.information_ratio(
+                    df['returns'], df['benchmark'], prepare_returns=False)
+            elif isinstance(returns, _pd.DataFrame):
+                metrics['R^2'] = ([_stats.r_squared(df[strategy_col], df['benchmark'], prepare_returns=False).round(2)
+                                  for strategy_col in df_strategy_columns]) + ['-']
+                metrics['Information Ratio'] = ([_stats.information_ratio(df[strategy_col], df['benchmark'], prepare_returns=False).round(2)
+                                                 for strategy_col in df_strategy_columns]) + ['-']
         else:
-            metrics['Volatility (ann.) %'] = [ret_vol]
+            if isinstance(returns, _pd.Series):
+                metrics['Volatility (ann.) %'] = [ret_vol]
+            elif isinstance(returns, _pd.DataFrame):
+                metrics['Volatility (ann.) %'] = ret_vol
 
         metrics['Calmar'] = _stats.calmar(df, prepare_returns=False)
         metrics['Skew'] = _stats.skew(df, prepare_returns=False)
@@ -594,11 +744,21 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
         if "benchmark" in df:
             metrics['~~~~~~~~~~~~'] = blank
-            greeks = _stats.greeks(df['returns'], df['benchmark'], win_year, prepare_returns=False)
-            metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
-            metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
-            metrics['Correlation'] = [str(round(df['benchmark'].corr(df['returns']) * pct, 2))+'%', '-']
-            metrics['Treynor Ratio'] = [str(round(_stats.treynor_ratio(df['returns'], df['benchmark'], win_year, rf)*pct, 2))+'%', '-']
+            if isinstance(returns, _pd.Series):
+                greeks = _stats.greeks(df['returns'], df['benchmark'], win_year, prepare_returns=False)
+                metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
+                metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
+                metrics['Correlation'] = [str(round(df['benchmark'].corr(df['returns']) * pct, 2))+'%', '-']
+                metrics['Treynor Ratio'] = [str(round(_stats.treynor_ratio(df['returns'], df['benchmark'], win_year, rf)*pct, 2))+'%', '-']
+            elif isinstance(returns, _pd.DataFrame):
+                greeks = ([_stats.greeks(df[strategy_col], df['benchmark'], win_year, prepare_returns=False)
+                           for strategy_col in df_strategy_columns])
+                metrics['Beta'] = [str(round(g['beta'], 2)) for g in greeks] + ['-']
+                metrics['Alpha'] = [str(round(g['alpha'], 2)) for g in greeks] + ['-']
+                metrics['Correlation'] = ([str(round(df['benchmark'].corr(df[strategy_col]) * pct, 2)) + '%'
+                                          for strategy_col in df_strategy_columns]) +  ['-']
+                metrics['Treynor Ratio'] = ([str(round(_stats.treynor_ratio(df[strategy_col], df['benchmark'], win_year, rf) * pct, 2)) + '%'
+                                            for strategy_col in df_strategy_columns]) +  ['-']
 
     # prepare for display
     for col in metrics.columns:
@@ -613,6 +773,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
         if (display or "internal" in kwargs) and "%" in col:
             metrics[col] = metrics[col] + '%'
+
     try:
         metrics['Longest DD Days'] = _pd.to_numeric(
             metrics['Longest DD Days']).astype('int')
@@ -637,9 +798,16 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics = metrics.T
 
     if "benchmark" in df:
-        metrics.columns = [strategy_colname, benchmark_colname]
+        column_names = [strategy_colname, benchmark_colname]
+        if isinstance(strategy_colname, list):
+            metrics.columns = list(_pd.core.common.flatten(column_names))
+        else:
+            metrics.columns = column_names
     else:
-        metrics.columns = [strategy_colname]
+        if isinstance(strategy_colname, list):
+            metrics.columns = strategy_colname
+        else:
+            metrics.columns = [strategy_colname]
 
     # cleanups
     metrics.replace([-0, '-0'], 0, inplace=True)
@@ -668,28 +836,46 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          periods_per_year=252, prepare_returns=True, match_dates=False, active=False):
+          periods_per_year=252, prepare_returns=True, match_dates=False, **kwargs):
+
+    benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
+    strategy_colname = kwargs.get("strategy_title", "Strategy")
+    active = kwargs.get('active', 'False')
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
+    if isinstance(returns, _pd.Series):
+        returns.name = strategy_colname
+    elif isinstance(returns, _pd.DataFrame):
+        returns.columns = strategy_colname
+
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]),
-                        show=True, mode=("comp" if compounded else "sum"))
+                        show=True, mode=("comp" if compounded else "sum"),
+                        benchmark_title=benchmark_colname, strategy_title=strategy_colname)
 
-        _plots.monthly_heatmap(returns, None, grayscale=grayscale,
-                               figsize=(figsize[0], figsize[0]*.5),
-                               show=True, ylabel=False,
-                               compounded=compounded, active=False)
+        if isinstance(returns, _pd.Series):
+            _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
+                                   figsize=(figsize[0], figsize[0]*.5),
+                                   show=True, ylabel=False,
+                                   compounded=compounded, active=active)
+        elif isinstance(returns, _pd.DataFrame):
+            for col in returns.columns:
+                _plots.monthly_heatmap(returns[col], benchmark, grayscale=grayscale,
+                                       figsize=(figsize[0], figsize[0] * .5),
+                                       show=True, ylabel=False, returns_label=col,
+                                       compounded=compounded, active=active)
 
         return
 
     # prepare timeseries
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+        benchmark.name = benchmark_colname
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
@@ -746,23 +932,44 @@ def plots(returns, benchmark=None, grayscale=False,
                            figsize=(figsize[0], figsize[0]*.3),
                            show=True, ylabel=False, period=win_half_year)
 
-    _plots.drawdowns_periods(returns, grayscale=grayscale,
-                             figsize=(figsize[0], figsize[0]*.5),
-                             show=True, ylabel=False,
-                             prepare_returns=False)
+    if isinstance(returns, _pd.Series):
+        _plots.drawdowns_periods(returns, grayscale=grayscale,
+                                 figsize=(figsize[0], figsize[0]*.5),
+                                 show=True, ylabel=False,
+                                 prepare_returns=False)
+    elif isinstance(returns, _pd.DataFrame):
+        for col in returns.columns:
+            _plots.drawdowns_periods(returns[col], grayscale=grayscale,
+                                     figsize=(figsize[0], figsize[0] * .5),
+                                     show=True, ylabel=False, title=col,
+                                     prepare_returns=False)
 
     _plots.drawdown(returns, grayscale=grayscale,
                     figsize=(figsize[0], figsize[0]*.4),
                     show=True, ylabel=False)
 
-    _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
-                           figsize=(figsize[0], figsize[0]*.5),
-                           show=True, ylabel=False, active=active)
+    if isinstance(returns, _pd.Series):
+        _plots.monthly_heatmap(returns, benchmark, grayscale=grayscale,
+                               figsize=(figsize[0], figsize[0]*.5), returns_label=returns.name,
+                               show=True, ylabel=False, active=active)
+    elif isinstance(returns, _pd.DataFrame):
+        for col in returns.columns:
+            _plots.monthly_heatmap(returns[col], benchmark, grayscale=grayscale,
+                                   figsize=(figsize[0], figsize[0] * .5),
+                                   show=True, ylabel=False, returns_label=col,
+                                   compounded=compounded, active=active)
 
-    _plots.distribution(returns, benchmark, grayscale=grayscale,
-                        figsize=(figsize[0], figsize[0]*.5),
-                        show=True, ylabel=False,
-                        prepare_returns=False)
+    if isinstance(returns, _pd.Series):
+        _plots.distribution(returns, grayscale=grayscale,
+                            figsize=(figsize[0], figsize[0] * .5),
+                            show=True, title=returns.name, ylabel=False,
+                            prepare_returns=False)
+    elif isinstance(returns, _pd.DataFrame):
+        for col in returns.columns:
+            _plots.distribution(returns[col], grayscale=grayscale,
+                                figsize=(figsize[0], figsize[0] * .5),
+                                show=True, title=col, ylabel=False,
+                                prepare_returns=False)
 
 
 def _calc_dd(df, display=True, as_pct=False):
@@ -774,20 +981,39 @@ def _calc_dd(df, display=True, as_pct=False):
 
     if "returns" in dd_info:
         ret_dd = dd_info['returns']
+    # to match multiple columns like returns_1, returns_2, ...
+    elif any(dd_info.columns.get_level_values(0).str.contains('returns')) \
+            and dd_info.columns.get_level_values(0).nunique() > 1:
+        ret_dd = dd_info.loc[:, dd_info.columns.get_level_values(0).str.contains('returns')]
     else:
         ret_dd = dd_info
 
-    dd_stats = {
-        'returns': {
-            'Max Drawdown %': ret_dd.sort_values(
-                by='max drawdown', ascending=True
-            )['max drawdown'].values[0] / 100,
-            'Longest DD Days': str(_np.round(ret_dd.sort_values(
-                by='days', ascending=False)['days'].values[0])),
-            'Avg. Drawdown %': ret_dd['max drawdown'].mean() / 100,
-            'Avg. Drawdown Days': str(_np.round(ret_dd['days'].mean()))
+    if any(ret_dd.columns.get_level_values(0).str.contains('returns')) and \
+            ret_dd.columns.get_level_values(0).nunique() > 1:
+        dd_stats = {
+            col: {
+                'Max Drawdown %': ret_dd[col].sort_values(
+                    by='max drawdown', ascending=True
+                )['max drawdown'].values[0] / 100,
+                'Longest DD Days': str(_np.round(ret_dd[col].sort_values(
+                    by='days', ascending=False)['days'].values[0])),
+                'Avg. Drawdown %': ret_dd[col]['max drawdown'].mean() / 100,
+                'Avg. Drawdown Days': str(_np.round(ret_dd[col]['days'].mean()))
+            }
+            for col in ret_dd.columns.get_level_values(0)
         }
-    }
+    else:
+        dd_stats = {
+            'returns': {
+                'Max Drawdown %': ret_dd.sort_values(
+                    by='max drawdown', ascending=True
+                )['max drawdown'].values[0] / 100,
+                'Longest DD Days': str(_np.round(ret_dd.sort_values(
+                    by='days', ascending=False)['days'].values[0])),
+                'Avg. Drawdown %': ret_dd['max drawdown'].mean() / 100,
+                'Avg. Drawdown Days': str(_np.round(ret_dd['days'].mean()))
+            }
+        }
     if "benchmark" in df and (dd_info.columns, _pd.MultiIndex):
         bench_dd = dd_info['benchmark'].sort_values(by='max drawdown')
         dd_stats['benchmark'] = {
@@ -848,9 +1074,19 @@ def _open_html(html):
         iDisplay(iHTML(jscode))
 
 
-def _embed_figure(figfile, figfmt):
-    figbytes = figfile.getvalue()
-    if figfmt == 'svg':
-        return figbytes.decode()
-    data_uri = _b64encode(figbytes).decode()
-    return '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+def _embed_figure(figfiles, figfmt):
+    if isinstance(figfiles, list):
+        embed_string = "\n"
+        for figfile in figfiles:
+            figbytes = figfile.getvalue()
+            if figfmt == 'svg':
+                return figbytes.decode()
+            data_uri = _b64encode(figbytes).decode()
+            embed_string.join('<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri))
+    else:
+        figbytes = figfiles.getvalue()
+        if figfmt == 'svg':
+            return figbytes.decode()
+        data_uri = _b64encode(figbytes).decode()
+        embed_string = '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+    return embed_string

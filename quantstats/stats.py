@@ -319,7 +319,6 @@ def rolling_sharpe(returns, rf=0., rolling_period=126,
     if annualize:
         res = res * _np.sqrt(
             1 if periods_per_year is None else periods_per_year)
-
     return res
 
 
@@ -920,15 +919,21 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
         returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    data = _pd.DataFrame(data={
-        'Benchmark': _utils.aggregate_returns(
-            benchmark, aggregate, compounded) * 100,
-        'Returns': _utils.aggregate_returns(
-            returns, aggregate, compounded) * 100
-    })
+    if isinstance(returns, _pd.Series):
+        data = _pd.DataFrame(data={
+            'Benchmark': _utils.aggregate_returns(
+                benchmark, aggregate, compounded) * 100,
+            'Returns': _utils.aggregate_returns(
+                returns, aggregate, compounded) * 100
+        })
 
-    data['Multiplier'] = data['Returns'] / data['Benchmark']
-    data['Won'] = _np.where(data['Returns'] >= data['Benchmark'], '+', '-')
+        data['Multiplier'] = data['Returns'] / data['Benchmark']
+        data['Won'] = _np.where(data['Returns'] >= data['Benchmark'], '+', '-')
+    elif isinstance(returns, _pd.DataFrame):
+        bench = {'Benchmark': _utils.aggregate_returns(benchmark, aggregate, compounded) * 100}
+        strategy = {'Returns_' + str(i): _utils.aggregate_returns(returns[col], aggregate, compounded) * 100
+                    for i, col in enumerate(returns.columns)}
+        data = _pd.DataFrame(data={**bench, **strategy})
 
     if round_vals is not None:
         return _np.round(data, round_vals)
@@ -939,7 +944,7 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
 def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     """Calculates monthly returns"""
     if isinstance(returns, _pd.DataFrame):
-        warn("Pandas DataFrame was passed (Series expeted). "
+        warn("Pandas DataFrame was passed (Series expected). "
              "Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)

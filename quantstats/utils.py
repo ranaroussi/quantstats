@@ -416,7 +416,7 @@ def make_portfolio(returns, start_balance=1e5,
     portfolio = _pd.concat([p0, p1])
 
     if isinstance(returns, _pd.DataFrame):
-        portfolio.loc[:1, :] = start_balance
+        portfolio.iloc[:1, :] = start_balance
         portfolio.drop(columns=[0], inplace=True)
 
     if round_to:
