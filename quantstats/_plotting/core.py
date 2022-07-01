@@ -458,7 +458,7 @@ def plot_rolling_stats(returns, benchmark=None, title="",
     ax.spines['left'].set_visible(False)
 
     if isinstance(returns, _pd.DataFrame):
-        returns_label = [col for col in returns.columns]
+        returns_label = list(returns.columns)
 
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame(index=returns.index, data={returns_label: returns})

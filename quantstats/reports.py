@@ -27,7 +27,6 @@ from datetime import (
 from base64 import b64encode as _b64encode
 import re as _regex
 
-import pandas as pd
 from tabulate import tabulate as _tabulate
 from . import (
     __version__, stats as _stats,
