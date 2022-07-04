@@ -979,7 +979,9 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
 
     if eoy:
         returns['eoy'] = _utils.group_returns(
-            original_returns, original_returns.index.year).values
+            original_returns, 
+            original_returns.index.year, 
+            compounded=compounded).values
 
     returns.columns = map(lambda x: str(x).upper(), returns.columns)
     returns.index.name = None
