@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.59
+-----
+- Fixed EOY compounded return calculation
+
 0.0.58
 -----
 - Run fillna(0) on plot's beta (issue #193)
