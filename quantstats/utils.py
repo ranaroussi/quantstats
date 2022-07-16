@@ -78,7 +78,10 @@ def to_prices(returns, base=1e5):
     returns = returns.copy().fillna(0).replace(
         [_np.inf, -_np.inf], float('NaN'))
 
-    return base + base * _stats.compsum(returns)
+    return _pd.concat([_pd.Series(data=[base], 
+        index=[returns.index[0]-(returns.index[1]-
+        returns.index[0])]), base + base 
+        * _stats.compsum(returns)])
 
 
 def log_returns(returns, rf=0., nperiods=None):
