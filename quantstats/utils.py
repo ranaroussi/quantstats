@@ -243,7 +243,7 @@ def download_returns(ticker, period="max"):
     return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
 
 
-def _prepare_benchmark(benchmark=None, period="max"):
+def _prepare_benchmark(benchmark=None, period="max", rf=0.):
     """
     Fetch benchmark if ticker is provided, and pass through
     _prepare_returns()
@@ -259,7 +259,7 @@ def _prepare_benchmark(benchmark=None, period="max"):
     elif isinstance(benchmark, _pd.DataFrame):
         benchmark = benchmark[benchmark.columns[0]].copy()
 
-    benchmark = _prepare_returns(benchmark)
+    benchmark = _prepare_returns(benchmark, rf)
 
     if isinstance(period, _pd.DatetimeIndex) \
         and set(period) != set(benchmark.index):
@@ -353,7 +353,7 @@ def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match
         else:
             ticker_returns = returns[ticker]
 
-        portfolio[ticker] = _prepare_returns(ticker_returns)
+        portfolio[ticker] = ticker_returns
 
     # index members time-series
     index = _pd.DataFrame(portfolio).dropna()
