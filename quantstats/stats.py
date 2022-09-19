@@ -939,7 +939,7 @@ def compare(returns, benchmark, aggregate=None, compounded=True,
 def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     """Calculates monthly returns"""
     if isinstance(returns, _pd.DataFrame):
-        warn("Pandas DataFrame was passed (Series expeted). "
+        warn("Pandas DataFrame was passed (Series expected). "
              "Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)

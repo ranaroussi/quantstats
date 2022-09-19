@@ -1,0 +1,12 @@
+[workspace]
+restore_data_on_startup = True
+save_data_on_exit = True
+save_history = True
+save_non_project_files = False
+project_type = 'empty-project-type'
+recent_files = ['..\\..\\..\\..\\.spyder-py3\\temp.py', 'quantstats\\reports.py', 'quantstats\\utils.py', 'quantstats\\stats.py', 'quantstats\\plots.py', 'quantstats\\_plotting\\core.py', 'quantstats\\_plotting\\wrappers.py', '..\\..\\R42\\R42_stock_sectors - py v22\\R42_stock_analysis.py']
+
+[main]
+version = 0.2.0
+recent_files = []
+

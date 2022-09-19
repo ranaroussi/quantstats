@@ -69,6 +69,15 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     with open(template_path or __file__[:-4] + '.html') as f:
         tpl = f.read()
         f.close()
+     
+    returns_title = 'Strategy'
+    # get title for returns: 
+    if isinstance(returns, str):
+        returns_title = returns
+    elif isinstance(returns, _pd.Series):
+        returns_title = returns.name
+    elif isinstance(returns, _pd.DataFrame):
+        returns_title = returns[returns.columns[0]].name
 
     # prepare timeseries
     returns = _utils._prepare_returns(returns)
@@ -98,7 +107,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                    sep=True, internal="True",
                    compounded=compounded,
                    periods_per_year=periods_per_year,
-                   prepare_returns=False)[2:]
+                   prepare_returns=False, returns_title = returns_title, benchmark_title=benchmark_title)[2:]
 
     mtrx.index.name = 'Metric'
     tpl = tpl.replace('{{metrics}}', _html_table(mtrx))
@@ -106,14 +115,25 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                       '<tr><td colspan="3"><hr></td></tr>')
     tpl = tpl.replace('<tr><td></td><td></td></tr>',
                       '<tr><td colspan="2"><hr></td></tr>')
+    
+    
+    dd = _stats.to_drawdown_series(returns)
+    dd_info = _stats.drawdown_details(dd).sort_values(
+        by='max drawdown', ascending=True)[:10]
+
+    dd_info = dd_info[['start', 'end', 'max drawdown', 'days']]
+    dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
+    tpl = tpl.replace('{{dd_info}}', _html_table(dd_info, False))
+
 
     if benchmark is not None:
         yoy = _stats.compare(
-            returns, benchmark, "A", compounded=compounded,
+            returns, benchmark, aggregate="A", compounded=compounded,
             prepare_returns=False)
-        yoy.columns = ['Benchmark', 'Strategy', 'Multiplier', 'Won']
+        yoy.columns = [benchmark_title, returns_title, 'Multiplier', 'Won']
+        yoy = yoy.reindex(columns = [returns_title, benchmark_title, 'Multiplier', 'Won'])
         yoy.index.name = 'Year'
-        tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs Benchmark</h3>')
+        tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns vs %s Benchmark</h3>' % benchmark_title)
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
     else:
         # pct multiplier
@@ -128,19 +148,48 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         yoy.index.name = 'Year'
         tpl = tpl.replace('{{eoy_title}}', '<h3>EOY Returns</h3>')
         tpl = tpl.replace('{{eoy_table}}', _html_table(yoy))
+        
+        
+    if benchmark is not None:
+        mom = _stats.compare(
+            returns, benchmark, aggregate="M", compounded=compounded,
+            prepare_returns=False)
+        mom.columns = [benchmark_title, returns_title, 'Multiplier', 'Won']
+        mom = mom.reindex(columns = [returns_title, benchmark_title, 'Multiplier', 'Won'])
+        mom.index.name = 'Index'
+        mom['Month'] = mom.index
+        mom['Month'] = mom['Month'].apply(lambda x: '-'.join(map(str, x)))
+        mom = mom.reset_index(drop = True)
+        mom = mom.set_index('Month')
+        mom.index.name = 'Month'
+        tpl = tpl.replace('{{eom_title}}', '<h3>EOM Returns vs %s Benchmark</h3>' % benchmark_title)
+        tpl = tpl.replace('{{eom_table}}', _html_table(mom))
+    else:
+        # pct multiplier
+        mom = _pd.DataFrame(
+            _utils.group_returns(returns, [returns.index.year, returns.index.month]) * 100)
+        mom.columns = ['Return']
+        mom['Cumulative'] = _utils.group_returns(
+            returns, [returns.index.year, returns.index.month], True)
+        mom['Return'] = mom['Return'].round(2).astype(str) + '%'
+        mom['Cumulative'] = (mom['Cumulative'] *
+                             100).round(2).astype(str) + '%'
+        mom.index.name = 'Index'
+        mom['Month'] = mom.index
+        mom['Month'] = mom['Month'].apply(lambda x: '-'.join(map(str, x)))
+        mom = mom.reset_index(drop = True)
+        mom = mom.set_index('Month')
+        mom.index.name = 'Month'
+        tpl = tpl.replace('{{eom_title}}', '<h3>EOM Returns</h3>')
+        tpl = tpl.replace('{{eom_table}}', _html_table(mom))
+        
 
-    dd = _stats.to_drawdown_series(returns)
-    dd_info = _stats.drawdown_details(dd).sort_values(
-        by='max drawdown', ascending=True)[:10]
-
-    dd_info = dd_info[['start', 'end', 'max drawdown', 'days']]
-    dd_info.columns = ['Started', 'Recovered', 'Drawdown', 'Days']
-    tpl = tpl.replace('{{dd_info}}', _html_table(dd_info, False))
 
     # plots
     figfile = _utils._file_stream()
     _plots.returns(returns, benchmark, grayscale=grayscale,
                    figsize=(8, 5), subtitle=False,
+                   returns_label=returns_title, benchmark_label=benchmark_title,
                    savefig={'fname': figfile, 'format': figfmt},
                    show=False, ylabel=False, cumulative=compounded,
                    prepare_returns=False)
@@ -150,6 +199,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.log_returns(returns, benchmark, grayscale=grayscale,
                        figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': figfmt},
+                       returns_label=returns_title, benchmark_label=benchmark_title,
                        show=False, ylabel=False, cumulative=compounded,
                        prepare_returns=False)
     tpl = tpl.replace('{{log_returns}}', _embed_figure(figfile, figfmt))
@@ -159,6 +209,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         _plots.returns(returns, benchmark, match_volatility=True,
                        grayscale=grayscale, figsize=(8, 4), subtitle=False,
                        savefig={'fname': figfile, 'format': figfmt},
+                       returns_label=returns_title, benchmark_label=benchmark_title,
                        show=False, ylabel=False, cumulative=compounded,
                        prepare_returns=False)
         tpl = tpl.replace('{{vol_returns}}', _embed_figure(figfile, figfmt))
@@ -167,6 +218,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.yearly_returns(returns, benchmark, grayscale=grayscale,
                           figsize=(8, 4), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
+                          returns_label=returns_title, benchmark_label=benchmark_title,
                           show=False, ylabel=False, compounded=compounded,
                           prepare_returns=False)
     tpl = tpl.replace('{{eoy_returns}}', _embed_figure(figfile, figfmt))
@@ -190,6 +242,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     if benchmark is not None:
         figfile = _utils._file_stream()
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
+                            benchmark_label=benchmark_title,
                             figsize=(8, 3), subtitle=False,
                             window1=win_half_year, window2=win_year,
                             savefig={'fname': figfile, 'format': figfmt},
@@ -201,6 +254,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
                               savefig={'fname': figfile, 'format': figfmt},
+                              returns_label=returns_title, benchmark_label=benchmark_title,
                               show=False, ylabel=False, period=win_half_year,
                               periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_vol}}', _embed_figure(figfile, figfmt))
@@ -209,6 +263,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.rolling_sharpe(returns, grayscale=grayscale,
                           figsize=(8, 3), subtitle=False,
                           savefig={'fname': figfile, 'format': figfmt},
+                          returns_label=returns_title, 
                           show=False, ylabel=False, period=win_half_year,
                           periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_sharpe}}', _embed_figure(figfile, figfmt))
@@ -217,6 +272,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
     _plots.rolling_sortino(returns, grayscale=grayscale,
                            figsize=(8, 3), subtitle=False,
                            savefig={'fname': figfile, 'format': figfmt},
+                           returns_label=returns_title,
                            show=False, ylabel=False, period=win_half_year,
                            periods_per_year=win_year)
     tpl = tpl.replace('{{rolling_sortino}}', _embed_figure(figfile, figfmt))
@@ -238,10 +294,18 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     figfile = _utils._file_stream()
     _plots.monthly_heatmap(returns, grayscale=grayscale,
-                           figsize=(8, 4), cbar=False,
+                           figsize=(8, 4), cbar=False, eoy = True,
                            savefig={'fname': figfile, 'format': figfmt},
                            show=False, ylabel=False, compounded=compounded)
     tpl = tpl.replace('{{monthly_heatmap}}', _embed_figure(figfile, figfmt))
+    
+    if benchmark is not None:
+        figfile = _utils._file_stream()
+        _plots.outperformance_heatmap(returns, benchmark=benchmark, grayscale=grayscale,
+                               figsize=(8, 4), cbar=False, eoy = True, benchmark_label=benchmark_title,
+                               savefig={'fname': figfile, 'format': figfmt},
+                               show=False, ylabel=False, compounded=compounded)
+        tpl = tpl.replace('{{perf_heatmap}}', _embed_figure(figfile, figfmt))
 
     figfile = _utils._file_stream()
     _plots.distribution(returns, grayscale=grayscale,
@@ -362,13 +426,27 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
     win_year, _ = _get_trading_periods(periods_per_year)
 
-    benchmark_col = 'Benchmark'
+    benchmark_title  = 'Benchmark'
+    
     if benchmark is not None:
         if isinstance(benchmark, str):
-            benchmark_col = f'Benchmark ({benchmark.upper()})'
+            benchmark_title  = f'Benchmark ({benchmark.upper()})'
         elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
             raise ValueError("`benchmark` must be a pandas Series, "
                              "but a multi-column DataFrame was passed")
+            
+    if kwargs.get('benchmark_title') is not None:
+        benchmark_title = kwargs.get('benchmark_title')
+    
+    
+    returns_title = 'Strategy'
+    if kwargs.get('returns_title') is not None:
+        returns_title = kwargs.get('returns_title')
+    
+    
+    
+        
+    
 
     blank = ['']
 
@@ -612,9 +690,9 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     metrics = metrics.T
 
     if "benchmark" in df:
-        metrics.columns = ['Strategy', benchmark_col]
+        metrics.columns = [returns_title, benchmark_title]
     else:
-        metrics.columns = ['Strategy']
+        metrics.columns = [returns_title]
 
     # cleanups
     metrics.replace([-0, '-0'], 0, inplace=True)

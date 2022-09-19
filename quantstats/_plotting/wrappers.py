@@ -36,7 +36,7 @@ from .. import (
 from . import core as _core
 
 
-_FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
+_FLATUI_COLORS = ["#696969", "#348dc1", "#af4b64",#fedd78->#696969 #348dc1->#0000FF
                   "#4fa487", "#9b59b6", "#808080"]
 _GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ['black']) + ['white']
 
@@ -255,6 +255,7 @@ def earnings(returns, start_balance=1e5, mode="comp",
 
 def returns(returns, benchmark=None,
             grayscale=False, figsize=(10, 6),
+            returns_label="Strategy", benchmark_label="Benchmark",
             fontname='Arial', lw=1.5,
             match_volatility=False, compound=True, cumulative=True,
             resample=None, ylabel="Cumulative Returns",
@@ -266,7 +267,7 @@ def returns(returns, benchmark=None,
         if isinstance(benchmark, str):
             title += ' vs %s' % benchmark.upper()
         else:
-            title += ' vs Benchmark'
+            title += ' vs %s' % benchmark_label
         if match_volatility:
             title += ' (Volatility Matched)'
 
@@ -283,6 +284,8 @@ def returns(returns, benchmark=None,
                                 compound=compound,
                                 cumulative=cumulative,
                                 lw=lw,
+                                returns_label=returns_label,
+                                benchmark_label = benchmark_label,
                                 figsize=figsize,
                                 fontname=fontname,
                                 grayscale=grayscale,
@@ -294,6 +297,7 @@ def returns(returns, benchmark=None,
 
 def log_returns(returns, benchmark=None,
                 grayscale=False, figsize=(10, 5),
+                returns_label="Strategy", benchmark_label="Benchmark",
                 fontname='Arial', lw=1.5,
                 match_volatility=False, compound=True, cumulative=True,
                 resample=None, ylabel="Cumulative Returns",
@@ -305,7 +309,7 @@ def log_returns(returns, benchmark=None,
         if isinstance(benchmark, str):
             title += ' vs %s (Log Scaled' % benchmark.upper()
         else:
-            title += ' vs Benchmark (Log Scaled'
+            title += ' vs %s (Log Scaled'  % benchmark_label
         if match_volatility:
             title += ', Volatility Matched'
     else:
@@ -325,6 +329,8 @@ def log_returns(returns, benchmark=None,
                                 compound=compound,
                                 cumulative=cumulative,
                                 lw=lw,
+                                returns_label=returns_label,
+                                benchmark_label = benchmark_label,
                                 figsize=figsize,
                                 fontname=fontname,
                                 grayscale=grayscale,
@@ -361,6 +367,7 @@ def daily_returns(returns,
 
 
 def yearly_returns(returns, benchmark=None,
+                   returns_label="Strategy", benchmark_label="Benchmark",
                    fontname='Arial', grayscale=False,
                    hlw=1.5, hlcolor="red", hllabel="",
                    match_volatility=False,
@@ -371,7 +378,7 @@ def yearly_returns(returns, benchmark=None,
 
     title = 'EOY Returns'
     if benchmark is not None:
-        title += '  vs Benchmark'
+        title += ' vs %s' % benchmark_label
         benchmark = _utils._prepare_benchmark(
             benchmark, returns.index).resample('A').apply(
                 _stats.comp).resample('A').last()
@@ -386,6 +393,7 @@ def yearly_returns(returns, benchmark=None,
     returns = returns.resample('A').last()
 
     fig = _core.plot_returns_bars(returns, benchmark,
+                                  returns_label=returns_label, benchmark_label=benchmark_label,
                                   fontname=fontname,
                                   hline=returns.mean(),
                                   hlw=hlw,
@@ -454,7 +462,7 @@ def histogram(returns, resample='M', fontname='Arial',
                                 savefig=savefig, show=show)
 
 
-def drawdown(returns, grayscale=False, figsize=(10, 5),
+def drawdown(returns, grayscale=False, figsize=(10, 3),
              fontname='Arial', lw=1, log_scale=False,
              match_volatility=False, compound=False, ylabel="Drawdown",
              resample=None, subtitle=True, savefig=None, show=True):
@@ -499,6 +507,7 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
 
 
 def rolling_beta(returns, benchmark,
+                 benchmark_label="Benchmark",
                  window1=126, window1_label="6-Months",
                  window2=252, window2_label="12-Months",
                  lw=1.5, fontname='Arial', grayscale=False,
@@ -514,7 +523,7 @@ def rolling_beta(returns, benchmark,
     fig = _core.plot_rolling_beta(returns, benchmark,
                                   window1=window1, window1_label=window1_label,
                                   window2=window2, window2_label=window2_label,
-                                  title="Rolling Beta to Benchmark",
+                                  title="Rolling Beta to %s" % benchmark_label, 
                                   fontname=fontname,
                                   grayscale=grayscale,
                                   lw=lw,
@@ -527,6 +536,7 @@ def rolling_beta(returns, benchmark,
 
 
 def rolling_volatility(returns, benchmark=None,
+                       returns_label="Strategy", benchmark_label="Benchmark",
                        period=126, period_label="6-Months",
                        periods_per_year=252,
                        lw=1.5, fontname='Arial', grayscale=False,
@@ -545,6 +555,8 @@ def rolling_volatility(returns, benchmark=None,
                                    hlw=1.5,
                                    ylabel=ylabel,
                                    title='Rolling Volatility (%s)' % period_label,
+                                   returns_label=returns_label,
+                                   benchmark_label = benchmark_label,
                                    fontname=fontname,
                                    grayscale=grayscale,
                                    lw=lw,
@@ -556,6 +568,7 @@ def rolling_volatility(returns, benchmark=None,
 
 
 def rolling_sharpe(returns, benchmark=None, rf=0.,
+                   returns_label="Strategy", benchmark_label="Benchmark",
                    period=126, period_label="6-Months",
                    periods_per_year=252,
                    lw=1.25, fontname='Arial', grayscale=False,
@@ -576,6 +589,8 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
                                    hlw=1.5,
                                    ylabel=ylabel,
                                    title='Rolling Sharpe (%s)' % period_label,
+                                   returns_label=returns_label,
+                                   benchmark_label = benchmark_label,
                                    fontname=fontname,
                                    grayscale=grayscale,
                                    lw=lw,
@@ -587,6 +602,7 @@ def rolling_sharpe(returns, benchmark=None, rf=0.,
 
 
 def rolling_sortino(returns, benchmark=None, rf=0.,
+                    returns_label="Strategy", benchmark_label="Benchmark",
                     period=126, period_label="6-Months",
                     periods_per_year=252,
                     lw=1.25, fontname='Arial', grayscale=False,
@@ -607,6 +623,8 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
                                    hlw=1.5,
                                    ylabel=ylabel,
                                    title='Rolling Sortino (%s)' % period_label,
+                                   returns_label=returns_label,
+                                   benchmark_label = benchmark_label,
                                    fontname=fontname,
                                    grayscale=grayscale,
                                    lw=lw,
@@ -625,9 +643,17 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = 'gray' if grayscale else 'RdYlGn'
+    
+    vmax = (_stats.monthly_returns(returns, eoy=False,
+                                     compounded=compounded) * 100).abs().max().max()
+    
+    #if vmax < 1: vmax = 1 ##
+    
 
     returns = _stats.monthly_returns(returns, eoy=eoy,
                                      compounded=compounded) * 100
+    
+    
 
     fig_height = len(returns) / 3
 
@@ -654,6 +680,7 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     # _sns.set(font_scale=.9)
     ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
+                      vmax=vmax, #vmin = -vmax,
                       annot_kws={"size": annot_size},
                       fmt="0.2f", linewidths=0.5,
                       square=square, cbar=cbar, cmap=cmap,
@@ -695,6 +722,100 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
 
     return None
 
+def outperformance_heatmap(returns, benchmark=None, annot_size=10, figsize=(10, 5),
+                    cbar=True, square=False, benchmark_label="Benchmark",
+                    compounded=True, eoy=False,
+                    grayscale=False, fontname='Arial',
+                    ylabel=True, savefig=None, show=True):
+
+    # colors, ls, alpha = _core._get_colors(grayscale)
+    cmap = 'gray' if grayscale else 'RdYlGn'
+    
+    vmax = ((
+        _stats.monthly_returns(returns, eoy=False,
+                                     compounded=compounded)-
+        _stats.monthly_returns(benchmark, eoy=False,
+                               compounded=compounded)
+            )* 100).abs().max().max()
+    
+    if vmax < 1: vmax = 1 ##
+    
+
+    outperformance = ((
+        _stats.monthly_returns(returns, eoy=eoy,
+                                     compounded=compounded)-
+        _stats.monthly_returns(benchmark, eoy=eoy,
+                               compounded=compounded)
+            )* 100)
+    
+    
+
+    fig_height = len(outperformance) / 3
+
+    if figsize is None:
+        size = list(_plt.gcf().get_size_inches())
+        figsize = (size[0], size[1])
+
+    figsize = (figsize[0], max([fig_height, figsize[1]]))
+
+    if cbar:
+        figsize = (figsize[0]*1.04, max([fig_height, figsize[1]]))
+
+    fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    fig.set_facecolor('white')
+    ax.set_facecolor('white')
+
+    ax.set_title('      Monthly Outperformance against %s \n' % benchmark_label, fontsize=14, y=.995,
+                 fontname=fontname, fontweight='bold', color='black')
+
+    # _sns.set(font_scale=.9)
+    ax = _sns.heatmap(outperformance, ax=ax, annot=True, center=0,
+                      vmax=vmax, #vmin = -vmax,
+                      annot_kws={"size": annot_size},
+                      fmt="0.2f", linewidths=0.5,
+                      square=square, cbar=cbar, cmap=cmap,
+                      cbar_kws={'format': '%.0f%%'})
+    # _sns.set(font_scale=1)
+
+    # align plot to match other
+    if ylabel:
+        ax.set_ylabel('Years', fontname=fontname,
+                      fontweight='bold', fontsize=12)
+        ax.yaxis.set_label_coords(-.1, .5)
+
+    ax.tick_params(colors="#808080")
+    _plt.xticks(rotation=0, fontsize=annot_size*1.2)
+    _plt.yticks(rotation=0, fontsize=annot_size*1.2)
+
+    try:
+        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    except Exception:
+        pass
+    try:
+        fig.tight_layout(w_pad=0, h_pad=0)
+    except Exception:
+        pass
+
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(block=False)
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
 
 def monthly_returns(returns, annot_size=10, figsize=(10, 5),
                     cbar=True, square=False,

@@ -88,7 +88,13 @@
             margin: -1.5rem 0
         }
 
-       
+        #monthly_heatmap {
+            overflow: hidden
+        }
+
+            #monthly_heatmap svg {
+                margin: -1.5rem 0
+            }
 
         table {
             margin: 0 0 40px;
@@ -212,42 +218,29 @@
         .container{max-width:100%;margin:0}
         #left{margin:0;width:55%}
 
-        #left svg{margin:0 0 -10%}
-        #left svg:first-of-type{margin-top:-30%}
-
-        .page {
-            /*display: block;*/
-            vertical-align: top;
-            margin-top: -30%;
-            margin-bottom: -30%;
-            /*page-break-inside: avoid;*/
-            /*page-break-after: always;*/
-        }
-
-        .page svg {            
+        .tall svg {
+            margin: 0 0 -10%;
             display: block;
-            margin-top: -30%;
-            margin-bottom: -30%;
             page-break-inside: avoid;
         }
 
-        .start svg {
-            margin-top: -30%;
+        .short svg {
+            margin: 0 0 -10%;
+            display: block;
+            page-break-inside: avoid;
         }
+
+        
+        
+
+        #left svg:first-of-type{margin-top:-30%}
+       
 
         #right{margin:0;width:45%}
-        #ddinfo {
-            page-break-inside: avoid;
-        }
         #eom {
             page-break-before: always;
-        }
-        
+        }        
     }
-     @page {
-         size: auto; /* width height */
-         margin: 10mm 10mm 0mm 10mm;  
-     }
     </style>
 </head>
 
@@ -286,37 +279,28 @@
 
         <div id="left">
 
-            <div class="page" id="p1">
-                <div class="tall" id="returns">{{returns}}</div><!--
-             --><div class="tall" id="log_returns">{{log_returns}}</div><!--
-             --><div class="tall" id="vol_returns">{{vol_returns}}</div>
-            </div>
+            <div class="tall" id="returns">{{returns}}</div>
+            <div class="tall" id="log_returns">{{log_returns}}</div>
+            <div class="tall" id="vol_returns">{{vol_returns}}</div>
 
-            <div class="page"  id="p2">
-                <div class="tall start" id="eoy_returns">{{eoy_returns}}</div><!--
-             --><div class="tall" id="monthly_dist">{{monthly_dist}}</div><!--
-             --><div class="short" id="daily_returns">{{daily_returns}}</div><!--
-             --><div class="short" id="rolling_beta">{{rolling_beta}}</div>
-            </div>
+            <div class="tall" id="eoy_returns">{{eoy_returns}}</div>
+            <div class="tall" id="monthly_dist">{{monthly_dist}}</div>
+            <div class="short" id="daily_returns">{{daily_returns}}</div>
+            <div class="short" id="rolling_beta">{{rolling_beta}}</div>
 
-            <div  class="page" id="p3">
-                <div class="short start" id="rolling_vol">{{rolling_vol}}</div>
-                <div class="short" id="rolling_sharpe">{{rolling_sharpe}}</div>
-                <div class="short" id="rolling_sortino">{{rolling_sortino}}</div>
-                <div class="tall" id="dd_periods">{{dd_periods}}</div>
-                <div class="tall" id="dd_plot">{{dd_plot}}</div>
-            </div>
+            <div class="short" id="rolling_vol">{{rolling_vol}}</div>
+            <div class="short" id="rolling_sharpe">{{rolling_sharpe}}</div>
+            <div class="short" id="rolling_sortino">{{rolling_sortino}}</div>
+            <div class="tall" id="dd_periods">{{dd_periods}}</div>
+            <div class="tall" id="dd_plot">{{dd_plot}}</div>
 
-            <div class="page"  id="p4">
-                <div class="tall start" id="heatmap1">{{monthly_heatmap}}</div>
-                <div class="tall" id="heatmap2">{{perf_heatmap}}</div>
-                <div class="tall" id="returns_dist">{{returns_dist}}</div>
-
-            </div>
+            <div class="tall" id="heatmap1">{{monthly_heatmap}}</div>
+            <div class="tall" id="heatmap2">{{perf_heatmap}}</div>
+            <div class="tall" id="returns_dist">{{returns_dist}}</div>
 
         </div>
-    <!--<style>*{white-space:auto !important;}</style>-->
+
+    </div>
+    <style>*{white-space:auto !important;}</style>
 </body>
 </html>
-
-<!-- https://stackoverflow.com/questions/5078239/how-to-remove-the-space-between-inline-inline-block-elements -->
