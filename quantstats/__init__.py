@@ -139,6 +139,7 @@ def extend_pandas():
     _po.plot_log_returns = plots.log_returns
     _po.plot_returns = plots.returns
     _po.plot_rolling_beta = plots.rolling_beta
+    _po.plot_rolling_alpha = plots.rolling_alpha
     _po.plot_rolling_sharpe = plots.rolling_sharpe
     _po.plot_rolling_sortino = plots.rolling_sortino
     _po.plot_rolling_volatility = plots.rolling_volatility

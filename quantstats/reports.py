@@ -197,6 +197,16 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
                             prepare_returns=False)
         tpl = tpl.replace('{{rolling_beta}}', _embed_figure(figfile, figfmt))
 
+    if benchmark is not None:
+        figfile = _utils._file_stream()
+        _plots.rolling_alpha(returns, benchmark, grayscale=grayscale,
+                            figsize=(8, 3), subtitle=False,
+                            window1=win_half_year, window2=win_year,
+                            savefig={'fname': figfile, 'format': figfmt},
+                            show=False, ylabel=False,
+                            prepare_returns=False)
+        tpl = tpl.replace('{{rolling_alpha}}', _embed_figure(figfile, figfmt))
+
     figfile = _utils._file_stream()
     _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
                               figsize=(8, 3), subtitle=False,
@@ -571,7 +581,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             metrics['~~~~~~~~~~~~'] = blank
             greeks = _stats.greeks(df['returns'], df['benchmark'], win_year, prepare_returns=False)
             metrics['Beta'] = [str(round(greeks['beta'], 2)), '-']
-            metrics['Alpha'] = [str(round(greeks['alpha'], 2)), '-']
+            metrics['Alpha'] = [str(round(greeks['alpha'] * pct, 2))+'%', '-']
             metrics['Correlation'] = [str(round(df['benchmark'].corr(df['returns']) * pct, 2))+'%', '-']
             metrics['Treynor Ratio'] = [str(round(_stats.treynor_ratio(df['returns'], df['benchmark'], win_year, rf)*pct, 2))+'%', '-']
 
@@ -699,6 +709,13 @@ def plots(returns, benchmark=None, grayscale=False,
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
+                            window1=win_half_year, window2=win_year,
+                            figsize=(figsize[0], figsize[0]*.3),
+                            show=True, ylabel=False,
+                            prepare_returns=False)
+
+    if benchmark is not None:
+        _plots.rolling_alpha(returns, benchmark, grayscale=grayscale,
                             window1=win_half_year, window2=win_year,
                             figsize=(figsize[0], figsize[0]*.3),
                             show=True, ylabel=False,

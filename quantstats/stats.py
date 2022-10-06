@@ -901,9 +901,9 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     std = df.rolling(int(periods)).std()
     beta = corr * std['returns'] / std['benchmark']
 
-    alpha = df['returns'].mean() - beta * df['benchmark'].mean()
+    alpha = df['returns'].rolling(int(periods)).mean() - beta * df['benchmark'].rolling(int(periods)).mean()
 
-    # alpha = alpha * periods
+    alpha = alpha * periods
     return _pd.DataFrame(index=returns.index, data={
         "beta": beta,
         "alpha": alpha

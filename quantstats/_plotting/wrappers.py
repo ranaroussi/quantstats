@@ -526,6 +526,34 @@ def rolling_beta(returns, benchmark,
         return fig
 
 
+def rolling_alpha(returns, benchmark,
+                 window1=126, window1_label="6-Months",
+                 window2=252, window2_label="12-Months",
+                 lw=1.5, fontname='Arial', grayscale=False,
+                 figsize=(10, 3), ylabel=True,
+                 subtitle=True, savefig=None, show=True,
+                 prepare_returns=True):
+
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns)
+
+    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+
+    fig = _core.plot_rolling_alpha(returns, benchmark,
+                                  window1=window1, window1_label=window1_label,
+                                  window2=window2, window2_label=window2_label,
+                                  title="Rolling Alpha to Benchmark",
+                                  fontname=fontname,
+                                  grayscale=grayscale,
+                                  lw=lw,
+                                  figsize=figsize,
+                                  ylabel=ylabel,
+                                  subtitle=subtitle,
+                                  savefig=savefig, show=show)
+    if not show:
+        return fig
+
+
 def rolling_volatility(returns, benchmark=None,
                        period=126, period_label="6-Months",
                        periods_per_year=252,

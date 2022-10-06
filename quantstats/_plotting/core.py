@@ -558,6 +558,88 @@ def plot_rolling_beta(returns, benchmark,
     return None
 
 
+def plot_rolling_alpha(returns, benchmark,
+                      window1=126, window1_label="",
+                      window2=None, window2_label="",
+                      title="", hlcolor="red", figsize=(10, 6),
+                      grayscale=False, fontname="Arial", lw=1.5,
+                      ylabel=True, subtitle=True, savefig=None, show=True):
+
+    colors, _, _ = _get_colors(grayscale)
+
+    fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+                 fontsize=14, color="black")
+
+    if subtitle:
+        ax.set_title("\n%s - %s                   " % (
+            returns.index.date[:1][0].strftime('%e %b \'%y'),
+            returns.index.date[-1:][0].strftime('%e %b \'%y')
+        ), fontsize=12, color='gray')
+
+    alpha = _stats.rolling_greeks(returns, benchmark, window1)['alpha'].fillna(0)
+    ax.plot(alpha, lw=lw, label=window1_label, color=colors[1])
+
+    if window2:
+        ax.plot(_stats.rolling_greeks(returns, benchmark, window2)['alpha'],
+                lw=lw, label=window2_label, color="gray", alpha=0.8)
+    #mmin = min([-100, int(alpha.min()*100)])
+    #mmax = max([100, int(alpha.max()*100)])
+    # print(alpha)
+    # step = 50 if (mmax-mmin) >= 200 else 100
+    # ax.set_yticks([x/100  for x in list(range(mmin, mmax, step))])
+
+    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+
+    hlcolor = 'black' if grayscale else hlcolor
+    ax.axhline(alpha.mean(), ls="--", lw=1.5,
+               color=hlcolor, zorder=2)
+
+    ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
+
+    fig.autofmt_xdate()
+
+    # use a more precise date string for the x axis locations in the toolbar
+    ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
+
+    if ylabel:
+        ax.set_ylabel("Alpha", fontname=fontname,
+                      fontweight='bold', fontsize=12, color="black")
+        ax.yaxis.set_label_coords(-.1, .5)
+
+    ax.legend(fontsize=12)
+    try:
+        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    except Exception:
+        pass
+
+    try:
+        fig.tight_layout()
+    except Exception:
+        pass
+
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(block=False)
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
+
+
 def plot_longest_drawdowns(returns, periods=5, lw=1.5,
                            fontname='Arial', grayscale=False,
                            log_scale=False, figsize=(10, 6), ylabel=True,
