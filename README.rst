@@ -80,7 +80,7 @@ Visualize stock performance
 
 .. code:: python
 
-    qs.plots.snapshot(stock, title='Facebook Performance')
+    qs.plots.snapshot(stock, title='Facebook Performance', show=True)
 
     # can also be called via:
     # stock.plot_snapshot(title='Facebook Performance')
