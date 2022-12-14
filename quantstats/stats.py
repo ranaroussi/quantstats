@@ -768,11 +768,11 @@ def drawdown_details(drawdown):
 
         # extract dd start dates
         starts = ~no_dd & no_dd.shift(1)
-        starts = list(starts[starts].index)
+        starts = list(starts[starts.values].index)
 
         # extract end dates
         ends = no_dd & (~no_dd).shift(1)
-        ends = list(ends[ends].index)
+        ends = list(ends[ends.values].index)
 
         # no drawdown :)
         if not starts:
