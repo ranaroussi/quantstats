@@ -766,12 +766,13 @@ def drawdown_details(drawdown):
         # mark no drawdown
         no_dd = drawdown == 0
 
-        # extract dd start dates
+        # extract dd start dates, first date of the drawdown
         starts = ~no_dd & no_dd.shift(1)
         starts = list(starts[starts.values].index)
 
-        # extract end dates
+        # extract end dates, last date of the drawdown
         ends = no_dd & (~no_dd).shift(1)
+        ends = ends.shift(-1, fill_value=False)
         ends = list(ends[ends.values].index)
 
         # no drawdown :)
@@ -794,7 +795,7 @@ def drawdown_details(drawdown):
             dd = drawdown[starts[i]:ends[i]]
             clean_dd = -remove_outliers(-dd, .99)
             data.append((starts[i], dd.idxmin(), ends[i],
-                         (ends[i] - starts[i]).days,
+                         (ends[i] - starts[i]).days+1,
                          dd.min() * 100, clean_dd.min() * 100))
 
         df = _pd.DataFrame(data=data,
