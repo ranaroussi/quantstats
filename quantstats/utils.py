@@ -235,7 +235,7 @@ def _prepare_returns(data, rf=0., nperiods=None):
     return data
 
 
-def download_returns(ticker, period="max",proxy=None):
+def download_returns(ticker, period="max", proxy=None):
     if isinstance(period, _pd.DatetimeIndex):
         p = {"start": period[0], "proxy": proxy}
     else:
