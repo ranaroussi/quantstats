@@ -60,7 +60,7 @@ Quick Start
     qs.extend_pandas()
 
     # fetch the daily returns for a stock
-    stock = qs.utils.download_returns('FB')
+    stock = qs.utils.download_returns('META')
 
     # show sharpe ratio
     qs.stats.sharpe(stock)
@@ -83,7 +83,7 @@ Visualize stock performance
     qs.plots.snapshot(stock, title='Facebook Performance', show=True)
 
     # can also be called via:
-    # stock.plot_snapshot(title='Facebook Performance')
+    # stock.plot_snapshot(title='Facebook Performance', show=True)
 
 Output:
 
