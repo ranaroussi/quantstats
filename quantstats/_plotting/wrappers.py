@@ -27,6 +27,7 @@ from matplotlib.ticker import (
 
 import numpy as _np
 from pandas import DataFrame as _df
+import pandas as _pd
 import seaborn as _sns
 
 from .. import (
@@ -61,7 +62,14 @@ def to_plotly(fig):
 def snapshot(returns, grayscale=False, figsize=(10, 8),
              title='Portfolio Summary', fontname='Arial', lw=1.5,
              mode="comp", subtitle=True, savefig=None, show=True,
-             log_scale=False):
+             log_scale=False, **kwargs):
+
+    strategy_colname = kwargs.get("strategy_title", "Strategy")
+
+    if isinstance(returns, _pd.Series):
+        returns.name = strategy_colname
+    elif isinstance(returns, _pd.DataFrame):
+        returns.columns = strategy_colname
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
 
@@ -86,22 +94,34 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     fig.set_facecolor('white')
 
     if subtitle:
-        axes[0].set_title("\n%s - %s ;  Sharpe: %.2f                      " % (
-            returns.index.date[:1][0].strftime('%e %b \'%y'),
-            returns.index.date[-1:][0].strftime('%e %b \'%y'),
-            _stats.sharpe(returns)
-        ), fontsize=12, color='gray')
+        if isinstance(returns, _pd.Series):
+            axes[0].set_title("\n%s - %s ;  Sharpe: %.2f                      " % (
+                returns.index.date[:1][0].strftime('%e %b \'%y'),
+                returns.index.date[-1:][0].strftime('%e %b \'%y'),
+                _stats.sharpe(returns)
+            ), fontsize=12, color='gray')
+        elif isinstance(returns, _pd.DataFrame):
+            axes[0].set_title("\n%s - %s ;  " % (
+                returns.index.date[:1][0].strftime('%e %b \'%y'),
+                returns.index.date[-1:][0].strftime('%e %b \'%y')
+            ), fontsize=12, color='gray')
 
     axes[0].set_ylabel('Cumulative Return', fontname=fontname,
                        fontweight='bold', fontsize=12)
-    axes[0].plot(_stats.compsum(returns) * 100, color=colors[1],
-                 lw=1 if grayscale else lw, zorder=1)
+    if isinstance(returns, _pd.Series):
+        axes[0].plot(_stats.compsum(returns) * 100, color=colors[1],
+                     lw=1 if grayscale else lw, zorder=1)
+    elif isinstance(returns, _pd.DataFrame):
+        for col in returns.columns:
+            axes[0].plot(_stats.compsum(returns[col]) * 100, label=col,
+                         lw=1 if grayscale else lw, zorder=1)
     axes[0].axhline(0, color='silver', lw=1, zorder=0)
 
     axes[0].set_yscale("symlog" if log_scale else "linear")
+    axes[0].legend(fontsize=12)
 
     dd = _stats.to_drawdown_series(returns) * 100
-    ddmin = _utils._round_to_closest(abs(dd.min()), 5)
+    ddmin = min(_utils._round_to_closest(abs(dd.min()), 5))
     ddmin_ticks = 5
     if ddmin > 50:
         ddmin_ticks = ddmin / 4
@@ -113,23 +133,37 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[1].set_ylabel('Drawdown', fontname=fontname,
                        fontweight='bold', fontsize=12)
     axes[1].set_yticks(_np.arange(-ddmin, 0, step=ddmin_ticks))
-    axes[1].plot(dd, color=colors[2], lw=1 if grayscale else lw, zorder=1)
+    if isinstance(dd, _pd.Series):
+        axes[1].plot(dd, color=colors[2], lw=1 if grayscale else lw, zorder=1)
+    elif isinstance(dd, _pd.DataFrame):
+        for col in dd.columns:
+            axes[1].plot(dd[col], label=col, lw=1 if grayscale else lw, zorder=1)
     axes[1].axhline(0, color='silver', lw=1, zorder=0)
     if not grayscale:
-        axes[1].fill_between(dd.index, 0, dd, color=colors[2], alpha=.1)
+        if isinstance(dd, _pd.Series):
+            axes[1].fill_between(dd.index, 0, dd, color=colors[1], alpha=.25)
+        elif isinstance(dd, _pd.DataFrame):
+            for i, col in enumerate(dd.columns):
+                axes[1].fill_between(dd[col].index, 0, dd[col], color=colors[i + 1], alpha=.25)
 
     axes[1].set_yscale("symlog" if log_scale else "linear")
+    axes[1].legend(fontsize=12)
 
     axes[2].set_ylabel('Daily Return', fontname=fontname,
                        fontweight='bold', fontsize=12)
-    axes[2].plot(returns * 100, color=colors[0], lw=0.5, zorder=1)
+    if isinstance(returns, _pd.Series):
+        axes[2].plot(returns * 100, color=colors[0], label=returns.name, lw=0.5, zorder=1)
+    elif isinstance(returns, _pd.DataFrame):
+        for i, col in enumerate(returns.columns):
+            axes[2].plot(returns[col] * 100, color=colors[i], label=col, lw=0.5, zorder=1)
     axes[2].axhline(0, color='silver', lw=1, zorder=0)
     axes[2].axhline(0, color=colors[-1], linestyle='--', lw=1, zorder=2)
 
     axes[2].set_yscale("symlog" if log_scale else "linear")
+    axes[2].legend(fontsize=12)
 
-    retmax = _utils._round_to_closest(returns.max() * 100, 5)
-    retmin = _utils._round_to_closest(returns.min() * 100, 5)
+    retmax = max(_utils._round_to_closest(returns.max() * 100, 5))
+    retmin = min(_utils._round_to_closest(returns.min() * 100, 5))
     retdiff = (retmax - retmin)
     steps = 5
     if retdiff > 50:
@@ -270,10 +304,10 @@ def returns(returns, benchmark=None,
         if match_volatility:
             title += ' (Volatility Matched)'
 
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
     fig = _core.plot_timeseries(returns, benchmark, title,
                                 ylabel=ylabel,
@@ -334,17 +368,22 @@ def log_returns(returns, benchmark=None,
         return fig
 
 
-def daily_returns(returns,
+def daily_returns(returns, benchmark,
                   grayscale=False, figsize=(10, 4),
                   fontname='Arial', lw=0.5,
                   log_scale=False, ylabel="Returns",
                   subtitle=True, savefig=None, show=True,
-                  prepare_returns=True):
+                  prepare_returns=True, active=False):
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
+        if active and benchmark is not None:
+            benchmark = _utils._prepare_returns(benchmark)
+            returns = returns - benchmark
 
-    fig = _core.plot_timeseries(returns, None, 'Daily Returns',
+    plot_title = 'Daily Active Returns' if active else 'Daily Returns'
+
+    fig = _core.plot_timeseries(returns, None, plot_title,
                                 ylabel=ylabel,
                                 match_volatility=False,
                                 log_scale=log_scale,
@@ -406,7 +445,7 @@ def yearly_returns(returns, benchmark=None,
 
 def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
                  figsize=(10, 6), subtitle=True, compounded=True,
-                 savefig=None, show=True,
+                 savefig=None, show=True, title=None,
                  prepare_returns=True):
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -417,19 +456,22 @@ def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
                                   figsize=figsize,
                                   ylabel=ylabel,
                                   subtitle=subtitle,
+                                  title=title,
                                   compounded=compounded,
                                   savefig=savefig, show=show)
     if not show:
         return fig
 
 
-def histogram(returns, resample='M', fontname='Arial',
+def histogram(returns, benchmark, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5), ylabel=True,
               subtitle=True, compounded=True, savefig=None, show=True,
               prepare_returns=True):
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
+        if benchmark is not None:
+            benchmark = _utils._prepare_returns(benchmark)
 
     if resample == 'W':
         title = "Weekly "
@@ -443,6 +485,7 @@ def histogram(returns, resample='M', fontname='Arial',
         title = ""
 
     return _core.plot_histogram(returns,
+                                benchmark,
                                 resample=resample,
                                 grayscale=grayscale,
                                 fontname=fontname,
@@ -476,7 +519,7 @@ def drawdown(returns, grayscale=False, figsize=(10, 5),
 
 
 def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
-                      fontname='Arial', grayscale=False, figsize=(10, 5),
+                      fontname='Arial', grayscale=False, title=None, figsize=(10, 5),
                       ylabel=True, subtitle=True, compounded=True,
                       savefig=None, show=True,
                       prepare_returns=True):
@@ -489,6 +532,7 @@ def drawdowns_periods(returns, periods=5, lw=1.5, log_scale=False,
                                        log_scale=log_scale,
                                        fontname=fontname,
                                        grayscale=grayscale,
+                                       title=title,
                                        figsize=figsize,
                                        ylabel=ylabel,
                                        subtitle=subtitle,
@@ -617,11 +661,11 @@ def rolling_sortino(returns, benchmark=None, rf=0.,
         return fig
 
 
-def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
-                    cbar=True, square=False,
+def monthly_heatmap(returns, benchmark, annot_size=10, figsize=(10, 5),
+                    cbar=True, square=False, returns_label="Strategy",
                     compounded=True, eoy=False,
                     grayscale=False, fontname='Arial',
-                    ylabel=True, savefig=None, show=True):
+                    ylabel=True, savefig=None, show=True, active=False):
 
     # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = 'gray' if grayscale else 'RdYlGn'
@@ -649,15 +693,27 @@ def monthly_heatmap(returns, annot_size=10, figsize=(10, 5),
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    ax.set_title('      Monthly Returns (%)\n', fontsize=14, y=.995,
-                 fontname=fontname, fontweight='bold', color='black')
-
     # _sns.set(font_scale=.9)
-    ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
-                      annot_kws={"size": annot_size},
-                      fmt="0.2f", linewidths=0.5,
-                      square=square, cbar=cbar, cmap=cmap,
-                      cbar_kws={'format': '%.0f%%'})
+    if active and benchmark is not None:
+        ax.set_title(f'{returns_label} - Monthly Active Returns (%)\n', fontsize=14, y=.995,
+                     fontname=fontname, fontweight='bold', color='black')
+        benchmark = _stats.monthly_returns(benchmark, eoy=eoy,
+                                           compounded=compounded) * 100
+        active_returns = returns - benchmark
+
+        ax = _sns.heatmap(active_returns, ax=ax, annot=True, center=0,
+                          annot_kws={"size": annot_size},
+                          fmt="0.2f", linewidths=0.5,
+                          square=square, cbar=cbar, cmap=cmap,
+                          cbar_kws={'format': '%.0f%%'})
+    else:
+        ax.set_title(f'{returns_label} - Monthly Returns (%)\n', fontsize=14, y=.995,
+                     fontname=fontname, fontweight='bold', color='black')
+        ax = _sns.heatmap(returns, ax=ax, annot=True, center=0,
+                          annot_kws={"size": annot_size},
+                          fmt="0.2f", linewidths=0.5,
+                          square=square, cbar=cbar, cmap=cmap,
+                          cbar_kws={'format': '%.0f%%'})
     # _sns.set(font_scale=1)
 
     # align plot to match other
