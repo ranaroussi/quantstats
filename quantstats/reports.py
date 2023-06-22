@@ -339,7 +339,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         _download_html(tpl, download_filename)
         return
 
-    with open(download_filename, 'w', encoding='utf-8') as f:
+    with open(output, 'w', encoding='utf-8') as f:
         f.write(tpl)
 
 
