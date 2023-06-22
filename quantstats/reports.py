@@ -65,7 +65,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
          figfmt='svg', template_path=None, match_dates=False, **kwargs):
 
     if output is None and not _utils._in_notebook():
-        raise ValueError("`file` must be specified")
+        raise ValueError("`output` must be specified")
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
@@ -339,7 +339,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         _download_html(tpl, download_filename)
         return
 
-    with open(download_filename, 'w', encoding='utf-8') as f:
+    with open(output, 'w', encoding='utf-8') as f:
         f.write(tpl)
 
 
