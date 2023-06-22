@@ -64,16 +64,23 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
              mode="comp", subtitle=True, savefig=None, show=True,
              log_scale=False, **kwargs):
 
-    strategy_colname = kwargs.get("strategy_title", "Strategy")
+    strategy_colname = kwargs.get("strategy_col", "Strategy")
 
+    multi_column = False
     if isinstance(returns, _pd.Series):
         returns.name = strategy_colname
     elif isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1:
+            if strategy_colname in returns.columns:
+                returns = returns[strategy_colname]
+            else:
+                multi_column = True
+                returns = returns.mean(axis=1)
+                title = title + " (daily equal-weighted*)"
         returns.columns = strategy_colname
 
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
-
-    returns = _utils.make_portfolio(returns, 1, mode).pct_change().fillna(0)
+    returns = _utils.make_portfolio(returns.dropna(), 1, mode).pct_change().fillna(0)
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
@@ -82,20 +89,27 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     fig, axes = _plt.subplots(3, 1, sharex=True, figsize=figsize,
                               gridspec_kw={'height_ratios': [3, 1, 1]})
 
+    if multi_column:
+        _plt.figtext(
+            0, -.05,
+            "            * When a multi-column DataFrame is passed, the mean of all columns will be used as returns.\n"
+            "              To change this behavior, use a pandas Series or pass the column name in the `strategy_col` parameter.",
+            ha="left", fontsize=11, color='black', alpha=0.6, linespacing=1.5)
+
     for ax in axes:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
         ax.spines['left'].set_visible(False)
 
-    fig.suptitle(title, fontsize=14, y=.995,
+    fig.suptitle(title, fontsize=14, y=.97,
                  fontname=fontname, fontweight='bold', color='black')
 
     fig.set_facecolor('white')
 
     if subtitle:
         if isinstance(returns, _pd.Series):
-            axes[0].set_title("\n%s - %s ;  Sharpe: %.2f                      " % (
+            axes[0].set_title("%s - %s ;  Sharpe: %.2f                      \n" % (
                 returns.index.date[:1][0].strftime('%e %b \'%y'),
                 returns.index.date[-1:][0].strftime('%e %b \'%y'),
                 _stats.sharpe(returns)
@@ -118,10 +132,10 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[0].axhline(0, color='silver', lw=1, zorder=0)
 
     axes[0].set_yscale("symlog" if log_scale else "linear")
-    axes[0].legend(fontsize=12)
+    # axes[0].legend(fontsize=12)
 
     dd = _stats.to_drawdown_series(returns) * 100
-    ddmin = min(_utils._round_to_closest(abs(dd.min()), 5))
+    ddmin = _utils._round_to_closest(abs(dd.min()), 5)
     ddmin_ticks = 5
     if ddmin > 50:
         ddmin_ticks = ddmin / 4
@@ -141,13 +155,13 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[1].axhline(0, color='silver', lw=1, zorder=0)
     if not grayscale:
         if isinstance(dd, _pd.Series):
-            axes[1].fill_between(dd.index, 0, dd, color=colors[1], alpha=.25)
+            axes[1].fill_between(dd.index, 0, dd, color=colors[2], alpha=.25)
         elif isinstance(dd, _pd.DataFrame):
             for i, col in enumerate(dd.columns):
                 axes[1].fill_between(dd[col].index, 0, dd[col], color=colors[i + 1], alpha=.25)
 
     axes[1].set_yscale("symlog" if log_scale else "linear")
-    axes[1].legend(fontsize=12)
+    # axes[1].legend(fontsize=12)
 
     axes[2].set_ylabel('Daily Return', fontname=fontname,
                        fontweight='bold', fontsize=12)
@@ -160,17 +174,17 @@ def snapshot(returns, grayscale=False, figsize=(10, 8),
     axes[2].axhline(0, color=colors[-1], linestyle='--', lw=1, zorder=2)
 
     axes[2].set_yscale("symlog" if log_scale else "linear")
-    axes[2].legend(fontsize=12)
+    # axes[2].legend(fontsize=12)
 
-    retmax = max(_utils._round_to_closest(returns.max() * 100, 5))
-    retmin = min(_utils._round_to_closest(returns.min() * 100, 5))
+    retmax = _utils._round_to_closest(returns.max() * 100, 5)
+    retmin = _utils._round_to_closest(returns.min() * 100, 5)
     retdiff = (retmax - retmin)
     steps = 5
     if retdiff > 50:
         steps = retdiff / 5
     elif retdiff > 30:
         steps = retdiff / 4
-    steps = int(_utils._round_to_closest(steps, 5))
+    steps = _utils._round_to_closest(steps, 5)
     axes[2].set_yticks(_np.arange(retmin, retmax, step=steps))
 
     for ax in axes:
@@ -463,7 +477,7 @@ def distribution(returns, fontname='Arial', grayscale=False, ylabel=True,
         return fig
 
 
-def histogram(returns, benchmark, resample='M', fontname='Arial',
+def histogram(returns, benchmark=None, resample='M', fontname='Arial',
               grayscale=False, figsize=(10, 5), ylabel=True,
               subtitle=True, compounded=True, savefig=None, show=True,
               prepare_returns=True):
@@ -673,7 +687,7 @@ def monthly_heatmap(returns, benchmark, annot_size=10, figsize=(10, 5),
     returns = _stats.monthly_returns(returns, eoy=eoy,
                                      compounded=compounded) * 100
 
-    fig_height = len(returns) / 3
+    fig_height = len(returns) / 2.5
 
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
@@ -682,7 +696,7 @@ def monthly_heatmap(returns, benchmark, annot_size=10, figsize=(10, 5),
     figsize = (figsize[0], max([fig_height, figsize[1]]))
 
     if cbar:
-        figsize = (figsize[0]*1.04, max([fig_height, figsize[1]]))
+        figsize = (figsize[0]*1.051, max([fig_height, figsize[1]]))
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines['top'].set_visible(False)

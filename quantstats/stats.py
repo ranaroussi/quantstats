@@ -60,7 +60,7 @@ def distribution(returns, compounded=True, prepare_returns=True):
         }
 
     if isinstance(returns, _pd.DataFrame):
-        warn("Pandas DataFrame was passed (Series expeted). "
+        warn("Pandas DataFrame was passed (Series expected). "
              "Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)

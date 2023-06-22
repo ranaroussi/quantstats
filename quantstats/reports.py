@@ -26,7 +26,6 @@ from datetime import (
 )
 from base64 import b64encode as _b64encode
 import re as _regex
-
 from tabulate import tabulate as _tabulate
 from . import (
     __version__, stats as _stats,
@@ -34,7 +33,6 @@ from . import (
 )
 from dateutil.relativedelta import relativedelta
 from io import StringIO
-
 try:
     from IPython.display import (
         display as iDisplay, HTML as iHTML
@@ -51,10 +49,12 @@ def _get_trading_periods(periods_per_year=252):
 
 
 def _match_dates(returns, benchmark):
-    returns = returns.loc[
-        max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
-    benchmark = benchmark.loc[
-        max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax()):]
+    if isinstance(returns, _pd.DataFrame):
+        loc = max(returns[returns.columns[0]].ne(0).idxmax(), benchmark.ne(0).idxmax())
+    else:
+        loc = max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax())
+    returns = returns.loc[loc:]
+    benchmark = benchmark.loc[loc:]
 
     return returns, benchmark
 
@@ -62,10 +62,13 @@ def _match_dates(returns, benchmark):
 def html(returns, benchmark=None, rf=0., grayscale=False,
          title='Strategy Tearsheet', output=None, compounded=True,
          periods_per_year=252, download_filename='quantstats-tearsheet.html',
-         figfmt='svg', template_path=None, match_dates=False, **kwargs):
+         figfmt='svg', template_path=None, match_dates=True, **kwargs):
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`output` must be specified")
+
+    if match_dates:
+        returns = returns.dropna()
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
@@ -75,9 +78,15 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
         f.close()
 
     # prepare timeseries
+    if match_dates:
+        returns = returns.dropna()
     returns = _utils._prepare_returns(returns)
 
     strategy_title = kwargs.get('strategy_title', 'Strategy')
+    if isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1 and isinstance(strategy_title, str):
+            strategy_title = list(returns.columns)
+
     if benchmark is not None:
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
         if kwargs.get('benchmark_title') is None:
@@ -220,7 +229,7 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
     figfile = _utils._file_stream()
     _plots.histogram(returns, benchmark, grayscale=grayscale,
-                     figsize=(8, 4), subtitle=False,
+                     figsize=(7, 4), subtitle=False,
                      savefig={'fname': figfile, 'format': figfmt},
                      show=False, ylabel=False, compounded=compounded,
                      prepare_returns=False)
@@ -345,9 +354,11 @@ def html(returns, benchmark=None, rf=0., grayscale=False,
 
 def full(returns, benchmark=None, rf=0., grayscale=False,
          figsize=(8, 5), display=True, compounded=True,
-         periods_per_year=252, match_dates=False, **kwargs):
+         periods_per_year=252, match_dates=True, **kwargs):
 
     # prepare timeseries
+    if match_dates:
+        returns = returns.dropna()
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
@@ -359,6 +370,10 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
     strategy_title = kwargs.get('strategy_title', 'Strategy')
     active = kwargs.get('active_returns', 'False')
+
+    if isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1 and isinstance(strategy_title, str):
+            strategy_title = list(returns.columns)
 
     if benchmark is not None:
         benchmark.name = benchmark_title
@@ -396,19 +411,19 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                          prepare_returns=False,
                          benchmark_title=benchmark_title,
                          strategy_title=strategy_title))
-        iDisplay(iHTML('<h4>5 Worst Drawdowns</h4>'))
 
         if isinstance(dd, _pd.Series):
+            iDisplay(iHTML('<h4 style="margin-bottom:20px">Worst 5 Drawdowns</h4>'))
             if dd_info.empty:
                 iDisplay(iHTML("<p>(no drawdowns)</p>"))
             else:
                 iDisplay(dd_info)
         elif isinstance(dd, _pd.DataFrame):
             for ptf, dd_info in dd_info_dict.items():
+                iDisplay(iHTML('<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>' % ptf))
                 if dd_info.empty:
                     iDisplay(iHTML("<p>(no drawdowns)</p>"))
                 else:
-                    iDisplay(iHTML("<p><h5>%s</h5></p>" % ptf))
                     iDisplay(dd_info)
 
         iDisplay(iHTML('<h4>Strategy Visualization</h4>'))
@@ -422,7 +437,7 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
                 benchmark_title=benchmark_title,
                 strategy_title=strategy_title)
         print('\n\n')
-        print('[5 Worst Drawdowns]\n')
+        print('[Worst 5 Drawdowns]\n')
         if isinstance(dd, _pd.Series):
             if dd_info.empty:
                 print("(no drawdowns)")
@@ -449,9 +464,11 @@ def full(returns, benchmark=None, rf=0., grayscale=False,
 
 def basic(returns, benchmark=None, rf=0., grayscale=False,
           figsize=(8, 5), display=True, compounded=True,
-          periods_per_year=252, match_dates=False, **kwargs):
+          periods_per_year=252, match_dates=True, **kwargs):
 
     # prepare timeseries
+    if match_dates:
+        returns = returns.dropna()
     returns = _utils._prepare_returns(returns)
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
@@ -463,6 +480,10 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
         benchmark_title = kwargs.get('benchmark_title', 'Benchmark')
     strategy_title = kwargs.get('strategy_title', 'Strategy')
     active = kwargs.get('active_returns', 'False')
+
+    if isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1 and isinstance(strategy_title, str):
+            strategy_title = list(returns.columns)
 
     if _utils._in_notebook():
         iDisplay(iHTML('<h4>Performance Metrics</h4>'))
@@ -495,24 +516,28 @@ def basic(returns, benchmark=None, rf=0., grayscale=False,
 def metrics(returns, benchmark=None, rf=0., display=True,
             mode='basic', sep=False, compounded=True,
             periods_per_year=252, prepare_returns=True,
-            match_dates=False, **kwargs):
+            match_dates=True, **kwargs):
 
+    if match_dates:
+        returns = returns.dropna()
     returns.index = returns.index.tz_localize(None)
     win_year, _ = _get_trading_periods(periods_per_year)
-
-    if benchmark is not None:
-        if isinstance(benchmark, str):
-            benchmark_col = f'Benchmark ({benchmark.upper()})'
-        elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
-            raise ValueError("`benchmark` must be a pandas Series, "
-                             "but a multi-column DataFrame was passed")
 
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
 
+    if benchmark is not None:
+        if isinstance(benchmark, str):
+            benchmark_colname = f'Benchmark ({benchmark.upper()})'
+        elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
+            raise ValueError("`benchmark` must be a pandas Series, "
+                             "but a multi-column DataFrame was passed")
+
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1:
             blank = [''] * len(returns.columns)
+            if isinstance(strategy_colname, str):
+                strategy_colname = list(returns.columns)
     else:
         blank = ['']
 
@@ -522,7 +547,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
     #     returns = returns[returns.columns[0]]
 
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        df = _utils._prepare_returns(returns)
 
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame({"returns": returns})
@@ -543,6 +568,21 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             for i, strategy_col in enumerate(returns.columns):
                 df["returns_" + str(i+1)] = returns[strategy_col]
 
+    if isinstance(returns, _pd.Series):
+        s_start = {'returns': df['returns'].index.strftime('%Y-%m-%d')[0]}
+        s_end = {'returns': df['returns'].index.strftime('%Y-%m-%d')[-1]}
+        s_rf = {'returns': rf}
+    elif isinstance(returns, _pd.DataFrame):
+        df_strategy_columns = [col for col in df.columns if col != "benchmark"]
+        s_start = {strategy_col: df[strategy_col].dropna().index.strftime('%Y-%m-%d')[0] for strategy_col in df_strategy_columns}
+        s_end = {strategy_col: df[strategy_col].dropna().index.strftime('%Y-%m-%d')[-1] for strategy_col in df_strategy_columns}
+        s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
+
+    if "benchmark" in df:
+        s_start['benchmark'] = df['benchmark'].index.strftime('%Y-%m-%d')[0]
+        s_end['benchmark'] = df['benchmark'].index.strftime('%Y-%m-%d')[-1]
+        s_rf['benchmark'] = rf
+
     df = df.fillna(0)
 
     # pct multiplier
@@ -555,22 +595,6 @@ def metrics(returns, benchmark=None, rf=0., display=True,
                   as_pct=kwargs.get("as_pct", False))
 
     metrics = _pd.DataFrame()
-
-    if isinstance(returns, _pd.Series):
-        s_start = {'returns': df['returns'].index.strftime('%Y-%m-%d')[0]}
-        s_end = {'returns': df['returns'].index.strftime('%Y-%m-%d')[-1]}
-        s_rf = {'returns': rf}
-    elif isinstance(returns, _pd.DataFrame):
-        df_strategy_columns = [col for col in df.columns if col != "benchmark"]
-        s_start = {strategy_col: df[strategy_col].index.strftime('%Y-%m-%d')[0] for strategy_col in df_strategy_columns}
-        s_end = {strategy_col: df[strategy_col].index.strftime('%Y-%m-%d')[-1] for strategy_col in df_strategy_columns}
-        s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
-
-    if "benchmark" in df:
-        s_start['benchmark'] = df['benchmark'].index.strftime('%Y-%m-%d')[0]
-        s_end['benchmark'] = df['benchmark'].index.strftime('%Y-%m-%d')[-1]
-        s_rf['benchmark'] = rf
-
     metrics['Start Period'] = _pd.Series(s_start)
     metrics['End Period'] = _pd.Series(s_end)
     metrics['Risk-Free Rate %'] = _pd.Series(s_rf)*100
@@ -838,13 +862,22 @@ def metrics(returns, benchmark=None, rf=0., display=True,
 
 def plots(returns, benchmark=None, grayscale=False,
           figsize=(8, 5), mode='basic', compounded=True,
-          periods_per_year=252, prepare_returns=True, match_dates=False, **kwargs):
+          periods_per_year=252, prepare_returns=True,
+          match_dates=True, **kwargs):
 
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get('active', 'False')
 
+    if isinstance(returns, _pd.DataFrame):
+        if len(returns.columns) > 1:
+            if isinstance(strategy_colname, str):
+                strategy_colname = list(returns.columns)
+
     win_year, win_half_year = _get_trading_periods(periods_per_year)
+
+    if match_dates is True:
+        returns = returns.dropna()
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -853,6 +886,8 @@ def plots(returns, benchmark=None, grayscale=False,
         returns.name = strategy_colname
     elif isinstance(returns, _pd.DataFrame):
         returns.columns = strategy_colname
+
+    returns = _pd.DataFrame(returns)
 
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
@@ -867,7 +902,7 @@ def plots(returns, benchmark=None, grayscale=False,
                                    compounded=compounded, active=active)
         elif isinstance(returns, _pd.DataFrame):
             for col in returns.columns:
-                _plots.monthly_heatmap(returns[col], benchmark, grayscale=grayscale,
+                _plots.monthly_heatmap(returns[col].dropna(), benchmark, grayscale=grayscale,
                                        figsize=(figsize[0], figsize[0] * .5),
                                        show=True, ylabel=False, returns_label=col,
                                        compounded=compounded, active=active)
@@ -909,29 +944,32 @@ def plots(returns, benchmark=None, grayscale=False,
                      show=True, ylabel=False,
                      prepare_returns=False)
 
+    small_fig_size = (figsize[0], figsize[0]*.35)
+    if len(returns.columns) > 1:
+        small_fig_size = (figsize[0], figsize[0]*(.33*(len(returns.columns)*.66)))
+
     _plots.daily_returns(returns, benchmark, grayscale=grayscale,
-                         figsize=(figsize[0], figsize[0]*.3),
+                         figsize=small_fig_size,
                          show=True, ylabel=False,
                          prepare_returns=False, active=active)
 
     if benchmark is not None:
         _plots.rolling_beta(returns, benchmark, grayscale=grayscale,
                             window1=win_half_year, window2=win_year,
-                            figsize=(figsize[0], figsize[0]*.3),
+                            figsize=small_fig_size,
                             show=True, ylabel=False,
                             prepare_returns=False)
 
-    _plots.rolling_volatility(
-        returns, benchmark, grayscale=grayscale,
-        figsize=(figsize[0], figsize[0]*.3), show=True, ylabel=False,
-        period=win_half_year)
+    _plots.rolling_volatility(returns, benchmark, grayscale=grayscale,
+                              figsize=small_fig_size, show=True, ylabel=False,
+                              period=win_half_year)
 
     _plots.rolling_sharpe(returns, grayscale=grayscale,
-                          figsize=(figsize[0], figsize[0]*.3),
+                          figsize=small_fig_size,
                           show=True, ylabel=False, period=win_half_year)
 
     _plots.rolling_sortino(returns, grayscale=grayscale,
-                           figsize=(figsize[0], figsize[0]*.3),
+                           figsize=small_fig_size,
                            show=True, ylabel=False, period=win_half_year)
 
     if isinstance(returns, _pd.Series):

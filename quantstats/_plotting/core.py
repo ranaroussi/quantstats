@@ -50,9 +50,10 @@ _sns.set(font_scale=1.1, rc={
     'ytick.color': '#666666'
 })
 
-_FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64",
-                  "#4fa487", "#9b59b6", "#808080"]
-_GRAYSCALE_COLORS = ['silver', '#222222', 'gray'] * 3
+_FLATUI_COLORS = ['#FEDD78', '#348DC1', '#BA516B', '#4FA487', '#9B59B6',
+                  '#613F66', '#84B082', '#DC136C', '#559CAD', '#4A5899']
+_GRAYSCALE_COLORS = ['#000000', '#222222', '#555555', '#888888', '#AAAAAA',
+                     '#CCCCCC', '#EEEEEE', '#333333', '#666666', '#999999']
 
 
 def _get_colors(grayscale):
@@ -108,11 +109,11 @@ def plot_returns_bars(returns, benchmark=None,
     ax.spines['left'].set_visible(False)
 
     # use a more precise date string for the x axis locations in the toolbar
-    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(title, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s           \n" % (
             df.index.date[:1][0].strftime('%Y'),
             df.index.date[-1:][0].strftime('%Y')
         ), fontsize=12, color='gray')
@@ -151,7 +152,7 @@ def plot_returns_bars(returns, benchmark=None,
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
     # if isinstance(benchmark, _pd.Series) or hline:
-    ax.legend(fontsize=12)
+    ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -162,6 +163,9 @@ def plot_returns_bars(returns, benchmark=None,
         ax.yaxis.set_label_coords(-.1, .5)
 
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+
+    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
+        ax.get_legend().remove()
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -238,11 +242,11 @@ def plot_timeseries(returns, benchmark=None,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(title, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                  " % (
+        ax.set_title("%s - %s            \n" % (
             returns.index.date[:1][0].strftime('%e %b \'%y'),
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
@@ -258,8 +262,8 @@ def plot_timeseries(returns, benchmark=None,
         ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
     elif isinstance(returns, _pd.DataFrame):
         # color_dict = {col: colors[i+1] for i, col in enumerate(returns.columns)}
-        for col in returns.columns:
-            ax.plot(returns[col], lw=lw, label=col, alpha=alpha)
+        for i, col in enumerate(returns.columns):
+            ax.plot(returns[col], lw=lw, label=col, alpha=alpha, color=colors[i+1])
 
     if fill:
         if isinstance(returns, _pd.Series):
@@ -287,8 +291,7 @@ def plot_timeseries(returns, benchmark=None,
                color='white' if grayscale else 'black', zorder=2)
 
     # if isinstance(benchmark, _pd.Series) or hline is not None:
-    #     ax.legend(fontsize=12)
-    ax.legend(fontsize=12)
+    ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -302,6 +305,9 @@ def plot_timeseries(returns, benchmark=None,
         ax.set_ylabel(ylabel, fontname=fontname,
                       fontweight='bold', fontsize=12, color="black")
     ax.yaxis.set_label_coords(-.1, .5)
+
+    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
+        ax.get_legend().remove()
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -336,9 +342,11 @@ def plot_histogram(returns, benchmark, resample="M", bins=20,
                    ylabel=True, subtitle=True, compounded=True,
                    savefig=None, show=True):
 
-    colors = ['#348dc1', '#003366', 'red']
-    if grayscale:
-        colors = ['silver', 'gray', 'black']
+    # colors = ['#348dc1', '#003366', 'red']
+    # if grayscale:
+    #     colors = ['silver', 'gray', 'black']
+
+    colors, _, _ = _get_colors(grayscale)
 
     apply_fnc = _stats.comp if compounded else _np.sum
     if benchmark is not None:
@@ -348,17 +356,19 @@ def plot_histogram(returns, benchmark, resample="M", bins=20,
     returns = returns.fillna(0).resample(resample).apply(
                       apply_fnc).resample(resample).last()
 
+    figsize = (0.995 * figsize[0], figsize[1])
     fig, ax = _plt.subplots(figsize=figsize)
+
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(title, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s           \n" % (
             returns.index.date[:1][0].strftime('%Y'),
             returns.index.date[-1:][0].strftime('%Y')
         ), fontsize=12, color='gray')
@@ -366,40 +376,60 @@ def plot_histogram(returns, benchmark, resample="M", bins=20,
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    # Why do we need average?
-    # ax.axvline(returns.mean(), ls="--", lw=1.5,
-    #            zorder=2, label="Average")
+    if isinstance(returns, _pd.DataFrame) and len(returns.columns) == 1:
+        returns = returns[returns.columns[0]]
+
+    pallete = colors[1:2] if benchmark is None else colors[:2]
+    alpha = 0.7
+    if isinstance(returns, _pd.DataFrame):
+        pallete = colors[1:len(returns.columns)+1] if benchmark is None else colors[:len(returns.columns)+1]
+        if len(returns.columns) > 1:
+            alpha = 0.5
 
     if benchmark is not None:
         if isinstance(returns, _pd.Series):
             combined_returns = benchmark.to_frame().join(returns.to_frame()) \
                                .stack().reset_index() \
-                               .rename(columns={'level_1': 'Portfolio', 0: 'Returns'})
+                               .rename(columns={'level_1': '', 0: 'Returns'})
         elif isinstance(returns, _pd.DataFrame):
             combined_returns = benchmark.to_frame().join(returns) \
                 .stack().reset_index() \
-                .rename(columns={'level_1': 'Portfolio', 0: 'Returns'})
+                .rename(columns={'level_1': '', 0: 'Returns'})
+        x = _sns.histplot(data=combined_returns, x='Returns',
+                          bins=bins, alpha=alpha, kde=kde,
+                          stat="density", hue='',
+                          palette=pallete,
+                          ax=ax)
 
-        _sns.histplot(data=combined_returns, x='Returns',
-                      bins=bins, alpha=0.4, kde=kde,
-                      stat="density", hue='Portfolio',
-                      ax=ax)
     else:
         if isinstance(returns, _pd.Series):
             combined_returns = returns.copy()
-            _sns.histplot(data=combined_returns, bins=bins,
-                          alpha=0.4, kde=kde,
-                          stat="density",
-                          ax=ax)
-            ax.legend(fontsize=12)
+            if kde:
+                _sns.kdeplot(data=combined_returns, color='black', ax=ax)
+            x = _sns.histplot(data=combined_returns, bins=bins,
+                              alpha=alpha,
+                              kde=False,
+                              stat="density",
+                              color=colors[1],
+                              ax=ax)
+
         elif isinstance(returns, _pd.DataFrame):
             combined_returns = returns.stack().reset_index() \
-                .rename(columns={'level_1': 'Portfolio', 0: 'Returns'})
-            _sns.histplot(data=combined_returns, x='Returns',
-                          bins=bins, alpha=0.4, kde=kde,
-                          stat="density", hue='Portfolio',
-                          ax=ax)
+                .rename(columns={'level_1': '', 0: 'Returns'})
+            # _sns.kdeplot(data=combined_returns, color='black', ax=ax)
+            x = _sns.histplot(data=combined_returns, x='Returns',
+                              bins=bins, alpha=alpha, kde=kde,
+                              stat="density", hue='',
+                              palette=pallete,
+                              ax=ax)
 
+    # Why do we need average?
+    if isinstance(combined_returns, _pd.Series) or len(combined_returns.columns) == 1:
+        ax.axvline(combined_returns.mean(), ls="--", lw=1.5,
+                   zorder=2, label="Average", color="red")
+
+
+    # _plt.setp(x.get_legend().get_texts(), fontsize=11)
     ax.xaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
 
@@ -408,10 +438,9 @@ def plot_histogram(returns, benchmark, resample="M", bins=20,
     # ax.axvline(0, lw=1, color="#000000", zorder=2)
 
     ax.set_xlabel('')
-    if ylabel:
-        ax.set_ylabel("Occurrences", fontname=fontname,
-                      fontweight='bold', fontsize=12, color="black")
-        ax.yaxis.set_label_coords(-.1, .5)
+    ax.set_ylabel("Occurrences", fontname=fontname,
+                    fontweight='bold', fontsize=12, color="black")
+    ax.yaxis.set_label_coords(-.1, .5)
 
     # fig.autofmt_xdate()
 
@@ -473,9 +502,8 @@ def plot_rolling_stats(returns, benchmark=None, title="",
         elif isinstance(returns, _pd.DataFrame):
             col_names = ['Benchmark', returns_label]
             df = df[list(_pd.core.common.flatten(col_names))].dropna()
-            for col in returns_label:
-                ax.plot(df[col], lw=lw,
-                        label=col)
+            for i, col in enumerate(returns_label):
+                ax.plot(df[col], lw=lw, label=col, color=colors[i+1])
         ax.plot(df['Benchmark'], lw=lw, label=benchmark.name,
                 color=colors[0], alpha=.8)
     else:
@@ -485,20 +513,19 @@ def plot_rolling_stats(returns, benchmark=None, title="",
                     label=returns.name, color=colors[1])
         elif isinstance(returns, _pd.DataFrame):
             df = df[returns_label].dropna()
-            for col in returns_label:
-                ax.plot(df[col], lw=lw,
-                        label=col)
+            for i, col in enumerate(returns_label):
+                ax.plot(df[col], lw=lw, label=col, color=colors[i+1])
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
 
     # use a more precise date string for the x axis locations in the toolbar
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')\
-    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(title, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s           \n" % (
             df.index.date[:1][0].strftime('%e %b \'%y'),
             df.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
@@ -519,7 +546,10 @@ def plot_rolling_stats(returns, benchmark=None, title="",
 
     ax.yaxis.set_major_formatter(_FormatStrFormatter('%.2f'))
 
-    ax.legend(fontsize=12)
+    ax.legend(fontsize=11)
+
+    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
+        ax.get_legend().remove()
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -562,15 +592,16 @@ def plot_rolling_beta(returns, benchmark,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle(title+"\n", y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(title, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s           \n" % (
             returns.index.date[:1][0].strftime('%e %b \'%y'),
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
 
+    i = 1
     if isinstance(returns, _pd.Series):
         beta = _stats.rolling_greeks(returns, benchmark, window1)['beta'].fillna(0)
         ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
@@ -578,9 +609,12 @@ def plot_rolling_beta(returns, benchmark,
         beta = ({col: _stats.rolling_greeks(returns[col], benchmark, window1)['beta'].fillna(0)
                  for col in returns.columns})
         for name, b in beta.items():
-            ax.plot(b, lw=lw, label=name + " " + f"({window1_label})")
+            ax.plot(b, lw=lw, label=name + " " + f"({window1_label})", color=colors[i])
+            i += 1
 
+    i = 1
     if window2:
+        lw = lw - 0.5
         if isinstance(returns, _pd.Series):
             ax.plot(_stats.rolling_greeks(returns, benchmark, window2)['beta'],
                     lw=lw, label=window2_label, color="gray", alpha=0.8)
@@ -588,9 +622,8 @@ def plot_rolling_beta(returns, benchmark,
             betas_w2 = ({col: _stats.rolling_greeks(returns[col], benchmark, window2)['beta']
                          for col in returns.columns})
             for name, beta_w2 in betas_w2.items():
-                ax.plot(beta_w2, lw=lw, ls='--', label=name + " " + f"({window2_label})",  alpha=0.8)
-            # ax.plot(_stats.rolling_greeks(returns, benchmark, window2)['beta'],
-            #         lw=lw, label=window2_label, color="gray", alpha=0.8)
+                ax.plot(beta_w2, lw=lw, ls='--', label=name + " " + f"({window2_label})",  alpha=0.5, color=colors[i])
+                i += 1
 
     beta_min = beta.min() if isinstance(returns, _pd.Series) else min([b.min() for b in beta.values()])
     beta_max = beta.max() if isinstance(returns, _pd.Series) else max([b.max() for b in beta.values()])
@@ -616,7 +649,10 @@ def plot_rolling_beta(returns, benchmark,
                       fontweight='bold', fontsize=12, color="black")
         ax.yaxis.set_label_coords(-.1, .5)
 
-    ax.legend(fontsize=12)
+    ax.legend(fontsize=11)
+    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
+        ax.get_legend().remove()
+
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
     except Exception:
@@ -665,11 +701,11 @@ def plot_longest_drawdowns(returns, periods=5, lw=1.5,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle(f"{title} - Worst %.0f Drawdown Periods\n" %
-                 periods, y=.99, fontweight="bold", fontname=fontname,
+    fig.suptitle(f"{title} - Worst %.0f Drawdown Periods" %
+                 periods, y=.94, fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s           \n" % (
             returns.index.date[:1][0].strftime('%e %b \'%y'),
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
@@ -767,12 +803,16 @@ def plot_distribution(returns, figsize=(10, 6),
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    fig.suptitle(f"{title} - Return Quantiles\n", y=.99,
+    if title:
+        title = f"{title} - Return Quantiles"
+    else:
+        title = "Return Quantiles"
+    fig.suptitle(title, y=.94,
                  fontweight="bold", fontname=fontname,
                  fontsize=14, color="black")
 
     if subtitle:
-        ax.set_title("\n%s - %s                   " % (
+        ax.set_title("%s - %s            \n" % (
             returns.index.date[:1][0].strftime('%e %b \'%y'),
             returns.index.date[-1:][0].strftime('%e %b \'%y')
         ), fontsize=12, color='gray')
@@ -780,7 +820,14 @@ def plot_distribution(returns, figsize=(10, 6),
     fig.set_facecolor('white')
     ax.set_facecolor('white')
 
-    port.boxplot(ax=ax)#, colo=tuple(colors[:5]))
+    _sns.boxplot(data=port, ax=ax,
+                 palette={
+                    'Daily': colors[0],
+                    'Weekly': colors[1],
+                    'Monthly': colors[2],
+                    'Quarterly': colors[3],
+                    'Yearly': colors[4]
+                 })
 
     ax.yaxis.set_major_formatter(_plt.FuncFormatter(
         lambda x, loc: "{:,}%".format(int(x*100))))
