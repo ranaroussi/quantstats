@@ -360,6 +360,7 @@ def metrics(returns, benchmark=None, rf=0., display=True,
             periods_per_year=252, prepare_returns=True,
             match_dates=False, **kwargs):
 
+    returns.index = returns.index.tz_localize(None)
     win_year, _ = _get_trading_periods(periods_per_year)
 
     benchmark_col = 'Benchmark'

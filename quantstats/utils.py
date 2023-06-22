@@ -270,6 +270,8 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.,
             .reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
+    benchmark.index = benchmark.index.tz_localize(None)
+
     if prepare_returns:
         return _prepare_returns(benchmark.dropna(), rf=rf)
     return benchmark.dropna()
