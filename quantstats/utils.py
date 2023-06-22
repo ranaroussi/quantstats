@@ -235,11 +235,15 @@ def _prepare_returns(data, rf=0., nperiods=None):
 
 
 def download_returns(ticker, period="max", proxy=None):
+    params = {
+        "tickers": ticker,
+        "proxy": proxy,
+    }
     if isinstance(period, _pd.DatetimeIndex):
-        p = {"start": period[0], "proxy": proxy}
+        params["start"] = period[0]
     else:
-        p = {"period": period, "proxy": proxy}
-    return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
+        params["period"] = period
+    return _yf.download(**params)['Close'].pct_change()
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.,
