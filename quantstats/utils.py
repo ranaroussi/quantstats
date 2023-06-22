@@ -226,8 +226,7 @@ def _prepare_returns(data, rf=0., nperiods=None):
     unnecessary_function_calls = ['_prepare_benchmark',
                                   'cagr',
                                   'gain_to_pain_ratio',
-                                  'rolling_volatility',]
-
+                                  'rolling_volatility']
 
     if function not in unnecessary_function_calls:
         if rf > 0:
