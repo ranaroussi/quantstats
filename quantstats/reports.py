@@ -38,7 +38,9 @@ try:
         display as iDisplay, HTML as iHTML
     )
 except ImportError:
-    pass
+    from IPython.core.display import (
+        display as iDisplay, HTML as iHTML
+    )
 
 
 def _get_trading_periods(periods_per_year=252):
