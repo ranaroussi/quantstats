@@ -235,11 +235,11 @@ def _prepare_returns(data, rf=0., nperiods=None):
     return data
 
 
-def download_returns(ticker, period="max"):
+def download_returns(ticker, period="max",proxy=None):
     if isinstance(period, _pd.DatetimeIndex):
-        p = {"start": period[0]}
+        p = {"start": period[0], "proxy": proxy}
     else:
-        p = {"period": period}
+        p = {"period": period, "proxy": proxy}
     return _yf.Ticker(ticker).history(**p)['Close'].pct_change()
 
 
