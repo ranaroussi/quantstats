@@ -965,7 +965,7 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     returns['Month'] = returns.index.strftime('%b')
 
     # make pivot table
-    returns = returns.pivot('Year', 'Month', 'Returns').fillna(0)
+    returns = returns.pivot(index='Year', columns='Month', values='Returns').fillna(0)
 
     # handle missing months
     for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
