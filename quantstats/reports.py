@@ -887,8 +887,6 @@ def plots(returns, benchmark=None, grayscale=False,
     elif isinstance(returns, _pd.DataFrame):
         returns.columns = strategy_colname
 
-    returns = _pd.DataFrame(returns)
-
     if mode.lower() != 'full':
         _plots.snapshot(returns, grayscale=grayscale,
                         figsize=(figsize[0], figsize[0]),
@@ -908,6 +906,8 @@ def plots(returns, benchmark=None, grayscale=False,
                                        compounded=compounded, active=active)
 
         return
+
+    returns = _pd.DataFrame(returns)
 
     # prepare timeseries
     if benchmark is not None:
