@@ -1,24 +1,40 @@
 Change Log
 ===========
 
+0.0.60
+------
+- Multi-strategy reports! You can now pass a dataframe with a column for each strategy to get a unified, single report for all
+- Support request proxy with yfinance
+- Added custom periods to CAGR
+- Correct drawdown days calculation when last day is a drawdown
+- Write report in correct file path
+- IPython 7+ compatibility
+- Pandas 2.0 compatibility
+- Fix for benchmark name when supplied by the user
+- Handles tz-native and tz-aware comparisson issue
+- Adding benchmark name to html report
+- Update README ticker to META :)
+- Many pull requests merged
+
+
 0.0.59
------
+------
 - Fixed EOY compounded return calculation
 
 0.0.58
------
+------
 - Run fillna(0) on plot's beta (issue #193)
 
 0.0.57
------
+------
 - Fixed `sigma` calculation in `stats.probabilistic_ratio()`
 
 0.0.56
------
+------
 - Added option to explicitly provide the benchmark title via `benchmark_title=...`
 
 0.0.55
------
+------
 - Fix for benchmark name in html report when supplied by the user
 
 0.0.54
