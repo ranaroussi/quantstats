@@ -1,6 +1,10 @@
 Change Log
 ===========
 
+0.0.61
+------
+- Fixed positional arguments passed to cagr()
+
 0.0.60
 ------
 - Multi-strategy reports! You can now pass a dataframe with a column for each strategy to get a unified, single report for all
