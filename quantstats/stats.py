@@ -604,7 +604,7 @@ def serenity_index(returns, rf=0):
     """
     dd = to_drawdown_series(returns)
     pitfall = -cvar(dd) / returns.std()
-    return (comp(returns) - rf) / (ulcer_index(returns) * pitfall)
+    return (returns.sum() - rf) / (ulcer_index(returns) * pitfall)
 
 
 def risk_of_ruin(returns, prepare_returns=True):
@@ -747,13 +747,13 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
     return returns.quantile(quantile).mean() / returns[returns < 0].mean()
 
 
-def recovery_factor(returns, prepare_returns=True):
+def recovery_factor(returns, rf=0., prepare_returns=True):
     """Measures how fast the strategy recovers from drawdowns"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-    total_returns = comp(returns)
+    total_returns = returns.sum() - rf
     max_dd = max_drawdown(returns)
-    return total_returns / abs(max_dd)
+    return abs(total_returns) / abs(max_dd)
 
 
 def risk_return_ratio(returns, prepare_returns=True):
