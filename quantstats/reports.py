@@ -930,13 +930,13 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -1004,19 +1004,19 @@ def metrics(
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, prepare_returns=False) * pct
+        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Worst Month %"] = (
             _stats.worst(df, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
         )
 
     # dd
@@ -1031,20 +1031,20 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, aggregate="Q", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, aggregate="A", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
         )
 
         if "benchmark" in df:
