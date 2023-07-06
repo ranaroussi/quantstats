@@ -933,7 +933,7 @@ def rolling_sortino(
 
 def monthly_heatmap(
     returns,
-    benchmark,
+    benchmark=None,
     annot_size=10,
     figsize=(10, 5),
     cbar=True,
@@ -948,7 +948,6 @@ def monthly_heatmap(
     show=True,
     active=False,
 ):
-
     # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = "gray" if grayscale else "RdYlGn"
 
@@ -1076,16 +1075,16 @@ def monthly_returns(
     show=True,
 ):
     return monthly_heatmap(
-        returns,
-        annot_size,
-        figsize,
-        cbar,
-        square,
-        compounded,
-        eoy,
-        grayscale,
-        fontname,
-        ylabel,
-        savefig,
-        show,
+        returns=returns,
+        annot_size=annot_size,
+        figsize=figsize,
+        cbar=cbar,
+        square=square,
+        compounded=compounded,
+        eoy=eoy,
+        grayscale=grayscale,
+        fontname=fontname,
+        ylabel=ylabel,
+        savefig=savefig,
+        show=show,
     )
