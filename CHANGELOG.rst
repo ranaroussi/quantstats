@@ -1,6 +1,12 @@
 Change Log
 ===========
 
+0.0.62
+------
+- Changed `serenity_index` and `recovery_factor` to use simple sum instead of compounded sum
+- Reports passing the `compounded` param to all supporting methods
+- Fixed a bug related to monthly_heatmap display
+
 0.0.61
 ------
 - Fixed positional arguments passed to cagr()
