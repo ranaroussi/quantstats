@@ -485,7 +485,7 @@ def log_returns(
 
 def daily_returns(
     returns,
-    benchmark,
+    benchmark=None,
     grayscale=False,
     figsize=(10, 4),
     fontname="Arial",
