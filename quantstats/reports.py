@@ -209,7 +209,7 @@ def html(
             )
         tpl = tpl.replace("{{dd_info}}", dd_html_table)
 
-    active = kwargs.get("active_returns", "False")
+    active = kwargs.get("active_returns", False)
     # plots
     figfile = _utils._file_stream()
     _plots.returns(
@@ -515,7 +515,7 @@ def full(
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    active = kwargs.get("active_returns", "False")
+    active = kwargs.get("active_returns", False)
 
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1 and isinstance(strategy_title, str):
@@ -665,7 +665,7 @@ def basic(
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    active = kwargs.get("active_returns", "False")
+    active = kwargs.get("active_returns", False)
 
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1 and isinstance(strategy_title, str):
