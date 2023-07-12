@@ -11,6 +11,9 @@ dist
 quantstats.egg-info
 QuantStats.egg-info
 Icon
-/tests
 .vscode
 Icon
+
+.pytest_cache
+htmlcov
+.coverage
