@@ -512,7 +512,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     return returns.sum() / downside
 
 
-def cagr(returns, rf=0.0, compounded=True, periods=252):
+def cagr(returns, rf=0.0, compounded=True):
     """
     Calculates the communicative annualized growth return
     (CAGR%) of access returns
@@ -526,7 +526,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
     else:
         total = _np.sum(total)
 
-    years = (returns.index[-1] - returns.index[0]).days / periods
+    years = (returns.index[-1] - returns.index[0]).days / 365
 
     res = abs(total + 1.0) ** (1.0 / years) - 1
 
