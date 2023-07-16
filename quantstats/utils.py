@@ -397,7 +397,7 @@ def make_index(
 
     # drop when all are NaN
     index.dropna(how="all", inplace=True)
-    return index[index.index <= last_day].sum(axis=1)
+    return index[index.index <= last_day][portfolio.keys()].sum(axis=1)
 
 
 def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):
