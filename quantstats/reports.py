@@ -763,7 +763,7 @@ def metrics(
     #     returns = returns[returns.columns[0]]
 
     if prepare_returns:
-        df = _utils._prepare_returns(returns)
+        returns = _utils._prepare_returns(returns)
 
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame({"returns": returns})
