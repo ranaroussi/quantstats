@@ -239,7 +239,7 @@ def download_returns(ticker, period="max", proxy=None):
         params["start"] = period[0]
     else:
         params["period"] = period
-    return _yf.download(**params)["Close"].pct_change()
+    return _yf.download(**params, progress=False, threads=False)["Close"].rename(ticker).pct_change()
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=True):
