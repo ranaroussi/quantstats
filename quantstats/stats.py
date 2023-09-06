@@ -512,7 +512,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     return returns.sum() / downside
 
 
-def cagr(returns, rf=0.0, compounded=True, periods=252):
+def cagr(returns, rf=0.0, compounded=True, periods=365):
     """
     Calculates the communicative annualized growth return
     (CAGR%) of access returns
