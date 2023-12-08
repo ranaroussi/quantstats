@@ -66,7 +66,6 @@ def html(
     match_dates=True,
     **kwargs,
 ):
-
     if output is None and not _utils._in_notebook():
         raise ValueError("`output` must be specified")
 
@@ -501,7 +500,6 @@ def full(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -651,7 +649,6 @@ def basic(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -731,7 +728,6 @@ def metrics(
     match_dates=True,
     **kwargs,
 ):
-
     if match_dates:
         returns = returns.dropna()
     returns.index = returns.index.tz_localize(None)
@@ -816,13 +812,6 @@ def metrics(
     if kwargs.get("as_pct", False):
         pct = 100
 
-    # return df
-    dd = _calc_dd(
-        df,
-        display=(display or "internal" in kwargs),
-        as_pct=kwargs.get("as_pct", False),
-    )
-
     metrics = _pd.DataFrame()
     metrics["Start Period"] = _pd.Series(s_start)
     metrics["End Period"] = _pd.Series(s_end)
@@ -863,6 +852,9 @@ def metrics(
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
+    metrics["Max Drawdown Date"] = blank
+    metrics["Max Drawdown Period Start"] = blank
+    metrics["Max Drawdown Period End"] = blank
     metrics["Longest DD Days"] = blank
 
     if mode.lower() == "full":
@@ -930,13 +922,20 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, prepare_returns=False)
+            * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="M", prepare_returns=False
+            )
+            * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="A", prepare_returns=False
+            )
+            * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -1004,25 +1003,40 @@ def metrics(
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        metrics["Best Day %"] = (
+            _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        )
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False)
+            * pct
         )
         metrics["Worst Month %"] = (
             _stats.worst(df, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False)
+            * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(
+                df, compounded=compounded, aggregate="A", prepare_returns=False
+            )
+            * pct
         )
 
-    # dd
+    # return drawdown (dd) df
+    dd = _calc_dd(
+        df,
+        display=(display or "internal" in kwargs),
+        as_pct=kwargs.get("as_pct", False),
+    )
+
+    # drawdown (dd) detail
     metrics["~~~~"] = blank
     for ix, row in dd.iterrows():
         metrics[ix] = row
+
     metrics["Recovery Factor"] = _stats.recovery_factor(df)
     metrics["Ulcer Index"] = _stats.ulcer_index(df)
     metrics["Serenity Index"] = _stats.serenity_index(df, rf)
@@ -1031,20 +1045,35 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(
+                df, compounded=compounded, aggregate="M", prepare_returns=False
+            )
+            * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(
+                df, compounded=compounded, aggregate="M", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="M", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="Q", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="A", prepare_returns=False
+            )
+            * pct
         )
 
         if "benchmark" in df:
@@ -1212,7 +1241,6 @@ def plots(
     match_dates=True,
     **kwargs,
 ):
-
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active", "False")
@@ -1500,6 +1528,15 @@ def _calc_dd(df, display=True, as_pct=False):
                 .sort_values(by="max drawdown", ascending=True)["max drawdown"]
                 .values[0]
                 / 100,
+                "Max Drawdown Date": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["valley"]
+                .values[0],
+                "Max Drawdown Period Start": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["start"]
+                .values[0],
+                "Max Drawdown Period End": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["end"]
+                .values[0],
                 "Longest DD Days": str(
                     _np.round(
                         ret_dd[col]
@@ -1519,6 +1556,15 @@ def _calc_dd(df, display=True, as_pct=False):
                     "max drawdown"
                 ].values[0]
                 / 100,
+                "Max Drawdown Date": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["valley"].values[0],
+                "Max Drawdown Period Start": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["start"].values[0],
+                "Max Drawdown Period End": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["end"].values[0],
                 "Longest DD Days": str(
                     _np.round(
                         ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
@@ -1535,6 +1581,15 @@ def _calc_dd(df, display=True, as_pct=False):
                 "max drawdown"
             ].values[0]
             / 100,
+            "Max Drawdown Date": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["valley"].values[0],
+            "Max Drawdown Period Start": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["start"].values[0],
+            "Max Drawdown Period End": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["end"].values[0],
             "Longest DD Days": str(
                 _np.round(
                     bench_dd.sort_values(by="days", ascending=False)["days"].values[0]
