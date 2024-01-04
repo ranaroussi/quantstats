@@ -255,8 +255,7 @@ def snapshot(
 
     if show:
         _plt.show(block=False)
-
-    _plt.close()
+        _plt.close()
 
     if not show:
         return fig
@@ -363,8 +362,7 @@ def earnings(
 
     if show:
         _plt.show(block=False)
-
-    _plt.close()
+        _plt.close()
 
     if not show:
         return fig
@@ -1051,8 +1049,7 @@ def monthly_heatmap(
 
     if show:
         _plt.show(block=False)
-
-    _plt.close()
+        _plt.close()
 
     if not show:
         return fig
