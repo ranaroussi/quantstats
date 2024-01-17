@@ -564,9 +564,18 @@ def plot_histogram(
     # ax.axvline(0, lw=1, color="#000000", zorder=2)
 
     ax.set_xlabel("")
-    ax.set_ylabel(
-        "Occurrences", fontname=fontname, fontweight="bold", fontsize=12, color="black"
-    )
+
+    if ylabel:
+        ax.set_ylabel(
+            "Occurrences",
+            fontname=fontname,
+            fontweight="bold",
+            fontsize=12,
+            color="black"
+        )
+    else:
+        ax.set_ylabel(None)
+
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
     # fig.autofmt_xdate()
