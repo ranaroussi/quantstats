@@ -221,7 +221,7 @@ def html(
         savefig={"fname": figfile, "format": figfmt},
         show=False,
         ylabel=False,
-        cumulative=compounded,
+        compound=compounded,
         prepare_returns=False,
     )
     tpl = tpl.replace("{{returns}}", _embed_figure(figfile, figfmt))
@@ -236,7 +236,7 @@ def html(
         savefig={"fname": figfile, "format": figfmt},
         show=False,
         ylabel=False,
-        cumulative=compounded,
+        compound=compounded,
         prepare_returns=False,
     )
     tpl = tpl.replace("{{log_returns}}", _embed_figure(figfile, figfmt))
@@ -253,7 +253,7 @@ def html(
             savefig={"fname": figfile, "format": figfmt},
             show=False,
             ylabel=False,
-            cumulative=compounded,
+            compound=compounded,
             prepare_returns=False,
         )
         tpl = tpl.replace("{{vol_returns}}", _embed_figure(figfile, figfmt))
@@ -631,6 +631,7 @@ def full(
         grayscale=grayscale,
         figsize=figsize,
         mode="full",
+        compounded=compounded,
         periods_per_year=periods_per_year,
         prepare_returns=False,
         benchmark_title=benchmark_title,
@@ -710,6 +711,7 @@ def basic(
         grayscale=grayscale,
         figsize=figsize,
         mode="basic",
+        compounded=compounded,
         periods_per_year=periods_per_year,
         prepare_returns=False,
         benchmark_title=benchmark_title,
