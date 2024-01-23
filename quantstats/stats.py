@@ -537,7 +537,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
     return res
 
 
-def rar(returns, rf=0.0):
+def rar(returns, rf=0.0, periods=252):
     """
     Calculates the risk-adjusted return of access returns
     (CAGR / exposure. takes time into account.)
@@ -546,7 +546,7 @@ def rar(returns, rf=0.0):
     In this case, rf is assumed to be expressed in yearly (annualized) terms
     """
     returns = _utils._prepare_returns(returns, rf)
-    return cagr(returns) / exposure(returns)
+    return cagr(returns=returns, periods=periods) / exposure(returns)
 
 
 def skew(returns, prepare_returns=True):
@@ -569,11 +569,11 @@ def kurtosis(returns, prepare_returns=True):
     return returns.kurtosis()
 
 
-def calmar(returns, prepare_returns=True):
+def calmar(returns, prepare_returns=True, periods=252):
     """Calculates the calmar ratio (CAGR% / MaxDD%)"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-    cagr_ratio = cagr(returns)
+    cagr_ratio = cagr(returns=returns, periods=periods)
     max_dd = max_drawdown(returns)
     return cagr_ratio / abs(max_dd)
 

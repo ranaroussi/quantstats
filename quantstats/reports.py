@@ -836,7 +836,7 @@ def metrics(
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
-    metrics["CAGR﹪%"] = _stats.cagr(df, rf, compounded) * pct
+    metrics["CAGR﹪%"] = _stats.cagr(df, rf, compounded, win_year) * pct
 
     metrics["~~~~~~~~~~~~~~"] = blank
 
@@ -923,7 +923,7 @@ def metrics(
             elif isinstance(returns, _pd.DataFrame):
                 metrics["Volatility (ann.) %"] = ret_vol
 
-        metrics["Calmar"] = _stats.calmar(df, prepare_returns=False)
+        metrics["Calmar"] = _stats.calmar(df, prepare_returns=False, periods=win_year)
         metrics["Skew"] = _stats.skew(df, prepare_returns=False)
         metrics["Kurtosis"] = _stats.kurtosis(df, prepare_returns=False)
 
@@ -991,15 +991,15 @@ def metrics(
     metrics["1Y %"] = comp_func(df[df.index >= d]) * pct
 
     d = today - relativedelta(months=35)
-    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
     d = today - relativedelta(months=59)
-    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
     d = today - relativedelta(years=10)
-    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
-    metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded) * pct
+    metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded, win_year) * pct
 
     # best/worst
     if mode.lower() == "full":
