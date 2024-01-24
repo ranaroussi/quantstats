@@ -36,11 +36,13 @@ except ImportError:
 
 
 def _get_trading_periods(periods_per_year=252):
+    """returns trading periods per year and half year"""
     half_year = _ceil(periods_per_year / 2)
     return periods_per_year, half_year
 
 
 def _match_dates(returns, benchmark):
+    """match dates of returns and benchmark"""
     if isinstance(returns, _pd.DataFrame):
         loc = max(returns[returns.columns[0]].ne(0).idxmax(), benchmark.ne(0).idxmax())
     else:
@@ -66,6 +68,7 @@ def html(
     match_dates=True,
     **kwargs,
 ):
+    """generates full HTML tear sheet report"""
 
     if output is None and not _utils._in_notebook():
         raise ValueError("`output` must be specified")
@@ -86,9 +89,10 @@ def html(
     returns = _utils._prepare_returns(returns)
 
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
-            strategy_title = list(returns.columns)
+    if isinstance(returns, _pd.DataFrame) and \
+        len(returns.columns) > 1 and \
+        isinstance(strategy_title, str):
+        strategy_title = list(returns.columns)
 
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
@@ -501,6 +505,7 @@ def full(
     match_dates=True,
     **kwargs,
 ):
+    """calculates and plots full performance metrics"""
 
     # prepare timeseries
     if match_dates:
@@ -517,9 +522,10 @@ def full(
     strategy_title = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active_returns", "False")
 
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
-            strategy_title = list(returns.columns)
+    if isinstance(returns, _pd.DataFrame) and \
+        len(returns.columns) > 1 and \
+        isinstance(strategy_title, str):
+        strategy_title = list(returns.columns)
 
     if benchmark is not None:
         benchmark.name = benchmark_title
@@ -651,6 +657,7 @@ def basic(
     match_dates=True,
     **kwargs,
 ):
+    """calculates and plots basic performance metrics"""
 
     # prepare timeseries
     if match_dates:
@@ -667,9 +674,10 @@ def basic(
     strategy_title = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active_returns", "False")
 
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
-            strategy_title = list(returns.columns)
+    if isinstance(returns, _pd.DataFrame) and \
+        len(returns.columns) > 1 and \
+        isinstance(strategy_title, str):
+        strategy_title = list(returns.columns)
 
     if _utils._in_notebook():
         iDisplay(iHTML("<h4>Performance Metrics</h4>"))
@@ -731,6 +739,7 @@ def metrics(
     match_dates=True,
     **kwargs,
 ):
+    """calculates and displays various performance metrics"""
 
     if match_dates:
         returns = returns.dropna()
@@ -930,13 +939,21 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
+            _stats.expected_return(df,
+                                   compounded=compounded,
+                                   prepare_returns=False) * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(df,
+                                   compounded=compounded,
+                                   aggregate="M",
+                                   prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(df,
+                                   compounded=compounded,
+                                   aggregate="A",
+                                   prepare_returns=False) * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -991,32 +1008,52 @@ def metrics(
     metrics["1Y %"] = comp_func(df[df.index >= d]) * pct
 
     d = today - relativedelta(months=35)
-    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d],
+                                         0.0,
+                                         compounded,
+                                         win_year) * pct
 
     d = today - relativedelta(months=59)
-    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d],
+                                         0.0,
+                                         compounded,
+                                         win_year) * pct
 
     d = today - relativedelta(years=10)
-    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d],
+                                          0.0,
+                                          compounded,
+                                          win_year) * pct
 
     metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded, win_year) * pct
 
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        metrics["Best Day %"] = _stats.best(df,
+                                            compounded=compounded,
+                                            prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df,
+                        compounded=compounded,
+                        aggregate="M",
+                        prepare_returns=False) * pct
         )
         metrics["Worst Month %"] = (
             _stats.worst(df, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df,
+                        compounded=compounded,
+                        aggregate="A",
+                        prepare_returns=False) * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(df,
+                         compounded=compounded,
+                         aggregate="A",
+                         prepare_returns=False) * pct
         )
 
     # dd
@@ -1031,14 +1068,23 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(df, 
+                           compounded=compounded,
+                           aggregate="M",
+                           prepare_returns=False) * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(df,
+                            compounded=compounded,
+                            aggregate="M",
+                            prepare_returns=False) * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(df, 
+                            compounded=compounded,
+                            aggregate="M",
+                            prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
             _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
@@ -1212,15 +1258,16 @@ def plots(
     match_dates=True,
     **kwargs,
 ):
+    """Plots for strategy performance"""
 
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active", "False")
 
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1:
-            if isinstance(strategy_colname, str):
-                strategy_colname = list(returns.columns)
+    if isinstance(returns, _pd.DataFrame) and \
+        len(returns.columns) > 1 and \
+        isinstance(strategy_colname, str):
+        strategy_colname = list(returns.columns)
 
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
@@ -1471,6 +1518,7 @@ def plots(
 
 
 def _calc_dd(df, display=True, as_pct=False):
+    """Returns drawdown stats"""
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
@@ -1555,6 +1603,7 @@ def _calc_dd(df, display=True, as_pct=False):
 
 
 def _html_table(obj, showindex="default"):
+    """Returns HTML table"""
     obj = _tabulate(
         obj, headers="keys", tablefmt="html", floatfmt=".2f", showindex=showindex
     )
@@ -1569,6 +1618,7 @@ def _html_table(obj, showindex="default"):
 
 
 def _download_html(html, filename="quantstats-tearsheet.html"):
+    """Downloads HTML report"""
     jscode = _regex.sub(
         " +",
         " ",
@@ -1589,6 +1639,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
 
 
 def _open_html(html):
+    """Opens HTML in a new tab"""
     jscode = _regex.sub(
         " +",
         " ",
@@ -1604,6 +1655,7 @@ def _open_html(html):
 
 
 def _embed_figure(figfiles, figfmt):
+    """Embeds the figure bytes in the html output"""
     if isinstance(figfiles, list):
         embed_string = "\n"
         for figfile in figfiles:

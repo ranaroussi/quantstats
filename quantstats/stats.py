@@ -47,7 +47,13 @@ def comp(returns):
 
 
 def distribution(returns, compounded=True, prepare_returns=True):
+    """Returns the distribution of returns
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * compounded (bool): Calculate compounded returns?
+    """
     def get_outliers(data):
+        """Returns outliers"""
         # https://datascience.stackexchange.com/a/57199
         Q1 = data.quantile(0.25)
         Q3 = data.quantile(0.75)
@@ -155,6 +161,7 @@ def exposure(returns, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     def _exposure(ret):
+        """Returns the market exposure time (returns != 0)"""
         ex = len(ret[(~_np.isnan(ret)) & (ret != 0)]) / len(ret)
         return _ceil(ex * 100) / 100
 
@@ -237,6 +244,12 @@ def volatility(returns, periods=252, annualize=True, prepare_returns=True):
 def rolling_volatility(
     returns, rolling_period=126, periods_per_year=252, prepare_returns=True
 ):
+    """Calculates the rolling volatility of returns for a period
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * rolling_period (int): Rolling period
+        * periods_per_year: periods per year
+    """
     if prepare_returns:
         returns = _utils._prepare_returns(returns, rolling_period)
 
@@ -250,7 +263,6 @@ def implied_volatility(returns, periods=252, annualize=True):
         return logret.rolling(periods).std() * _np.sqrt(periods)
     return logret.std()
 
-
 def autocorr_penalty(returns, prepare_returns=False):
     """Metric to account for auto correlation"""
     if prepare_returns:
@@ -259,7 +271,6 @@ def autocorr_penalty(returns, prepare_returns=False):
     if isinstance(returns, _pd.DataFrame):
         returns = returns[returns.columns[0]]
 
-    # returns.to_csv('/Users/ran/Desktop/test.csv')
     num = len(returns)
     coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
     corr = [((num - x) / num) * coef**x for x in range(1, num)]
@@ -300,6 +311,13 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
 
 
 def smart_sharpe(returns, rf=0.0, periods=252, annualize=True):
+    """Calculates the smart sharpe ratio
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+    """
     return sharpe(returns, rf, periods, annualize, True)
 
 
@@ -311,7 +329,14 @@ def rolling_sharpe(
     periods_per_year=252,
     prepare_returns=True,
 ):
-
+    """ Calculates the rolling sharpe ratio
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * rolling_period (int): Rolling period
+        * annualize: return annualize sharpe?
+        * periods_per_year: periods per year
+    """
     if rf != 0 and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -355,12 +380,27 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
 
 
 def smart_sortino(returns, rf=0, periods=252, annualize=True):
+    """Calculates the smart sortino ratio
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+    """
     return sortino(returns, rf, periods, annualize, True)
 
 
 def rolling_sortino(
     returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs
 ):
+    """ Calculates the rolling sortino ratio
+    Args:
+        * returns (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * rolling_period (int): Rolling period
+        * annualize: return annualize sharpe?
+        * periods_per_year: periods per year
+    """
     if rf != 0 and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -393,6 +433,14 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
 def probabilistic_ratio(
     series, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False
 ):
+    """Calculates the probabilistic sharpe ratio
+    Args:
+        * series (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+        * smart: return smart sharpe ratio
+    """
 
     if base.lower() == "sharpe":
         base = sharpe(series, periods=periods, annualize=False, smart=smart)
@@ -430,6 +478,14 @@ def probabilistic_ratio(
 def probabilistic_sharpe_ratio(
     series, rf=0.0, periods=252, annualize=False, smart=False
 ):
+    """Calculates the probabilistic sharpe ratio
+    Args:
+        * series (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+        * smart: return smart sharpe ratio
+    """
     return probabilistic_ratio(
         series, rf, base="sharpe", periods=periods, annualize=annualize, smart=smart
     )
@@ -438,6 +494,13 @@ def probabilistic_sharpe_ratio(
 def probabilistic_sortino_ratio(
     series, rf=0.0, periods=252, annualize=False, smart=False
 ):
+    """ Calculates the probabilistic sortino ratio
+    Args:
+        * series (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+        * smart: return smart sharpe ratio"""
     return probabilistic_ratio(
         series, rf, base="sortino", periods=periods, annualize=annualize, smart=smart
     )
@@ -446,6 +509,14 @@ def probabilistic_sortino_ratio(
 def probabilistic_adjusted_sortino_ratio(
     series, rf=0.0, periods=252, annualize=False, smart=False
 ):
+    """Calculates the probabilistic adjusted sortino ratio
+    
+    Args:
+        * series (Series, DataFrame): Input return series
+        * rf (float): Risk-free rate expressed as a yearly (annualized) return
+        * periods (int): Freq. of returns (252/365 for daily, 12 for monthly)
+        * annualize: return annualize sharpe?
+        * smart: return smart sharpe ratio"""
     return probabilistic_ratio(
         series,
         rf,
@@ -786,7 +857,7 @@ def drawdown_details(drawdown):
     for every drawdown period
     """
 
-    def _drawdown_details(drawdown):
+    def _drawdown_details(drawdown): 
         # mark no drawdown
         no_dd = drawdown == 0
 
@@ -887,7 +958,6 @@ def kelly_criterion(returns, prepare_returns=True):
 
 def r_squared(returns, benchmark, prepare_returns=True):
     """Measures the straight line fit of the equity curve"""
-    # slope, intercept, r_val, p_val, std_err = _linregress(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     _, _, r_val, _, _ = _linregress(
@@ -956,7 +1026,6 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
 
     alpha = df["returns"].mean() - beta * df["benchmark"].mean()
 
-    # alpha = alpha * periods
     return _pd.DataFrame(index=returns.index, data={"beta": beta, "alpha": alpha})
 
 
