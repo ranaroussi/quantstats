@@ -329,7 +329,7 @@ def rolling_sharpe(
     periods_per_year=252,
     prepare_returns=True,
 ):
-    """ Calculates the rolling sharpe ratio
+    """Calculates the rolling sharpe ratio
     Args:
         * returns (Series, DataFrame): Input return series
         * rf (float): Risk-free rate expressed as a yearly (annualized) return
@@ -393,7 +393,7 @@ def smart_sortino(returns, rf=0, periods=252, annualize=True):
 def rolling_sortino(
     returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs
 ):
-    """ Calculates the rolling sortino ratio
+    """Calculates the rolling sortino ratio
     Args:
         * returns (Series, DataFrame): Input return series
         * rf (float): Risk-free rate expressed as a yearly (annualized) return
@@ -494,7 +494,7 @@ def probabilistic_sharpe_ratio(
 def probabilistic_sortino_ratio(
     series, rf=0.0, periods=252, annualize=False, smart=False
 ):
-    """ Calculates the probabilistic sortino ratio
+    """Calculates the probabilistic sortino ratio
     Args:
         * series (Series, DataFrame): Input return series
         * rf (float): Risk-free rate expressed as a yearly (annualized) return

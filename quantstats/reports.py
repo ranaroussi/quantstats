@@ -766,11 +766,6 @@ def metrics(
     else:
         blank = [""]
 
-    # if isinstance(returns, _pd.DataFrame):
-    #     if len(returns.columns) > 1:
-    #         raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
-    #     returns = returns[returns.columns[0]]
-
     if prepare_returns:
         df = _utils._prepare_returns(returns)
 
@@ -855,19 +850,14 @@ def metrics(
     )
     if mode.lower() == "full":
         metrics["Smart Sharpe"] = _stats.smart_sharpe(df, rf, win_year, True)
-        # metrics['Prob. Smart Sharpe Ratio %'] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False, True) * pct
 
     metrics["Sortino"] = _stats.sortino(df, rf, win_year, True)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino"] = _stats.smart_sortino(df, rf, win_year, True)
-        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False, True) * pct
 
     metrics["Sortino/√2"] = metrics["Sortino"] / _sqrt(2)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
-        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
     metrics["Omega"] = _stats.omega(df, rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
@@ -975,10 +965,6 @@ def metrics(
 
     metrics["Gain/Pain Ratio"] = _stats.gain_to_pain_ratio(df, rf)
     metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "M")
-    # if mode.lower() == 'full':
-    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "Q")
-    #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
-    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "A")
     metrics["~~~~~~~"] = blank
 
     metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
