@@ -221,7 +221,7 @@ def html(
         savefig={"fname": figfile, "format": figfmt},
         show=False,
         ylabel=False,
-        cumulative=compounded,
+        compound=compounded,
         prepare_returns=False,
     )
     tpl = tpl.replace("{{returns}}", _embed_figure(figfile, figfmt))
@@ -236,7 +236,7 @@ def html(
         savefig={"fname": figfile, "format": figfmt},
         show=False,
         ylabel=False,
-        cumulative=compounded,
+        compound=compounded,
         prepare_returns=False,
     )
     tpl = tpl.replace("{{log_returns}}", _embed_figure(figfile, figfmt))
@@ -253,7 +253,7 @@ def html(
             savefig={"fname": figfile, "format": figfmt},
             show=False,
             ylabel=False,
-            cumulative=compounded,
+            compound=compounded,
             prepare_returns=False,
         )
         tpl = tpl.replace("{{vol_returns}}", _embed_figure(figfile, figfmt))
@@ -631,6 +631,7 @@ def full(
         grayscale=grayscale,
         figsize=figsize,
         mode="full",
+        compounded=compounded,
         periods_per_year=periods_per_year,
         prepare_returns=False,
         benchmark_title=benchmark_title,
@@ -710,6 +711,7 @@ def basic(
         grayscale=grayscale,
         figsize=figsize,
         mode="basic",
+        compounded=compounded,
         periods_per_year=periods_per_year,
         prepare_returns=False,
         benchmark_title=benchmark_title,
@@ -1290,6 +1292,7 @@ def plots(
         show=True,
         ylabel=False,
         prepare_returns=False,
+        compound=compounded,
     )
 
     _plots.log_returns(
@@ -1300,6 +1303,7 @@ def plots(
         show=True,
         ylabel=False,
         prepare_returns=False,
+        compound=compounded,
     )
 
     if benchmark is not None:
@@ -1312,6 +1316,7 @@ def plots(
             show=True,
             ylabel=False,
             prepare_returns=False,
+            compound=compounded,
         )
 
     _plots.yearly_returns(
@@ -1322,6 +1327,7 @@ def plots(
         show=True,
         ylabel=False,
         prepare_returns=False,
+        compounded=compounded,
     )
 
     _plots.histogram(
@@ -1332,6 +1338,7 @@ def plots(
         show=True,
         ylabel=False,
         prepare_returns=False,
+        compounded=compounded,
     )
 
     small_fig_size = (figsize[0], figsize[0] * 0.35)
@@ -1401,6 +1408,7 @@ def plots(
             show=True,
             ylabel=False,
             prepare_returns=False,
+            compounded=compounded,
         )
     elif isinstance(returns, _pd.DataFrame):
         for col in returns.columns:
@@ -1412,6 +1420,7 @@ def plots(
                 ylabel=False,
                 title=col,
                 prepare_returns=False,
+                compounded=compounded,
             )
 
     _plots.drawdown(
@@ -1420,6 +1429,7 @@ def plots(
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
         ylabel=False,
+        compound=compounded,
     )
 
     if isinstance(returns, _pd.Series):
@@ -1431,6 +1441,7 @@ def plots(
             returns_label=returns.name,
             show=True,
             ylabel=False,
+            compounded=compounded,
             active=active,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1456,6 +1467,7 @@ def plots(
             title=returns.name,
             ylabel=False,
             prepare_returns=False,
+            compounded=compounded,
         )
     elif isinstance(returns, _pd.DataFrame):
         for col in returns.columns:
@@ -1467,6 +1479,7 @@ def plots(
                 title=col,
                 ylabel=False,
                 prepare_returns=False,
+                compounded=compounded,
             )
 
 
