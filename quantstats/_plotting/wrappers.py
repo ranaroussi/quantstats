@@ -569,7 +569,7 @@ def yearly_returns(
     if compounded:
         returns = returns.resample("A").apply(_stats.comp)
     else:
-        returns = returns.resample("A").apply(_df.sum)
+        returns = returns.resample("A").sum()
     returns = returns.resample("A").last()
 
     fig = _core.plot_returns_bars(
