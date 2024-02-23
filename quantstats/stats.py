@@ -93,7 +93,7 @@ def expected_return(returns, aggregate=None, compounded=True, prepare_returns=Tr
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return _np.product(1 + returns) ** (1 / len(returns)) - 1
+    return _np.prod(1 + returns, axis=0) ** (1 / len(returns)) - 1
 
 
 def geometric_mean(retruns, aggregate=None, compounded=True):
