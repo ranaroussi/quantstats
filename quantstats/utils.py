@@ -17,13 +17,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io as _io
 import datetime as _dt
-import pandas as _pd
-import numpy as _np
-import yfinance as _yf
-from . import stats as _stats
 import inspect
+import io as _io
+
+import numpy as _np
+import pandas as _pd
+import yfinance as _yf
+
+from . import stats as _stats
 
 
 def _mtd(df):
@@ -259,10 +261,9 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         benchmark = benchmark[benchmark.columns[0]].copy()
 
     if isinstance(period, _pd.DatetimeIndex) and set(period) != set(benchmark.index):
-
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
-        new_index = _pd.date_range(start=period[0], end=period[-1], freq="D")
+        new_index = _pd.date_range(start=period[0], end=period[-1], freq="d")
         benchmark = (
             benchmark_prices.reindex(new_index, method="bfill")
             .reindex(period)
