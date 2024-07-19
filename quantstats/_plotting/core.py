@@ -1002,13 +1002,13 @@ def plot_distribution(
     port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
     port["Weekly"] = port["Weekly"].ffill()
 
-    port["Monthly"] = port["Daily"].resample("M").apply(apply_fnc)
+    port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
     port["Monthly"] = port["Monthly"].ffill()
 
-    port["Quarterly"] = port["Daily"].resample("Q").apply(apply_fnc)
+    port["Quarterly"] = port["Daily"].resample("QE").apply(apply_fnc)
     port["Quarterly"] = port["Quarterly"].ffill()
 
-    port["Yearly"] = port["Daily"].resample("A").apply(apply_fnc)
+    port["Yearly"] = port["Daily"].resample("YE").apply(apply_fnc)
     port["Yearly"] = port["Yearly"].ffill()
 
     fig, ax = _plt.subplots(figsize=figsize)
