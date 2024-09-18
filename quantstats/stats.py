@@ -512,7 +512,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     return returns.sum() / downside
 
 
-def cagr(returns, rf=0.0, compounded=True, periods=252):
+def cagr(returns, rf=0.0, compounded=True, periods=365):
     """
     Calculates the communicative annualized growth return
     (CAGR%) of access returns
@@ -569,10 +569,10 @@ def kurtosis(returns, prepare_returns=True):
     return returns.kurtosis()
 
 
-def calmar(returns, prepare_returns=True):
+def calmar(returns, prepare_returns=True, periods=365):
     """Calculates the calmar ratio (CAGR% / MaxDD%)"""
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _utils._prepare_returns(returns, periods)
     cagr_ratio = cagr(returns)
     max_dd = max_drawdown(returns)
     return cagr_ratio / abs(max_dd)
