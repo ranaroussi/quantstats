@@ -552,9 +552,9 @@ def yearly_returns(
         title += "  vs Benchmark"
         benchmark = (
             _utils._prepare_benchmark(benchmark, returns.index)
-            .resample("A")
+            .resample("YE")
             .apply(_stats.comp)
-            .resample("A")
+            .resample("YE")
             .last()
         )
 
@@ -562,10 +562,10 @@ def yearly_returns(
         returns = _utils._prepare_returns(returns)
 
     if compounded:
-        returns = returns.resample("A").apply(_stats.comp)
+        returns = returns.resample("YE").apply(_stats.comp)
     else:
-        returns = returns.resample("A").apply(_df.sum)
-    returns = returns.resample("A").last()
+        returns = returns.resample("YE").apply(_df.sum)
+    returns = returns.resample("YE").last()
 
     fig = _core.plot_returns_bars(
         returns,
@@ -646,9 +646,9 @@ def histogram(
         title = "Weekly "
     elif resample == "ME":
         title = "Monthly "
-    elif resample == "Q":
+    elif resample == "QE":
         title = "Quarterly "
-    elif resample == "A":
+    elif resample == "YE":
         title = "Annual "
     else:
         title = ""

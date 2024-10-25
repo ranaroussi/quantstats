@@ -100,7 +100,7 @@ def plot_returns_bars(
     hlw=None,
     hlcolor="red",
     hllabel="",
-    resample="A",
+    resample="YE",
     title="Returns",
     match_volatility=False,
     log_scale=False,
@@ -1018,10 +1018,10 @@ def plot_distribution(
     port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
     port["Monthly"].ffill(inplace=True)
 
-    port["Quarterly"] = port["Daily"].resample("Q").apply(apply_fnc)
+    port["Quarterly"] = port["Daily"].resample("QE").apply(apply_fnc)
     port["Quarterly"].ffill(inplace=True)
 
-    port["Yearly"] = port["Daily"].resample("A").apply(apply_fnc)
+    port["Yearly"] = port["Daily"].resample("YE").apply(apply_fnc)
     port["Yearly"].ffill(inplace=True)
 
     fig, ax = _plt.subplots(figsize=figsize)

@@ -80,8 +80,8 @@ def distribution(returns, compounded=True, prepare_returns=True):
         "Daily": get_outliers(daily),
         "Weekly": get_outliers(daily.resample("W-MON").apply(apply_fnc)),
         "Monthly": get_outliers(daily.resample("ME").apply(apply_fnc)),
-        "Quarterly": get_outliers(daily.resample("Q").apply(apply_fnc)),
-        "Yearly": get_outliers(daily.resample("A").apply(apply_fnc)),
+        "Quarterly": get_outliers(daily.resample("QE").apply(apply_fnc)),
+        "Yearly": get_outliers(daily.resample("YE").apply(apply_fnc)),
     }
 
 
@@ -93,17 +93,17 @@ def expected_return(returns, aggregate=None, compounded=True, prepare_returns=Tr
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return _np.product(1 + returns) ** (1 / len(returns)) - 1
+    return _np.prod(1 + returns) ** (1 / len(returns)) - 1
 
 
-def geometric_mean(retruns, aggregate=None, compounded=True):
+def geometric_mean(returns, aggregate=None, compounded=True):
     """Shorthand for expected_return()"""
-    return expected_return(retruns, aggregate, compounded)
+    return expected_return(returns, aggregate, compounded)
 
 
-def ghpr(retruns, aggregate=None, compounded=True):
+def ghpr(returns, aggregate=None, compounded=True):
     """Shorthand for expected_return()"""
-    return expected_return(retruns, aggregate, compounded)
+    return expected_return(returns, aggregate, compounded)
 
 
 def outliers(returns, quantile=0.95):
@@ -410,12 +410,7 @@ def probabilistic_ratio(
     n = len(series)
 
     sigma_sr = _np.sqrt(
-        (
-            1
-            + (0.5 * base**2)
-            - (skew_no * base)
-            + (((kurtosis_no - 3) / 4) * base**2)
-        )
+        (1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2))
         / (n - 1)
     )
 
@@ -493,8 +488,8 @@ def omega(returns, rf=0.0, required_return=0.0, periods=252):
         return_threshold = (1 + required_return) ** (1.0 / periods) - 1
 
     returns_less_thresh = returns - return_threshold
-    numer = returns_less_thresh[returns_less_thresh > 0.0].sum().values[0]
-    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
+    numer = returns_less_thresh[returns_less_thresh > 0.0].sum()
+    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum()
 
     if denom > 0.0:
         return numer / denom
@@ -747,7 +742,7 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
     return returns.quantile(quantile).mean() / returns[returns < 0].mean()
 
 
-def recovery_factor(returns, rf=0., prepare_returns=True):
+def recovery_factor(returns, rf=0.0, prepare_returns=True):
     """Measures how fast the strategy recovers from drawdowns"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -910,7 +905,10 @@ def information_ratio(returns, benchmark, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
     diff_rets = returns - _utils._prepare_benchmark(benchmark, returns.index)
 
-    return diff_rets.mean() / diff_rets.std()
+    std = diff_rets.std()
+    if std != 0:
+        return diff_rets.mean() / diff_rets.std()
+    return 0
 
 
 def greeks(returns, benchmark, periods=252.0, prepare_returns=True):

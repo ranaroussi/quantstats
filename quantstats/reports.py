@@ -155,7 +155,7 @@ def html(
 
     if benchmark is not None:
         yoy = _stats.compare(
-            returns, benchmark, "A", compounded=compounded, prepare_returns=False
+            returns, benchmark, "YE", compounded=compounded, prepare_returns=False
         )
         if isinstance(returns, _pd.Series):
             yoy.columns = [benchmark_title, strategy_title, "Multiplier", "Won"]
@@ -859,7 +859,7 @@ def metrics(
         # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
         # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
-    metrics["Omega"] = _stats.omega(df, rf, 0.0, win_year)
+    metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
@@ -936,7 +936,7 @@ def metrics(
             _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -959,9 +959,9 @@ def metrics(
     metrics["Gain/Pain Ratio"] = _stats.gain_to_pain_ratio(df, rf)
     metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "ME")
     # if mode.lower() == 'full':
-    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "Q")
+    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "QE")
     #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
-    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "A")
+    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "YE")
     metrics["~~~~~~~"] = blank
 
     metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
@@ -1013,10 +1013,10 @@ def metrics(
             _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
 
     # dd
@@ -1041,10 +1041,10 @@ def metrics(
             _stats.win_rate(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="QE", prepare_returns=False) * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
 
         if "benchmark" in df:
@@ -1574,7 +1574,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
         " ",
         """<script>
     var bl=new Blob(['{{html}}'],{type:"text/html"});
-    var a=document.createElement("a");
+    var a=document.createElement("YE");
     a.href=URL.createObjectURL(bl);
     a.download="{{filename}}";
     a.hidden=true;document.body.appendChild(a);

@@ -62,7 +62,7 @@ def multi_shift(df, shift=3):
     dfs = [df.shift(i) for i in _np.arange(shift)]
     for ix, dfi in enumerate(dfs[1:]):
         dfs[ix + 1].columns = [str(col) for col in dfi.columns + str(ix + 1)]
-    return _pd.concat(dfs, 1, sort=True)
+    return _pd.concat(dfs, axis=1, sort=True)
 
 
 def to_returns(prices, rf=0.0):
@@ -133,7 +133,7 @@ def aggregate_returns(returns, period=None, compounded=True):
     if "quarter" in period:
         return group_returns(returns, index.quarter, compounded=compounded)
 
-    if period == "A" or any(x in period for x in ["year", "eoy", "yoy"]):
+    if period == "YE" or any(x in period for x in ["year", "eoy", "yoy"]):
         return group_returns(returns, index.year, compounded=compounded)
 
     if "week" in period:
@@ -145,7 +145,7 @@ def aggregate_returns(returns, period=None, compounded=True):
     if "eom" in period or period == "ME":
         return group_returns(returns, [index.year, index.month], compounded=compounded)
 
-    if "eoq" in period or period == "Q":
+    if "eoq" in period or period == "QE":
         return group_returns(
             returns, [index.year, index.quarter], compounded=compounded
         )
@@ -179,7 +179,9 @@ def to_excess_returns(returns, rf, nperiods=None):
         # deannualize
         rf = _np.power(1 + rf, 1.0 / nperiods) - 1.0
 
-    return returns - rf
+    df = returns - rf
+    df = df.tz_localize(None)
+    return df
 
 
 def _prepare_prices(data, base=1.0):
@@ -198,6 +200,7 @@ def _prepare_prices(data, base=1.0):
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
 
+    data = data.tz_localize(None)
     return data
 
 
@@ -227,6 +230,8 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     if function not in unnecessary_function_calls:
         if rf > 0:
             return to_excess_returns(data, rf, nperiods)
+
+    data = data.tz_localize(None)
     return data
 
 
@@ -234,12 +239,17 @@ def download_returns(ticker, period="max", proxy=None):
     params = {
         "tickers": ticker,
         "proxy": proxy,
+        "auto_adjust": True,
+        "multi_level_index": False,
+        "progress": False,
     }
     if isinstance(period, _pd.DatetimeIndex):
         params["start"] = period[0]
     else:
         params["period"] = period
-    return _yf.download(**params)["Close"].pct_change()
+    df = _yf.download(**params)["Close"].pct_change()
+    df = df.tz_localize(None)
+    return df
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=True):
@@ -271,7 +281,7 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         )
         benchmark = benchmark[benchmark.index.isin(period)]
 
-    benchmark.index = benchmark.index.tz_localize(None)
+    benchmark = benchmark.tz_localize(None)
 
     if prepare_returns:
         return _prepare_returns(benchmark.dropna(), rf=rf)
