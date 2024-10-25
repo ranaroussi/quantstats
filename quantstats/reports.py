@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -933,7 +933,7 @@ def metrics(
             _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
             _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
@@ -957,7 +957,7 @@ def metrics(
         metrics["Max Consecutive Losses *int"] = _stats.consecutive_losses(df)
 
     metrics["Gain/Pain Ratio"] = _stats.gain_to_pain_ratio(df, rf)
-    metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "M")
+    metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "ME")
     # if mode.lower() == 'full':
     #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "Q")
     #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
@@ -1007,10 +1007,10 @@ def metrics(
         metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Worst Month %"] = (
-            _stats.worst(df, aggregate="M", prepare_returns=False) * pct
+            _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
             _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
@@ -1031,14 +1031,14 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
             _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct

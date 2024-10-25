@@ -4,7 +4,7 @@
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -406,7 +406,7 @@ def plot_timeseries(
 def plot_histogram(
     returns,
     benchmark,
-    resample="M",
+    resample="ME",
     bins=20,
     fontname="Arial",
     grayscale=False,
@@ -1015,7 +1015,7 @@ def plot_distribution(
     port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
     port["Weekly"].ffill(inplace=True)
 
-    port["Monthly"] = port["Daily"].resample("M").apply(apply_fnc)
+    port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
     port["Monthly"].ffill(inplace=True)
 
     port["Quarterly"] = port["Daily"].resample("Q").apply(apply_fnc)
@@ -1203,7 +1203,7 @@ def format_cur_axis(x, _):
         return res.replace(".0B", "B")
     if x >= 1e6:
         res = "$%1.1fM" % (x * 1e-6)
-        return res.replace(".0M", "M")
+        return res.replace(".0M", "ME")
     if x >= 1e3:
         res = "$%1.0fK" % (x * 1e-3)
         return res.replace(".0K", "K")

@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ def distribution(returns, compounded=True, prepare_returns=True):
     return {
         "Daily": get_outliers(daily),
         "Weekly": get_outliers(daily.resample("W-MON").apply(apply_fnc)),
-        "Monthly": get_outliers(daily.resample("M").apply(apply_fnc)),
+        "Monthly": get_outliers(daily.resample("ME").apply(apply_fnc)),
         "Quarterly": get_outliers(daily.resample("Q").apply(apply_fnc)),
         "Yearly": get_outliers(daily.resample("A").apply(apply_fnc)),
     }

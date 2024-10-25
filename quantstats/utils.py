@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -142,7 +142,7 @@ def aggregate_returns(returns, period=None, compounded=True):
     if "eow" in period or period == "W":
         return group_returns(returns, [index.year, index.week], compounded=compounded)
 
-    if "eom" in period or period == "M":
+    if "eom" in period or period == "ME":
         return group_returns(returns, [index.year, index.month], compounded=compounded)
 
     if "eoq" in period or period == "Q":
