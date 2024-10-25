@@ -220,7 +220,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -235,7 +235,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -252,7 +252,7 @@ def html(
             subtitle=False,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             cumulative=compounded,
             prepare_returns=False,
         )
@@ -267,7 +267,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         compounded=compounded,
         prepare_returns=False,
     )
@@ -282,7 +282,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         compounded=compounded,
         prepare_returns=False,
     )
@@ -297,7 +297,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         active=active,
     )
@@ -315,7 +315,7 @@ def html(
             window2=win_year,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
         tpl = tpl.replace("{{rolling_beta}}", _embed_figure(figfile, figfmt))
@@ -329,7 +329,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -343,7 +343,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -357,7 +357,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -373,7 +373,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             prepare_returns=False,
         )
@@ -389,7 +389,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -404,7 +404,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
     )
     tpl = tpl.replace("{{dd_plot}}", _embed_figure(figfile, figfmt))
 
@@ -419,7 +419,7 @@ def html(
             returns_label=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             active=active,
         )
@@ -436,7 +436,7 @@ def html(
                 returns_label=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 active=active,
             )
@@ -454,7 +454,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             prepare_returns=False,
         )
@@ -470,7 +470,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -1255,7 +1255,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 active=active,
             )
@@ -1267,7 +1267,7 @@ def plots(
                     grayscale=grayscale,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
-                    ylabel=False,
+                    ylabel='',
                     returns_label=col,
                     compounded=compounded,
                     active=active,
@@ -1290,7 +1290,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
     )
 
@@ -1300,7 +1300,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
     )
 
@@ -1312,7 +1312,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
 
@@ -1322,7 +1322,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
     )
 
@@ -1332,7 +1332,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
     )
 
@@ -1349,7 +1349,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         active=active,
     )
@@ -1363,7 +1363,7 @@ def plots(
             window2=win_year,
             figsize=small_fig_size,
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
 
@@ -1373,7 +1373,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1382,7 +1382,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1391,7 +1391,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1401,7 +1401,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1411,7 +1411,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 title=col,
                 prepare_returns=False,
             )
@@ -1421,7 +1421,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
-        ylabel=False,
+        ylabel='',
     )
 
     if isinstance(returns, _pd.Series):
@@ -1432,7 +1432,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
             show=True,
-            ylabel=False,
+            ylabel='',
             active=active,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1443,7 +1443,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 returns_label=col,
                 compounded=compounded,
                 active=active,
@@ -1456,7 +1456,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=returns.name,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1467,7 +1467,7 @@ def plots(
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 title=col,
-                ylabel=False,
+                ylabel='',
                 prepare_returns=False,
             )
 

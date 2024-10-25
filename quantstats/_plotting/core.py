@@ -291,10 +291,10 @@ def plot_timeseries(
 
     if resample:
         returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum()
+        returns = returns.last() if compound is True else returns.sum(axis=0)
         if isinstance(benchmark, _pd.Series):
             benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound is True else benchmark.sum()
+            benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
