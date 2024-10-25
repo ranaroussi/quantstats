@@ -38,12 +38,12 @@ def pct_rank(prices, window=60):
 
 def compsum(returns):
     """Calculates rolling compounded returns"""
-    return returns.add(1).cumprod() - 1
+    return returns.add(1).cumprod(axis=0) - 1
 
 
 def comp(returns):
     """Calculates total compounded returns"""
-    return returns.add(1).prod() - 1
+    return returns.add(1).prod(axis=0) - 1
 
 
 def distribution(returns, compounded=True, prepare_returns=True):
@@ -93,7 +93,7 @@ def expected_return(returns, aggregate=None, compounded=True, prepare_returns=Tr
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return _np.prod(1 + returns) ** (1 / len(returns)) - 1
+    return _np.prod(1 + returns, axis=0) ** (1 / len(returns)) - 1
 
 
 def geometric_mean(returns, aggregate=None, compounded=True):
@@ -519,7 +519,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
     if compounded:
         total = comp(total)
     else:
-        total = _np.sum(total)
+        total = _np.sum(total, axis=0)
 
     years = (returns.index[-1] - returns.index[0]).days / periods
 

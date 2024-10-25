@@ -972,23 +972,25 @@ def metrics(
     metrics["Outlier Win Ratio"] = _stats.outlier_win_ratio(df, prepare_returns=False)
     metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(df, prepare_returns=False)
 
-    # returns
+    # # returns
     metrics["~~"] = blank
-    comp_func = _stats.comp if compounded else _np.sum
 
     today = df.index[-1]  # _dt.today()
-    metrics["MTD %"] = comp_func(df[df.index >= _dt(today.year, today.month, 1)]) * pct
-
-    d = today - relativedelta(months=3)
-    metrics["3M %"] = comp_func(df[df.index >= d]) * pct
-
-    d = today - relativedelta(months=6)
-    metrics["6M %"] = comp_func(df[df.index >= d]) * pct
-
-    metrics["YTD %"] = comp_func(df[df.index >= _dt(today.year, 1, 1)]) * pct
-
-    d = today - relativedelta(years=1)
-    metrics["1Y %"] = comp_func(df[df.index >= d]) * pct
+    m3 = today - relativedelta(months=3)
+    m6 = today - relativedelta(months=6)
+    y1 = today - relativedelta(years=1)
+    if compounded:
+        metrics["MTD %"] = _stats.comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+        metrics["3M %"] = _stats.comp(df[df.index >= m3]) * pct
+        metrics["6M %"] = _stats.comp(df[df.index >= m6]) * pct
+        metrics["YTD %"] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+        metrics["1Y %"] = _stats.comp(df[df.index >= y1]) * pct
+    else:
+        metrics["MTD %"] = _np.sum(df[df.index >= _dt(today.year, today.month, 1)], axis=0) * pct
+        metrics["3M %"] = _np.sum(df[df.index >= m3], axis=0) * pct
+        metrics["6M %"] = _np.sum(df[df.index >= m6], axis=0) * pct
+        metrics["YTD %"] = _np.sum(df[df.index >= _dt(today.year, 1, 1)], axis=0) * pct
+        metrics["1Y %"] = _np.sum(df[df.index >= y1], axis=0) * pct
 
     d = today - relativedelta(months=35)
     metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
