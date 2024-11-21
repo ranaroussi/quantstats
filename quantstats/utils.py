@@ -236,6 +236,10 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
 
 
 def download_returns(ticker, period="max", proxy=None):
+    """
+    Period parse in as yfinance format "max" or 
+    as pd.DatetimeIndex([...]) array.
+    """
     params = {
         "tickers": ticker,
         "proxy": proxy,
@@ -245,6 +249,8 @@ def download_returns(ticker, period="max", proxy=None):
     }
     if isinstance(period, _pd.DatetimeIndex):
         params["start"] = period[0]
+        if len(period) > 1:
+            params["end"] = period[-1]
     else:
         params["period"] = period
     df = _yf.download(**params)["Close"].pct_change()
