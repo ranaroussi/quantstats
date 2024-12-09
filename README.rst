@@ -56,7 +56,7 @@ Quick Start
     qs.extend_pandas()
 
     # fetch the daily returns for a stock
-    stock = qs.utils.download_returns('META')
+    stock = qs.utils.download_returns("META")["META"]
 
     # show sharpe ratio
     qs.stats.sharpe(stock)
