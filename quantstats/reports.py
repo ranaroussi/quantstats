@@ -993,15 +993,15 @@ def metrics(
         metrics["1Y %"] = _np.sum(df[df.index >= y1], axis=0) * pct
 
     d = today - relativedelta(months=35)
-    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
     d = today - relativedelta(months=59)
-    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
     d = today - relativedelta(years=10)
-    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
 
-    metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded) * pct
+    metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded, win_year) * pct
 
     # best/worst
     if mode.lower() == "full":
