@@ -294,7 +294,12 @@ def earnings(
     ax.spines["left"].set_visible(False)
 
     fig.suptitle(
-        f"    {title}", fontsize=12, y=0.95, fontname=fontname, fontweight="bold", color="black"
+        f"    {title}",
+        fontsize=12,
+        y=0.95,
+        fontname=fontname,
+        fontweight="bold",
+        color="black",
     )
 
     if subtitle:
@@ -390,6 +395,10 @@ def returns(
     savefig=None,
     show=True,
     prepare_returns=True,
+    render_mode="svg",
+    hoverable=False,
+    chart_id="chart_returns",
+    save_script=None,
 ):
 
     title = "Cumulative Returns" if compound else "Returns"
@@ -423,6 +432,10 @@ def returns(
         subtitle=subtitle,
         savefig=savefig,
         show=show,
+        render_mode=render_mode,
+        hoverable=hoverable,
+        chart_id=chart_id,
+        save_script=save_script,
     )
     if not show:
         return fig
@@ -444,6 +457,10 @@ def log_returns(
     savefig=None,
     show=True,
     prepare_returns=True,
+    render_mode="svg",
+    hoverable=False,
+    chart_id="chart_returns",
+    save_script=None,
 ):
 
     title = "Cumulative Returns" if compound else "Returns"
@@ -480,6 +497,10 @@ def log_returns(
         subtitle=subtitle,
         savefig=savefig,
         show=show,
+        render_mode=render_mode,
+        hoverable=hoverable,
+        chart_id=chart_id,
+        save_script=save_script,
     )
     if not show:
         return fig

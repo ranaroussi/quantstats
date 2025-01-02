@@ -64,6 +64,8 @@ def html(
     figfmt="svg",
     template_path=None,
     match_dates=True,
+    render_mode="svg",
+    hoverable=False,
     **kwargs,
 ):
 
@@ -211,42 +213,46 @@ def html(
 
     active = kwargs.get("active_returns", "False")
     # plots
-    figfile = _utils._file_stream()
-    _plots.returns(
-        returns,
-        benchmark,
-        grayscale=grayscale,
-        figsize=(8, 5),
-        subtitle=False,
-        savefig={"fname": figfile, "format": figfmt},
-        show=False,
-        ylabel='',
-        cumulative=compounded,
-        prepare_returns=False,
-    )
-    tpl = tpl.replace("{{returns}}", _embed_figure(figfile, figfmt))
-
-    figfile = _utils._file_stream()
-    _plots.log_returns(
-        returns,
-        benchmark,
-        grayscale=grayscale,
-        figsize=(8, 4),
-        subtitle=False,
-        savefig={"fname": figfile, "format": figfmt},
-        show=False,
-        ylabel='',
-        cumulative=compounded,
-        prepare_returns=False,
-    )
-    tpl = tpl.replace("{{log_returns}}", _embed_figure(figfile, figfmt))
-
-    if benchmark is not None:
+    if render_mode == "svg":
         figfile = _utils._file_stream()
         _plots.returns(
             returns,
             benchmark,
-            match_volatility=True,
+            grayscale=grayscale,
+            figsize=(8, 5),
+            subtitle=False,
+            savefig={"fname": figfile, "format": figfmt},
+            show=False,
+            ylabel='',
+            cumulative=compounded,
+            prepare_returns=False,
+        )
+        tpl = tpl.replace("{{returns}}", _embed_figure(figfile, figfmt))
+    elif render_mode == "canvas":
+        save_script = { "script": "", }
+        _plots.returns(
+            returns,
+            benchmark,
+            grayscale=grayscale,
+            figsize=(8, 5),
+            subtitle=False,
+            show=False,
+            ylabel='',
+            cumulative=compounded,
+            prepare_returns=False,
+            render_mode=render_mode,
+            hoverable=hoverable,
+            chart_id="chart_returns",
+            save_script=save_script
+        )
+        tpl = tpl.replace("{{returns}}", '<canvas id="chart_returns"></canvas>')
+        tpl += save_script["script"]
+
+    if render_mode == "svg":
+        figfile = _utils._file_stream()
+        _plots.log_returns(
+            returns,
+            benchmark,
             grayscale=grayscale,
             figsize=(8, 4),
             subtitle=False,
@@ -256,7 +262,65 @@ def html(
             cumulative=compounded,
             prepare_returns=False,
         )
-        tpl = tpl.replace("{{vol_returns}}", _embed_figure(figfile, figfmt))
+        tpl = tpl.replace("{{log_returns}}", _embed_figure(figfile, figfmt))
+    elif render_mode == "canvas":
+        save_script = { "script": "", }
+        _plots.log_returns(
+            returns,
+            benchmark,
+            grayscale=grayscale,
+            figsize=(8, 4),
+            subtitle=False,
+            show=False,
+            ylabel='',
+            cumulative=compounded,
+            prepare_returns=False,
+            render_mode=render_mode,
+            hoverable=hoverable,
+            chart_id="chart_log_returns",
+            save_script=save_script
+        )
+        tpl = tpl.replace("{{log_returns}}", '<canvas id="chart_log_returns"></canvas>')
+        tpl += save_script["script"]
+
+
+    if benchmark is not None:
+        if render_mode == "svg":
+            figfile = _utils._file_stream()
+            _plots.returns(
+                returns,
+                benchmark,
+                match_volatility=True,
+                grayscale=grayscale,
+                figsize=(8, 4),
+                subtitle=False,
+                savefig={"fname": figfile, "format": figfmt},
+                show=False,
+                ylabel='',
+                cumulative=compounded,
+                prepare_returns=False,
+            )
+            tpl = tpl.replace("{{vol_returns}}", _embed_figure(figfile, figfmt))
+        elif render_mode == "canvas":
+            save_script = { "script": "", }
+            _plots.returns(
+                returns,
+                benchmark,
+                match_volatility=True,
+                grayscale=grayscale,
+                figsize=(8, 4),
+                subtitle=False,
+                show=False,
+                ylabel='',
+                cumulative=compounded,
+                prepare_returns=False,
+                render_mode=render_mode,
+                hoverable=hoverable,
+                chart_id="chart_vol_returns",
+                save_script=save_script
+            )
+            tpl = tpl.replace("{{vol_returns}}", '<canvas id="chart_vol_returns"></canvas>')
+            tpl += save_script["script"]
 
     figfile = _utils._file_stream()
     _plots.yearly_returns(

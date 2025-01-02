@@ -19,6 +19,7 @@
 # limitations under the License.
 
 import matplotlib.pyplot as _plt
+from quantstats.template import gen_template_for_return_chart
 
 try:
     _plt.rcParams["font.family"] = "Arial"
@@ -264,6 +265,10 @@ def plot_timeseries(
     subtitle=True,
     savefig=None,
     show=True,
+    render_mode="svg",
+    hoverable=False,
+    chart_id="chart_returns",
+    save_script=None,
 ):
 
     colors, ls, alpha = _get_colors(grayscale)
@@ -297,110 +302,149 @@ def plot_timeseries(
             benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
     # ---------------
 
-    fig, ax = _plt.subplots(figsize=figsize)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
+    if render_mode == "svg":
+        fig, ax = _plt.subplots(figsize=figsize)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
 
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
-
-    if subtitle:
-        ax.set_title(
-            "%s - %s            \n"
-            % (
-                returns.index.date[:1][0].strftime("%e %b '%y"),
-                returns.index.date[-1:][0].strftime("%e %b '%y"),
-            ),
-            fontsize=12,
-            color="gray",
+        fig.suptitle(
+            title,
+            y=0.94,
+            fontweight="bold",
+            fontname=fontname,
+            fontsize=14,
+            color="black",
         )
 
-    fig.set_facecolor("white")
-    ax.set_facecolor("white")
+        if subtitle:
+            ax.set_title(
+                "%s - %s            \n"
+                % (
+                    returns.index.date[:1][0].strftime("%e %b '%y"),
+                    returns.index.date[-1:][0].strftime("%e %b '%y"),
+                ),
+                fontsize=12,
+                color="gray",
+            )
 
-    if isinstance(benchmark, _pd.Series):
-        ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
+        fig.set_facecolor("white")
+        ax.set_facecolor("white")
 
-    alpha = 0.25 if grayscale else 1
-    if isinstance(returns, _pd.Series):
-        ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
-    elif isinstance(returns, _pd.DataFrame):
-        # color_dict = {col: colors[i+1] for i, col in enumerate(returns.columns)}
-        for i, col in enumerate(returns.columns):
-            ax.plot(returns[col], lw=lw, label=col, alpha=alpha, color=colors[i + 1])
+        if isinstance(benchmark, _pd.Series):
+            ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
 
-    if fill:
+        alpha = 0.25 if grayscale else 1
         if isinstance(returns, _pd.Series):
-            ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=0.25)
+            ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
         elif isinstance(returns, _pd.DataFrame):
+            # color_dict = {col: colors[i+1] for i, col in enumerate(returns.columns)}
             for i, col in enumerate(returns.columns):
-                ax.fill_between(
-                    returns[col].index, 0, returns[col], color=colors[i + 1], alpha=0.25
+                ax.plot(
+                    returns[col], lw=lw, label=col, alpha=alpha, color=colors[i + 1]
                 )
 
-    # rotate and align the tick labels so they look better
-    fig.autofmt_xdate()
+        if fill:
+            if isinstance(returns, _pd.Series):
+                ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=0.25)
+            elif isinstance(returns, _pd.DataFrame):
+                for i, col in enumerate(returns.columns):
+                    ax.fill_between(
+                        returns[col].index,
+                        0,
+                        returns[col],
+                        color=colors[i + 1],
+                        alpha=0.25,
+                    )
 
-    # use a more precise date string for the x axis locations in the toolbar
-    # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
+        # rotate and align the tick labels so they look better
+        fig.autofmt_xdate()
 
-    if hline is not None:
-        if not isinstance(hline, _pd.Series):
-            if grayscale:
-                hlcolor = "black"
-            ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
+        # use a more precise date string for the x axis locations in the toolbar
+        # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
 
-    ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
-    ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
+        if hline is not None:
+            if not isinstance(hline, _pd.Series):
+                if grayscale:
+                    hlcolor = "black"
+                ax.axhline(
+                    hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2
+                )
 
-    # if isinstance(benchmark, _pd.Series) or hline is not None:
-    ax.legend(fontsize=11)
+        ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
+        ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
 
-    _plt.yscale("symlog" if log_scale else "linear")
+        # if isinstance(benchmark, _pd.Series) or hline is not None:
+        ax.legend(fontsize=11)
 
-    if percent:
-        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
-        # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
-        #     lambda x, loc: "{:,}%".format(int(x*100))))
+        _plt.yscale("symlog" if log_scale else "linear")
 
-    ax.set_xlabel("")
-    if ylabel:
-        ax.set_ylabel(
-            ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black"
+        if percent:
+            ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+            # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
+            #     lambda x, loc: "{:,}%".format(int(x*100))))
+
+        ax.set_xlabel("")
+        if ylabel:
+            ax.set_ylabel(
+                ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black"
+            )
+        ax.yaxis.set_label_coords(-0.1, 0.5)
+
+        if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
+            ax.get_legend().remove()
+
+        try:
+            _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+        except Exception:
+            pass
+
+        try:
+            fig.tight_layout()
+        except Exception:
+            pass
+
+        if savefig:
+            if isinstance(savefig, dict):
+                _plt.savefig(**savefig)
+            else:
+                _plt.savefig(savefig)
+
+        if show:
+            _plt.show(block=False)
+
+        _plt.close()
+
+        if not show:
+            return fig
+
+        return None
+    elif render_mode == "canvas":
+        chartjs_benchmark = chartjs_returns = template_chartjs = None
+        if isinstance(benchmark, _pd.Series):
+            chartjs_benchmark = benchmark
+
+        alpha = 0.25 if grayscale else 1
+        if isinstance(returns, _pd.Series):
+            chartjs_returns = returns
+        elif isinstance(returns, _pd.DataFrame):
+            for i, col in enumerate(returns.columns):
+                chartjs_returns.append(returns[col])
+
+        save_script["script"] = gen_template_for_return_chart(
+            chart_id=chart_id,
+            title=title,
+            returns=chartjs_returns,
+            benchmark=chartjs_benchmark,
+            hoverable=hoverable,
+            font_name=fontname,
+            figsize=figsize,
+            log_scale=log_scale,
+            line_opacity=alpha,
         )
-    ax.yaxis.set_label_coords(-0.1, 0.5)
 
-    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
-
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
-        fig.tight_layout()
-    except Exception:
-        pass
-
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+        return None
 
 
 def plot_histogram(
