@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-"""QuantStats: Portfolio analytics for quants
+"""NiedoQuantStats: Portfolio analytics for quants
 https://github.com/ranaroussi/quantstats
-QuantStats performs portfolio profiling, to allow quants and
+NiedoQuantStats performs portfolio profiling, to allow quants and
 portfolio managers to understand their performance better,
 by providing them with in-depth analytics and risk metrics.
 """
@@ -30,7 +30,7 @@ with io.open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     requirements = [line.rstrip() for line in f]
 
 setup(
-    name='QuantStats',
+    name='NiedoQuantStats',
     version=version,
     description='Portfolio analytics for quants',
     long_description=long_description,
