@@ -288,13 +288,51 @@ def plot_timeseries(
             returns = returns.cumsum()
             if isinstance(benchmark, _pd.Series):
                 benchmark = benchmark.cumsum()
+# In `core.py` at lines 292–298, the original implementation for handling the `returns` and `benchmark` objects when resampling was as follows:
+# 
+# ```python
+# if resample:
+#     returns = returns.resample(resample)
+#     returns = returns.last() if compound is True else returns.sum(axis=0)
+#     if isinstance(benchmark, _pd.Series):
+#         benchmark = benchmark.resample(resample)
+#         benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
+# ```
+# 
+# Problem:
+# The above code caused a `numpy operations are not valid with resample. Use .resample(...).sum() instead` error. This occurred because `returns = returns.resample(resample)` produces a `DatetimeIndexResampler` object rather than a `DataFrame` or `Series`.
+# 
+# Fix:
+# To avoid this issue, the fix involves chaining the `.resample()` call directly with `.sum()` or `.last()`. The updated approach ensures that the `returns` and `benchmark` variables remain as `DataFrame` or `Series` objects rather than becoming resampler objects:
+# 
+# ```python
+# if resample:
+#     if compound:
+#         returns = returns.resample(resample).last()
+#         if isinstance(benchmark, _pd.Series):
+#             benchmark = benchmark.resample(resample).last()
+#     else:
+#         returns = returns.resample(resample).sum()
+#         if isinstance(benchmark, _pd.Series):
+#             benchmark = benchmark.resample(resample).sum()
+# ```
+# 
+# Explanation:
+# - In the `compound` case, `.last()` is applied to get the final value for each period after resampling.
+# - In the non-compound case, `.sum()` is applied to aggregate values within each period.
+# 
+# Benefit:
+# This change ensures that the logic for handling `returns` and `benchmark` remains correct while avoiding errors related to performing operations on `DatetimeIndexResampler` objects.
 
     if resample:
-        returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum(axis=0)
-        if isinstance(benchmark, _pd.Series):
-            benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
+        if compound:
+            returns = returns.resample(resample).last()
+            if isinstance(benchmark,_pd.Series):
+                benchmark = benchmark.resample(resample).last()
+            else:
+                returns = returns.resample(resample).sum()
+                if isinstance(benchmark, _pd.Series):
+                    benchmark = benchmark.resample(resample).sum()
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
