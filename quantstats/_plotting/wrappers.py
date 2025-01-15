@@ -27,6 +27,7 @@ from matplotlib.ticker import (
 
 import numpy as _np
 from pandas import DataFrame as _df
+from pandas import Series as _series
 import pandas as _pd
 import seaborn as _sns
 
@@ -566,7 +567,7 @@ def yearly_returns(
     if compounded:
         returns = returns.resample("YE").apply(_stats.comp)
     else:
-        returns = returns.resample("YE").apply(_df.sum)
+        returns = returns.resample("YE").apply(_series.sum if isinstance(returns,_series) else _df.sum)
     returns = returns.resample("YE").last()
 
     fig = _core.plot_returns_bars(
