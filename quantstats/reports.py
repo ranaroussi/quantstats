@@ -636,6 +636,7 @@ def full(
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
         active=active,
+        compounded=compounded,
     )
 
 
@@ -715,6 +716,7 @@ def basic(
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
         active=active,
+        compounded=compounded,
     )
 
 
