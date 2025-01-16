@@ -1292,7 +1292,8 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
-        ylabel='',
+        ylabel=False,
+        cumulative=compounded,
         prepare_returns=False,
     )
 
@@ -1302,7 +1303,8 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel=False,
+        cumulative=compounded,
         prepare_returns=False,
     )
 
@@ -1314,7 +1316,8 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel=False,
+            cumulative=compounded,
             prepare_returns=False,
         )
 
@@ -1324,7 +1327,8 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel=False,
+        compounded=compounded,
         prepare_returns=False,
     )
 
@@ -1334,7 +1338,8 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel=False,
+        compounded=compounded,
         prepare_returns=False,
     )
 
@@ -1403,7 +1408,8 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel=False,
+            compounded=compounded,
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1413,11 +1419,11 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel=False,
                 title=col,
+                compounded=compounded,
                 prepare_returns=False,
             )
-
     _plots.drawdown(
         returns,
         grayscale=grayscale,
@@ -1433,6 +1439,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
+            compounded=compounded,
             show=True,
             ylabel='',
             active=active,
@@ -1458,7 +1465,8 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=returns.name,
-            ylabel='',
+            ylabel=False,
+            compounded=compounded,
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1469,10 +1477,10 @@ def plots(
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 title=col,
-                ylabel='',
+                ylabel=False,
+                compounded=compounded,
                 prepare_returns=False,
             )
-
 
 def _calc_dd(df, display=True, as_pct=False):
     dd = _stats.to_drawdown_series(df)
