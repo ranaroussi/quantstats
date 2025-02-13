@@ -112,9 +112,8 @@ def plot_returns_bars(
     savefig=None,
     show=True,
 ):
-
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.loc[returns.index].std()
         returns = (returns / returns.std()) * bmark_vol
@@ -265,7 +264,6 @@ def plot_timeseries(
     savefig=None,
     show=True,
 ):
-
     colors, ls, alpha = _get_colors(grayscale)
 
     returns.fillna(0, inplace=True)
@@ -273,7 +271,7 @@ def plot_timeseries(
         benchmark.fillna(0, inplace=True)
 
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.std()
         returns = (returns / returns.std()) * bmark_vol
@@ -291,10 +289,10 @@ def plot_timeseries(
 
     if resample:
         returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum(axis=0)
+        returns = returns.last() if compound is True else returns.sum()
         if isinstance(benchmark, _pd.Series):
             benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
+            benchmark = benchmark.last() if compound is True else benchmark.sum()
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -419,7 +417,6 @@ def plot_histogram(
     savefig=None,
     show=True,
 ):
-
     # colors = ['#348dc1', '#003366', 'red']
     # if grayscale:
     #     colors = ['silver', 'gray', 'black']
@@ -616,7 +613,6 @@ def plot_rolling_stats(
     savefig=None,
     show=True,
 ):
-
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -745,7 +741,6 @@ def plot_rolling_beta(
     savefig=None,
     show=True,
 ):
-
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -889,7 +884,6 @@ def plot_longest_drawdowns(
     savefig=None,
     show=True,
 ):
-
     colors = ["#348dc1", "#003366", "red"]
     if grayscale:
         colors = ["#000000"] * 3
@@ -1001,7 +995,6 @@ def plot_distribution(
     savefig=None,
     show=True,
 ):
-
     colors = _FLATUI_COLORS
     if grayscale:
         colors = ["#f9f9f9", "#dddddd", "#bbbbbb", "#999999", "#808080"]
@@ -1013,16 +1006,16 @@ def plot_distribution(
     apply_fnc = _stats.comp if compounded else _np.sum
 
     port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
-    port["Weekly"].ffill(inplace=True)
+    port["Weekly"] = port["Weekly"].ffill()
 
     port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
-    port["Monthly"].ffill(inplace=True)
+    port["Monthly"] = port["Monthly"].ffill()
 
     port["Quarterly"] = port["Daily"].resample("QE").apply(apply_fnc)
-    port["Quarterly"].ffill(inplace=True)
+    port["Quarterly"] = port["Quarterly"].ffill()
 
     port["Yearly"] = port["Daily"].resample("YE").apply(apply_fnc)
-    port["Yearly"].ffill(inplace=True)
+    port["Yearly"] = port["Yearly"].ffill()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -1118,7 +1111,6 @@ def plot_table(
     savefig=None,
     show=False,
 ):
-
     if columns is not None:
         try:
             tbl.columns = columns
