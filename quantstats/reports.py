@@ -43,8 +43,10 @@ def _get_trading_periods(periods_per_year=252):
 def _match_dates(returns, benchmark):
     if isinstance(returns, _pd.DataFrame):
         loc = max(returns[returns.columns[0]].ne(0).idxmax(), benchmark.ne(0).idxmax())
-    else:
+    elif isinstance(returns, _pd.Series) and isinstance(benchmark, _pd.Series):
         loc = max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax())
+    else:    
+        loc = max(returns.ne(0).idxmax(), benchmark.iloc[:, 0].ne(0).idxmax())
     returns = returns.loc[loc:]
     benchmark = benchmark.loc[loc:]
 
