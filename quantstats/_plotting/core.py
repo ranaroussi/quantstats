@@ -483,15 +483,15 @@ def plot_histogram(
     if benchmark is not None:
         if isinstance(returns, _pd.Series):
             combined_returns = (
-                benchmark.to_frame()
-                .join(returns.to_frame())
+                _pd.DataFrame(benchmark)
+                .join(_pd.DataFrame(returns))
                 .stack()
                 .reset_index()
                 .rename(columns={"level_1": "", 0: "Returns"})
             )
         elif isinstance(returns, _pd.DataFrame):
             combined_returns = (
-                benchmark.to_frame()
+                _pd.DataFrame(benchmark)
                 .join(returns)
                 .stack()
                 .reset_index()
