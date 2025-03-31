@@ -13,15 +13,25 @@ from setuptools import setup, find_packages
 import io
 from os import path
 
+# --- get version ---
+version = "unknown"
+with open("quantstats/version.py") as f:
+    line = f.read().strip()
+    version = line.replace("version = ", "").replace('"', '')
+# --- /get version ---
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with io.open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+with io.open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+    requirements = [line.rstrip() for line in f]
+
 setup(
     name='QuantStats',
-    version='0.0.26',
+    version=version,
     description='Portfolio analytics for quants',
     long_description=long_description,
     url='https://github.com/ranaroussi/quantstats',
@@ -33,8 +43,8 @@ setup(
         # 'Development Status :: 1 - Planning',
         # 'Development Status :: 2 - Pre-Alpha',
         # 'Development Status :: 3 - Alpha',
-        'Development Status :: 4 - Beta',
-        # 'Development Status :: 5 - Production/Stable',
+        # 'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
 
         'Operating System :: OS Independent',
 
@@ -53,15 +63,15 @@ setup(
         # 'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
 
     platforms=['any'],
     keywords="""quant algotrading algorithmic-trading quantitative-trading
                 quantitative-analysis algo-trading visualization plotting""",
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'examples']),
-    install_requires=['pandas>=0.24.0', 'numpy>=1.15.0', 'scipy>=1.2.0',
-                      'matplotlib>=3.0.0', 'seaborn>=0.9.0',
-                      'tabulate>=0.8.0', 'yfinance>=0.1.44'],
+    install_requires=requirements,
     entry_points={
         'console_scripts': [
             'sample=sample:main',

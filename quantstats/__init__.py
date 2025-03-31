@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.0.26"
+from . import version
+
+__version__ = version.version
 __author__ = "Ran Aroussi"
 
 from . import stats, utils, plots, reports
 
-__all__ = ['stats', 'plots', 'reports', 'utils', 'extend_pandas']
+__all__ = ["stats", "plots", "reports", "utils", "extend_pandas"]
 
 # try automatic matplotlib inline
 utils._in_notebook(matplotlib_inline=True)
@@ -31,7 +33,7 @@ utils._in_notebook(matplotlib_inline=True)
 
 def extend_pandas():
     """
-    extends pandas by exposing methods to be used like:
+    Extends pandas by exposing methods to be used like:
     df.sharpe(), df.best('day'), ...
     """
     from pandas.core.base import PandasObject as _po
@@ -53,9 +55,16 @@ def extend_pandas():
     _po.avg_win = stats.avg_win
     _po.avg_loss = stats.avg_loss
     _po.volatility = stats.volatility
+    _po.rolling_volatility = stats.rolling_volatility
     _po.implied_volatility = stats.implied_volatility
     _po.sharpe = stats.sharpe
+    _po.smart_sharpe = stats.smart_sharpe
+    _po.rolling_sharpe = stats.rolling_sharpe
     _po.sortino = stats.sortino
+    _po.smart_sortino = stats.smart_sortino
+    _po.adjusted_sortino = stats.adjusted_sortino
+    _po.rolling_sortino = stats.rolling_sortino
+    _po.omega = stats.omega
     _po.cagr = stats.cagr
     _po.rar = stats.rar
     _po.skew = stats.skew
@@ -64,6 +73,7 @@ def extend_pandas():
     _po.ulcer_index = stats.ulcer_index
     _po.ulcer_performance_index = stats.ulcer_performance_index
     _po.upi = stats.upi
+    _po.serenity_index = stats.serenity_index
     _po.risk_of_ruin = stats.risk_of_ruin
     _po.ror = stats.ror
     _po.value_at_risk = stats.value_at_risk
@@ -88,6 +98,13 @@ def extend_pandas():
     _po.kelly_criterion = stats.kelly_criterion
     _po.monthly_returns = stats.monthly_returns
     _po.pct_rank = stats.pct_rank
+
+    _po.treynor_ratio = stats.treynor_ratio
+    _po.probabilistic_sharpe_ratio = stats.probabilistic_sharpe_ratio
+    _po.probabilistic_sortino_ratio = stats.probabilistic_sortino_ratio
+    _po.probabilistic_adjusted_sortino_ratio = (
+        stats.probabilistic_adjusted_sortino_ratio
+    )
 
     # methods from utils
     _po.to_returns = utils.to_returns
@@ -131,4 +148,6 @@ def extend_pandas():
     _po.plot_monthly_heatmap = plots.monthly_heatmap
 
     _po.metrics = reports.metrics
+
+
 # extend_pandas()

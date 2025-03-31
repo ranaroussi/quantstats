@@ -1,4 +1,4 @@
-.. image:: https://img.shields.io/badge/python-3.5+-blue.svg?style=flat
+.. image:: https://img.shields.io/badge/python-3.6+-blue.svg?style=flat
     :target: https://pypi.python.org/pypi/quantstats
     :alt: Python version
 
@@ -9,10 +9,6 @@
 .. image:: https://img.shields.io/pypi/status/quantstats.svg?maxAge=60
     :target: https://pypi.python.org/pypi/quantstats
     :alt: PyPi status
-
-.. image:: https://img.shields.io/travis/ranaroussi/quantstats/master.svg?maxAge=1
-    :target: https://travis-ci.com/ranaroussi/quantstats
-    :alt: Travis-CI build status
 
 .. image:: https://img.shields.io/pypi/dm/quantstats.svg?maxAge=2592000&label=installs&color=%2327B1FF
     :target: https://pypi.python.org/pypi/quantstats
@@ -60,7 +56,7 @@ Quick Start
     qs.extend_pandas()
 
     # fetch the daily returns for a stock
-    stock = qs.utils.download_returns('FB')
+    stock = qs.utils.download_returns('META')
 
     # show sharpe ratio
     qs.stats.sharpe(stock)
@@ -80,14 +76,14 @@ Visualize stock performance
 
 .. code:: python
 
-    qs.plots.snapshot(stock, title='Facebook Performance')
+    qs.plots.snapshot(stock, title='Facebook Performance', show=True)
 
     # can also be called via:
-    # stock.plot_snapshot(title='Facebook Performance')
+    # stock.plot_snapshot(title='Facebook Performance', show=True)
 
 Output:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/snapshot.jpg
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.jpg?raw=true
     :alt: Snapshot plot
 
 
@@ -111,10 +107,10 @@ Let' create an html tearsheet
 
 Output will generate something like this:
 
-.. image:: https://raw.githubusercontent.com/ranaroussi/quantstats/dev/docs/report.jpg
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.jpg?raw=true
     :alt: HTML tearsheet
 
-(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/bd0e70bd284798a58c569363bc7e1c3c8c6e3fd9/docs/tearsheet.html>`_)
+(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/main/docs/tearsheet.html>`_)
 
 
 To view a complete list of available methods, run
@@ -174,6 +170,7 @@ To view a complete list of available methods, run
 	 'sharpe',
 	 'skew',
 	 'sortino',
+	 'adjusted_sortino',
 	 'tail_ratio',
 	 'to_drawdown_series',
 	 'ulcer_index',

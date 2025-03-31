@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

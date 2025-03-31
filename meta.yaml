@@ -1,5 +1,5 @@
 {% set name = "QuantStats" %}
-{% set version = "0.0.22" %}
+{% set version = "0.0.35" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: "c445478da26bedf5517c61272b4b49d834f72c600740951f36d02424aba321c8"
+  sha256: "c09e9ad157f6cbbf76c7cace6d52e64486a64fffdb21f4a840152f7e9ea8f8a2"
 
 build:
   noarch: python
@@ -16,24 +16,27 @@ build:
 
 requirements:
   host:
-    - matplotlib >=3.0.0
-    - numpy >=1.15.0
     - pandas >=0.24.0
+    - numpy >=1.16.5
+    - seaborn >=0.9.0
+    - matplotlib >=3.0.0
+    - scipy >=1.2.0
+    - tabulate >=0.8.0
+    - yfinance >=0.1.55
     - pip
     - python
     - scipy >=1.2.0
-    - seaborn >=0.9.0
-    - tabulate >=0.8.0
-    - yfinance >=0.1.44
   run:
-    - matplotlib >=3.0.0
-    - numpy >=1.15.0
     - pandas >=0.24.0
+    - numpy >=1.16.5
+    - seaborn >=0.9.0
+    - matplotlib >=3.0.0
+    - scipy >=1.2.0
+    - tabulate >=0.8.0
+    - yfinance >=0.1.55
+    - pip
     - python
     - scipy >=1.2.0
-    - seaborn >=0.9.0
-    - tabulate >=0.8.0
-    - yfinance >=0.1.44
 
 test:
   imports:
