@@ -1,0 +1,3 @@
+[package_module_name_map]
+ipython = "IPython"
+python-dateutil = "dateutil"
