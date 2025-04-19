@@ -30,4 +30,4 @@ jobs:
   
       - name: Run Deptry
         shell: bash
-        run: deptry quantstats
+        run: deptry .
