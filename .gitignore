@@ -12,4 +12,5 @@ quantstats.egg-info
 QuantStats.egg-info
 Icon
 .vscode
+.venv
 Icon
