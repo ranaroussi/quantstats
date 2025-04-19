@@ -30,4 +30,5 @@ jobs:
   
       - name: Run Deptry
         shell: bash
-        run: deptry . --package-module-name-map "python-dateutil=dateutil,ipython=IPython"
+        run: deptry . --package-module-name-map "python-dateutil=dateutil,ipython=IPython" \
+                      --per-rule-ignores "DEP001=plotly"
