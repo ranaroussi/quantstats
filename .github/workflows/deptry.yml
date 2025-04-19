@@ -30,4 +30,4 @@ jobs:
   
       - name: Run Deptry
         shell: bash
-        run: deptry .
+        run: deptry . --package-module-name-map "python-dateutil=datutil,ipython=IPython"
