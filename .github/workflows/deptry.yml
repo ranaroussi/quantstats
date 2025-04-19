@@ -1,0 +1,25 @@
+# this job can be used to identify missing and obsolete dependencies
+name: "Deptry"
+
+on:
+  push:
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ main ]
+
+permissions:
+    contents: read
+    
+jobs:
+  Dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Install deptry
+        shell: bash
+        run: |
+          python -m pip install --no-cache-dir deptry
+  
+      - name: Run Deptry
+        shell: bash
+        run: deptry quantstats
