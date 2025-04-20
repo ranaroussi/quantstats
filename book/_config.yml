@@ -1,0 +1,34 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: quantstats
+author: Thomas Schmelzer
+only_build_toc_files: true
+
+parse:
+  myst_enable_extensions:
+    - substitution
+    - linkify
+    - dollarmath
+  myst_substitutions:
+    book_url: https://tschm.github.io/quantstats
+
+# needed for plotly
+sphinx:
+  config:
+    html_js_files:
+    - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js
+
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/tschm/quantstats
+  path_to_book: book
+  branch: main
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+  extra_navbar: Powered by <a href="https://jupyterbook.org">Jupyter Book</a>  # Will be displayed underneath the left navbar.
