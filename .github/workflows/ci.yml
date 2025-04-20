@@ -1,0 +1,25 @@
+name: "ci"
+
+on:
+- push
+
+jobs:
+  test:
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ] #, windows-latest, macos-latest ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: "Build the virtual environment"
+        uses: tschm/cradle/actions/environment@v0.1.59
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: tschm/cradle/actions/test@v0.1.59
+        with:
+          tests-folder: tests
