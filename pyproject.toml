@@ -1,0 +1,64 @@
+[project]
+name = 'quantstats_reloaded'
+version = "0.0.0"
+description = "Toying with quantstats"
+# Please add authors and correct the email...
+authors = [{name='tschm', email= 'thomas.schmelzer@gmail.com'}]
+readme = "README.rst"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.2.3",
+    "pandas>=2.2.3",
+    "seaborn>=0.9.0",
+    #pandas>=0.24.0
+#numpy>=1.16.5
+#seaborn>=0.9.0
+    "matplotlib>=3.0.0",
+    "scipy>=1.5.0",
+    "tabulate>=0.8.0",
+    "yfinance>=0.1.70",
+    "python-dateutil>=2.0",
+    "ipython>=8.0.0"
+]
+
+[project.urls]
+repository = "https://github.com/tschm/quantstats"
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=6.0.0",
+    "pytest>=8.3.3",
+    "pre-commit>=4.0.1",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    "*__init__.py"
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["quantstats"]
+
+[tool.hatch.build]
+include = [
+    "LICENSE",    # Ensure the LICENSE file is included in your package
+    "README.md",
+    "quantstats"
+]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+
+
+[tool.deptry]
+# see https://deptry.com/usage/#pep-621-dev-dependency-groups
+pep621_dev_dependency_groups = ["dev"]
