@@ -1,0 +1,35 @@
+{
+    "name": "Marimo Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/python:3.13",
+    "hostRequirements": {
+        "cpus": 4
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {}
+    },
+    "forwardPorts": [8080],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.pythonPath": ".venv/bin/python",
+                "python.defaultInterpreterPath": ".venv/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": true,
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestArgs": ["."],
+                "python.terminal.activateEnvInCurrentTerminal": true,
+                "marimo.pythonPath": ".venv/bin/python",
+                "marimo.marimoPath": ".venv/bin/marimo"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "marimo-team.vscode-marimo"
+            ]
+        }
+    },
+    "onCreateCommand": ".devcontainer/startup.sh",
+    "postStartCommand": "uv run marimo --yes edit --host=localhost --port=8080 --headless --no-token",
+    "remoteUser": "vscode"
+}

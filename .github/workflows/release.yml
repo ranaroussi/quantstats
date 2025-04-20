@@ -1,0 +1,52 @@
+name: Bump version and publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tagging:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag_step.outputs.new_tag }}
+
+    steps:
+      - name: Generate Tag
+        id: tag_step
+        uses: tschm/cradle/actions/tag@v0.1.57
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    runs-on: ubuntu-latest
+    needs: tagging
+    steps:
+      - name: build
+        uses: tschm/cradle/actions/build@v0.1.57
+        with:
+          tag: ${{ needs.tagging.outputs.new_tag }}
+
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+
+    permissions:
+      contents: read
+      # This permission is required for trusted publishing.
+      id-token: write
+
+    steps:
+      - name: Checkout [${{ github.repository }}]
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
