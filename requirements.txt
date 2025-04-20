@@ -6,4 +6,4 @@ scipy>=1.2.0
 tabulate>=0.8.0
 yfinance>=0.1.70
 python-dateutil>=2.0
-ipython>=9.0.0
+ipython>=8.0.0
