@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -17,13 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io as _io
 import datetime as _dt
-import pandas as _pd
-import numpy as _np
-import yfinance as _yf
-from . import stats as _stats
 import inspect
+import io as _io
+
+import numpy as _np
+import pandas as _pd
+import yfinance as _yf
+
+from . import stats as _stats
 
 
 def _mtd(df):
@@ -95,9 +96,7 @@ def exponential_stdev(returns, window=30, is_halflife=False):
     """Returns series representing exponential volatility of returns"""
     returns = _prepare_returns(returns)
     halflife = window if is_halflife else None
-    return returns.ewm(
-        com=None, span=window, halflife=halflife, min_periods=window
-    ).std()
+    return returns.ewm(com=None, span=window, halflife=halflife, min_periods=window).std()
 
 
 def rebase(prices, base=100.0):
@@ -146,9 +145,7 @@ def aggregate_returns(returns, period=None, compounded=True):
         return group_returns(returns, [index.year, index.month], compounded=compounded)
 
     if "eoq" in period or period == "QE":
-        return group_returns(
-            returns, [index.year, index.quarter], compounded=compounded
-        )
+        return group_returns(returns, [index.year, index.quarter], compounded=compounded)
 
     if not isinstance(period, str):
         return group_returns(returns, period, compounded)
@@ -269,16 +266,10 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         benchmark = benchmark[benchmark.columns[0]].copy()
 
     if isinstance(period, _pd.DatetimeIndex) and set(period) != set(benchmark.index):
-
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
         new_index = _pd.date_range(start=period[0], end=period[-1], freq="D")
-        benchmark = (
-            benchmark_prices.reindex(new_index, method="bfill")
-            .reindex(period)
-            .pct_change()
-            .fillna(0)
-        )
+        benchmark = benchmark_prices.reindex(new_index, method="bfill").reindex(period).pct_change().fillna(0)
         benchmark = benchmark[benchmark.index.isin(period)]
 
     benchmark = benchmark.tz_localize(None)
@@ -300,25 +291,6 @@ def _file_stream():
     return _io.BytesIO()
 
 
-def _in_notebook(matplotlib_inline=False):
-    """Identify enviroment (notebook, terminal, etc)"""
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
-            # Jupyter notebook or qtconsole
-            if matplotlib_inline:
-                get_ipython().magic("matplotlib inline")
-            return True
-        if shell == "TerminalInteractiveShell":
-            # Terminal running IPython
-            return False
-        # Other type (?)
-        return False
-    except NameError:
-        # Probably standard Python interpreter
-        return False
-
-
 def _count_consecutive(data):
     """Counts consecutive data (like cumsum() with reset on zeroes)"""
 
@@ -337,9 +309,7 @@ def _score_str(val):
     return ("" if "-" in val else "+") + str(val)
 
 
-def make_index(
-    ticker_weights, rebalance="1M", period="max", returns=None, match_dates=False
-):
+def make_index(ticker_weights, rebalance="1M", period="max", returns=None, match_dates=False):
     """
     Makes an index out of the given tickers and weights.
     Optionally you can pass a dataframe with the returns.
@@ -398,9 +368,7 @@ def make_index(
 
     # multiply first day of each rebalance period by the weight
     for ticker, weight in ticker_weights.items():
-        index[ticker] = _np.where(
-            index["first_day"], weight * index[ticker], index[ticker]
-        )
+        index[ticker] = _np.where(index["first_day"], weight * index[ticker], index[ticker])
 
     # drop first marker
     index.drop(columns=["first_day"], inplace=True)
@@ -420,9 +388,7 @@ def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):
         p1 = to_prices(returns, start_balance)
     else:
         # fixed amount every day
-        comp_rev = (start_balance + start_balance * returns.shift(1)).fillna(
-            start_balance
-        ) * returns
+        comp_rev = (start_balance + start_balance * returns.shift(1)).fillna(start_balance) * returns
         p1 = start_balance + comp_rev.cumsum()
 
     # add day before with starting balance

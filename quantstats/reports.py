@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
@@ -18,21 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as _pd
-import numpy as _np
-from math import sqrt as _sqrt, ceil as _ceil
-from datetime import datetime as _dt
-from base64 import b64encode as _b64encode
 import re as _regex
-from tabulate import tabulate as _tabulate
-from . import __version__, stats as _stats, utils as _utils, plots as _plots
-from dateutil.relativedelta import relativedelta
+from base64 import b64encode as _b64encode
+from datetime import datetime as _dt
 from io import StringIO
+from math import ceil as _ceil
+from math import sqrt as _sqrt
+
+import numpy as _np
+import pandas as _pd
+from dateutil.relativedelta import relativedelta
+from tabulate import tabulate as _tabulate
+
+from . import plots as _plots
+from . import stats as _stats
+from . import utils as _utils
 
 try:
-    from IPython.display import display as iDisplay, HTML as iHTML
+    from IPython.display import HTML as iHTML
+    from IPython.display import display as iDisplay
 except ImportError:
-    from IPython.core.display import display as iDisplay, HTML as iHTML
+    from IPython.core.display import HTML as iHTML
+    from IPython.core.display import display as iDisplay
 
 
 def _get_trading_periods(periods_per_year=252):
@@ -66,7 +70,6 @@ def html(
     match_dates=True,
     **kwargs,
 ):
-
     if output is None and not _utils._in_notebook():
         raise ValueError("`output` must be specified")
 
@@ -100,9 +103,7 @@ def html(
             elif isinstance(benchmark, _pd.DataFrame):
                 benchmark_title = benchmark[benchmark.columns[0]].name
 
-        tpl = tpl.replace(
-            "{{benchmark_title}}", f"Benchmark is {benchmark_title.upper()} | "
-        )
+        tpl = tpl.replace("{{benchmark_title}}", f"Benchmark is {benchmark_title.upper()} | ")
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
@@ -112,7 +113,6 @@ def html(
     date_range = returns.index.strftime("%e %b, %Y")
     tpl = tpl.replace("{{date_range}}", date_range[0] + " - " + date_range[-1])
     tpl = tpl.replace("{{title}}", title)
-    tpl = tpl.replace("{{v}}", __version__)
 
     if benchmark is not None:
         benchmark.name = benchmark_title
@@ -142,27 +142,17 @@ def html(
         num_cols = len(returns.columns)
         for i in reversed(range(num_cols + 1, num_cols + 3)):
             str_td = "<td></td>" * i
-            tpl = tpl.replace(
-                f"<tr>{str_td}</tr>", '<tr><td colspan="{}"><hr></td></tr>'.format(i)
-            )
+            tpl = tpl.replace(f"<tr>{str_td}</tr>", f'<tr><td colspan="{i}"><hr></td></tr>')
 
-    tpl = tpl.replace(
-        "<tr><td></td><td></td><td></td></tr>", '<tr><td colspan="3"><hr></td></tr>'
-    )
-    tpl = tpl.replace(
-        "<tr><td></td><td></td></tr>", '<tr><td colspan="2"><hr></td></tr>'
-    )
+    tpl = tpl.replace("<tr><td></td><td></td><td></td></tr>", '<tr><td colspan="3"><hr></td></tr>')
+    tpl = tpl.replace("<tr><td></td><td></td></tr>", '<tr><td colspan="2"><hr></td></tr>')
 
     if benchmark is not None:
-        yoy = _stats.compare(
-            returns, benchmark, "YE", compounded=compounded, prepare_returns=False
-        )
+        yoy = _stats.compare(returns, benchmark, "YE", compounded=compounded, prepare_returns=False)
         if isinstance(returns, _pd.Series):
             yoy.columns = [benchmark_title, strategy_title, "Multiplier", "Won"]
         elif isinstance(returns, _pd.DataFrame):
-            yoy.columns = list(
-                _pd.core.common.flatten([benchmark_title, strategy_title])
-            )
+            yoy.columns = list(_pd.core.common.flatten([benchmark_title, strategy_title]))
         yoy.index.name = "Year"
         tpl = tpl.replace("{{eoy_title}}", "<h3>EOY Returns vs Benchmark</h3>")
         tpl = tpl.replace("{{eoy_table}}", _html_table(yoy))
@@ -185,9 +175,7 @@ def html(
 
     if isinstance(returns, _pd.Series):
         dd = _stats.to_drawdown_series(returns)
-        dd_info = _stats.drawdown_details(dd).sort_values(
-            by="max drawdown", ascending=True
-        )[:10]
+        dd_info = _stats.drawdown_details(dd).sort_values(by="max drawdown", ascending=True)[:10]
         dd_info = dd_info[["start", "end", "max drawdown", "days"]]
         dd_info.columns = ["Started", "Recovered", "Drawdown", "Days"]
         tpl = tpl.replace("{{dd_info}}", _html_table(dd_info, False))
@@ -195,18 +183,14 @@ def html(
         dd_info_list = []
         for col in returns.columns:
             dd = _stats.to_drawdown_series(returns[col])
-            dd_info = _stats.drawdown_details(dd).sort_values(
-                by="max drawdown", ascending=True
-            )[:10]
+            dd_info = _stats.drawdown_details(dd).sort_values(by="max drawdown", ascending=True)[:10]
             dd_info = dd_info[["start", "end", "max drawdown", "days"]]
             dd_info.columns = ["Started", "Recovered", "Drawdown", "Days"]
             dd_info_list.append(_html_table(dd_info, False))
 
         dd_html_table = ""
         for html_str, col in zip(dd_info_list, returns.columns):
-            dd_html_table = (
-                dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
-            )
+            dd_html_table = dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
         tpl = tpl.replace("{{dd_info}}", dd_html_table)
 
     active = kwargs.get("active_returns", "False")
@@ -220,7 +204,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -235,7 +219,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -252,7 +236,7 @@ def html(
             subtitle=False,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             cumulative=compounded,
             prepare_returns=False,
         )
@@ -267,7 +251,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         compounded=compounded,
         prepare_returns=False,
     )
@@ -282,7 +266,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         compounded=compounded,
         prepare_returns=False,
     )
@@ -297,7 +281,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
         active=active,
     )
@@ -315,7 +299,7 @@ def html(
             window2=win_year,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
         tpl = tpl.replace("{{rolling_beta}}", _embed_figure(figfile, figfmt))
@@ -329,7 +313,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -343,7 +327,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -357,7 +341,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -373,7 +357,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             prepare_returns=False,
         )
@@ -389,7 +373,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -404,7 +388,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
     )
     tpl = tpl.replace("{{dd_plot}}", _embed_figure(figfile, figfmt))
 
@@ -419,7 +403,7 @@ def html(
             returns_label=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             active=active,
         )
@@ -436,7 +420,7 @@ def html(
                 returns_label=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 active=active,
             )
@@ -454,7 +438,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             prepare_returns=False,
         )
@@ -470,7 +454,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -501,7 +485,6 @@ def full(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -540,9 +523,7 @@ def full(
         col = _stats.drawdown_details(dd).columns.get_level_values(1)[4]
         dd_info_dict = {}
         for ptf in dd.columns:
-            dd_info = _stats.drawdown_details(dd[ptf]).sort_values(
-                by=col, ascending=True
-            )[:5]
+            dd_info = _stats.drawdown_details(dd[ptf]).sort_values(by=col, ascending=True)[:5]
             if not dd_info.empty:
                 dd_info.index = range(1, min(6, len(dd_info) + 1))
                 dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
@@ -573,12 +554,7 @@ def full(
                 iDisplay(dd_info)
         elif isinstance(dd, _pd.DataFrame):
             for ptf, dd_info in dd_info_dict.items():
-                iDisplay(
-                    iHTML(
-                        '<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>'
-                        % ptf
-                    )
-                )
+                iDisplay(iHTML('<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>' % ptf))
                 if dd_info.empty:
                     iDisplay(iHTML("<p>(no drawdowns)</p>"))
                 else:
@@ -605,22 +581,14 @@ def full(
             if dd_info.empty:
                 print("(no drawdowns)")
             else:
-                print(
-                    _tabulate(
-                        dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"
-                    )
-                )
+                print(_tabulate(dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"))
         elif isinstance(dd, _pd.DataFrame):
             for ptf, dd_info in dd_info_dict.items():
                 if dd_info.empty:
                     print("(no drawdowns)")
                 else:
                     print(f"{ptf}\n")
-                    print(
-                        _tabulate(
-                            dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"
-                        )
-                    )
+                    print(_tabulate(dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"))
 
         print("\n\n")
         print("[Strategy Visualization]\nvia Matplotlib")
@@ -651,7 +619,6 @@ def basic(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -731,7 +698,6 @@ def metrics(
     match_dates=True,
     **kwargs,
 ):
-
     if match_dates:
         returns = returns.dropna()
     returns.index = returns.index.tz_localize(None)
@@ -744,10 +710,7 @@ def metrics(
         if isinstance(benchmark, str):
             benchmark_colname = f"Benchmark ({benchmark.upper()})"
         elif isinstance(benchmark, _pd.DataFrame) and len(benchmark.columns) > 1:
-            raise ValueError(
-                "`benchmark` must be a pandas Series, "
-                "but a multi-column DataFrame was passed"
-            )
+            raise ValueError("`benchmark` must be a pandas Series, but a multi-column DataFrame was passed")
 
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1:
@@ -757,11 +720,6 @@ def metrics(
     else:
         blank = [""]
 
-    # if isinstance(returns, _pd.DataFrame):
-    #     if len(returns.columns) > 1:
-    #         raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
-    #     returns = returns[returns.columns[0]]
-
     if prepare_returns:
         df = _utils._prepare_returns(returns)
 
@@ -769,10 +727,7 @@ def metrics(
         df = _pd.DataFrame({"returns": returns})
     elif isinstance(returns, _pd.DataFrame):
         df = _pd.DataFrame(
-            {
-                "returns_" + str(i + 1): returns[strategy_col]
-                for i, strategy_col in enumerate(returns.columns)
-            }
+            {"returns_" + str(i + 1): returns[strategy_col] for i, strategy_col in enumerate(returns.columns)}
         )
 
     if benchmark is not None:
@@ -841,9 +796,7 @@ def metrics(
     metrics["~~~~~~~~~~~~~~"] = blank
 
     metrics["Sharpe"] = _stats.sharpe(df, rf, win_year, True)
-    metrics["Prob. Sharpe Ratio %"] = (
-        _stats.probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
-    )
+    metrics["Prob. Sharpe Ratio %"] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
     if mode.lower() == "full":
         metrics["Smart Sharpe"] = _stats.smart_sharpe(df, rf, win_year, True)
         # metrics['Prob. Smart Sharpe Ratio %'] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False, True) * pct
@@ -852,13 +805,10 @@ def metrics(
     if mode.lower() == "full":
         # metrics['Prob. Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino"] = _stats.smart_sortino(df, rf, win_year, True)
-        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False, True) * pct
 
     metrics["Sortino/√2"] = metrics["Sortino"] / _sqrt(2)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
-        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
     metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
@@ -867,25 +817,14 @@ def metrics(
 
     if mode.lower() == "full":
         if isinstance(returns, _pd.Series):
-            ret_vol = (
-                _stats.volatility(df["returns"], win_year, True, prepare_returns=False)
-                * pct
-            )
+            ret_vol = _stats.volatility(df["returns"], win_year, True, prepare_returns=False) * pct
         elif isinstance(returns, _pd.DataFrame):
             ret_vol = [
-                _stats.volatility(
-                    df[strategy_col], win_year, True, prepare_returns=False
-                )
-                * pct
+                _stats.volatility(df[strategy_col], win_year, True, prepare_returns=False) * pct
                 for strategy_col in df_strategy_columns
             ]
         if "benchmark" in df:
-            bench_vol = (
-                _stats.volatility(
-                    df["benchmark"], win_year, True, prepare_returns=False
-                )
-                * pct
-            )
+            bench_vol = _stats.volatility(df["benchmark"], win_year, True, prepare_returns=False) * pct
 
             vol_ = [ret_vol, bench_vol]
             if isinstance(ret_vol, list):
@@ -894,26 +833,20 @@ def metrics(
                 metrics["Volatility (ann.) %"] = vol_
 
             if isinstance(returns, _pd.Series):
-                metrics["R^2"] = _stats.r_squared(
-                    df["returns"], df["benchmark"], prepare_returns=False
-                )
+                metrics["R^2"] = _stats.r_squared(df["returns"], df["benchmark"], prepare_returns=False)
                 metrics["Information Ratio"] = _stats.information_ratio(
                     df["returns"], df["benchmark"], prepare_returns=False
                 )
             elif isinstance(returns, _pd.DataFrame):
                 metrics["R^2"] = (
                     [
-                        _stats.r_squared(
-                            df[strategy_col], df["benchmark"], prepare_returns=False
-                        ).round(2)
+                        _stats.r_squared(df[strategy_col], df["benchmark"], prepare_returns=False).round(2)
                         for strategy_col in df_strategy_columns
                     ]
                 ) + ["-"]
                 metrics["Information Ratio"] = (
                     [
-                        _stats.information_ratio(
-                            df[strategy_col], df["benchmark"], prepare_returns=False
-                        ).round(2)
+                        _stats.information_ratio(df[strategy_col], df["benchmark"], prepare_returns=False).round(2)
                         for strategy_col in df_strategy_columns
                     ]
                 ) + ["-"]
@@ -929,26 +862,18 @@ def metrics(
 
         metrics["~~~~~~~~~~"] = blank
 
-        metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
-        )
+        metrics["Expected Daily %%"] = _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Expected Monthly %%"] = (
             _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
             _stats.expected_return(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
-        metrics["Kelly Criterion %"] = (
-            _stats.kelly_criterion(df, prepare_returns=False) * pct
-        )
+        metrics["Kelly Criterion %"] = _stats.kelly_criterion(df, prepare_returns=False) * pct
         metrics["Risk of Ruin %"] = _stats.risk_of_ruin(df, prepare_returns=False)
 
-        metrics["Daily Value-at-Risk %"] = -abs(
-            _stats.var(df, prepare_returns=False) * pct
-        )
-        metrics["Expected Shortfall (cVaR) %"] = -abs(
-            _stats.cvar(df, prepare_returns=False) * pct
-        )
+        metrics["Daily Value-at-Risk %"] = -abs(_stats.var(df, prepare_returns=False) * pct)
+        metrics["Expected Shortfall (cVaR) %"] = -abs(_stats.cvar(df, prepare_returns=False) * pct)
 
     metrics["~~~~~~"] = blank
 
@@ -1008,18 +933,10 @@ def metrics(
         metrics["~~~"] = blank
         metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
-        metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
-        )
-        metrics["Worst Month %"] = (
-            _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
-        )
-        metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
-        )
-        metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
-        )
+        metrics["Best Month %"] = _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+        metrics["Worst Month %"] = _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
+        metrics["Best Year %"] = _stats.best(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
+        metrics["Worst Year %"] = _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
 
     # dd
     metrics["~~~~"] = blank
@@ -1045,16 +962,12 @@ def metrics(
         metrics["Win Quarter %%"] = (
             _stats.win_rate(df, compounded=compounded, aggregate="QE", prepare_returns=False) * pct
         )
-        metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
-        )
+        metrics["Win Year %%"] = _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
 
         if "benchmark" in df:
             metrics["~~~~~~~~~~~~"] = blank
             if isinstance(returns, _pd.Series):
-                greeks = _stats.greeks(
-                    df["returns"], df["benchmark"], win_year, prepare_returns=False
-                )
+                greeks = _stats.greeks(df["returns"], df["benchmark"], win_year, prepare_returns=False)
                 metrics["Beta"] = [str(round(greeks["beta"], 2)), "-"]
                 metrics["Alpha"] = [str(round(greeks["alpha"], 2)), "-"]
                 metrics["Correlation"] = [
@@ -1064,10 +977,7 @@ def metrics(
                 metrics["Treynor Ratio"] = [
                     str(
                         round(
-                            _stats.treynor_ratio(
-                                df["returns"], df["benchmark"], win_year, rf
-                            )
-                            * pct,
+                            _stats.treynor_ratio(df["returns"], df["benchmark"], win_year, rf) * pct,
                             2,
                         )
                     )
@@ -1088,8 +998,7 @@ def metrics(
                 metrics["Alpha"] = [str(round(g["alpha"], 2)) for g in greeks] + ["-"]
                 metrics["Correlation"] = (
                     [
-                        str(round(df["benchmark"].corr(df[strategy_col]) * pct, 2))
-                        + "%"
+                        str(round(df["benchmark"].corr(df[strategy_col]) * pct, 2)) + "%"
                         for strategy_col in df_strategy_columns
                     ]
                 ) + ["-"]
@@ -1097,10 +1006,7 @@ def metrics(
                     [
                         str(
                             round(
-                                _stats.treynor_ratio(
-                                    df[strategy_col], df["benchmark"], win_year, rf
-                                )
-                                * pct,
+                                _stats.treynor_ratio(df[strategy_col], df["benchmark"], win_year, rf) * pct,
                                 2,
                             )
                         )
@@ -1124,12 +1030,8 @@ def metrics(
             metrics[col] = metrics[col] + "%"
 
     try:
-        metrics["Longest DD Days"] = _pd.to_numeric(metrics["Longest DD Days"]).astype(
-            "int"
-        )
-        metrics["Avg. Drawdown Days"] = _pd.to_numeric(
-            metrics["Avg. Drawdown Days"]
-        ).astype("int")
+        metrics["Longest DD Days"] = _pd.to_numeric(metrics["Longest DD Days"]).astype("int")
+        metrics["Avg. Drawdown Days"] = _pd.to_numeric(metrics["Avg. Drawdown Days"]).astype("int")
 
         if display or "internal" in kwargs:
             metrics["Longest DD Days"] = metrics["Longest DD Days"].astype(str)
@@ -1180,10 +1082,7 @@ def metrics(
 
     # move benchmark to be the first column always if present
     if "benchmark" in df:
-        metrics = metrics[
-            [benchmark_colname]
-            + [col for col in metrics.columns if col != benchmark_colname]
-        ]
+        metrics = metrics[[benchmark_colname] + [col for col in metrics.columns if col != benchmark_colname]]
 
     if display:
         print(_tabulate(metrics, headers="keys", tablefmt="simple"))
@@ -1194,9 +1093,7 @@ def metrics(
 
     # remove spaces from column names
     metrics = metrics.T
-    metrics.columns = [
-        c.replace(" %", "").replace(" *int", "").strip() for c in metrics.columns
-    ]
+    metrics.columns = [c.replace(" %", "").replace(" *int", "").strip() for c in metrics.columns]
     metrics = metrics.T
 
     return metrics
@@ -1214,7 +1111,6 @@ def plots(
     match_dates=True,
     **kwargs,
 ):
-
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active", "False")
@@ -1255,7 +1151,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 active=active,
             )
@@ -1267,7 +1163,7 @@ def plots(
                     grayscale=grayscale,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
-                    ylabel='',
+                    ylabel="",
                     returns_label=col,
                     compounded=compounded,
                     active=active,
@@ -1290,7 +1186,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1300,7 +1196,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1312,7 +1208,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
 
@@ -1322,7 +1218,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1332,7 +1228,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1349,7 +1245,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
         active=active,
     )
@@ -1363,7 +1259,7 @@ def plots(
             window2=win_year,
             figsize=small_fig_size,
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
 
@@ -1373,7 +1269,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1382,7 +1278,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1391,7 +1287,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1401,7 +1297,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1411,7 +1307,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 title=col,
                 prepare_returns=False,
             )
@@ -1421,7 +1317,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
-        ylabel='',
+        ylabel="",
     )
 
     if isinstance(returns, _pd.Series):
@@ -1432,7 +1328,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
             show=True,
-            ylabel='',
+            ylabel="",
             active=active,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1443,7 +1339,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 returns_label=col,
                 compounded=compounded,
                 active=active,
@@ -1456,7 +1352,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=returns.name,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1467,7 +1363,7 @@ def plots(
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 title=col,
-                ylabel='',
+                ylabel="",
                 prepare_returns=False,
             )
 
@@ -1486,9 +1382,7 @@ def _calc_dd(df, display=True, as_pct=False):
         any(dd_info.columns.get_level_values(0).str.contains("returns"))
         and dd_info.columns.get_level_values(0).nunique() > 1
     ):
-        ret_dd = dd_info.loc[
-            :, dd_info.columns.get_level_values(0).str.contains("returns")
-        ]
+        ret_dd = dd_info.loc[:, dd_info.columns.get_level_values(0).str.contains("returns")]
     else:
         ret_dd = dd_info
 
@@ -1498,16 +1392,10 @@ def _calc_dd(df, display=True, as_pct=False):
     ):
         dd_stats = {
             col: {
-                "Max Drawdown %": ret_dd[col]
-                .sort_values(by="max drawdown", ascending=True)["max drawdown"]
-                .values[0]
+                "Max Drawdown %": ret_dd[col].sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0]
                 / 100,
                 "Longest DD Days": str(
-                    _np.round(
-                        ret_dd[col]
-                        .sort_values(by="days", ascending=False)["days"]
-                        .values[0]
-                    )
+                    _np.round(ret_dd[col].sort_values(by="days", ascending=False)["days"].values[0])
                 ),
                 "Avg. Drawdown %": ret_dd[col]["max drawdown"].mean() / 100,
                 "Avg. Drawdown Days": str(_np.round(ret_dd[col]["days"].mean())),
@@ -1517,15 +1405,8 @@ def _calc_dd(df, display=True, as_pct=False):
     else:
         dd_stats = {
             "returns": {
-                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)[
-                    "max drawdown"
-                ].values[0]
-                / 100,
-                "Longest DD Days": str(
-                    _np.round(
-                        ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
-                    )
-                ),
+                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0] / 100,
+                "Longest DD Days": str(_np.round(ret_dd.sort_values(by="days", ascending=False)["days"].values[0])),
                 "Avg. Drawdown %": ret_dd["max drawdown"].mean() / 100,
                 "Avg. Drawdown Days": str(_np.round(ret_dd["days"].mean())),
             }
@@ -1533,15 +1414,8 @@ def _calc_dd(df, display=True, as_pct=False):
     if "benchmark" in df and (dd_info.columns, _pd.MultiIndex):
         bench_dd = dd_info["benchmark"].sort_values(by="max drawdown")
         dd_stats["benchmark"] = {
-            "Max Drawdown %": bench_dd.sort_values(by="max drawdown", ascending=True)[
-                "max drawdown"
-            ].values[0]
-            / 100,
-            "Longest DD Days": str(
-                _np.round(
-                    bench_dd.sort_values(by="days", ascending=False)["days"].values[0]
-                )
-            ),
+            "Max Drawdown %": bench_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0] / 100,
+            "Longest DD Days": str(_np.round(bench_dd.sort_values(by="days", ascending=False)["days"].values[0])),
             "Avg. Drawdown %": bench_dd["max drawdown"].mean() / 100,
             "Avg. Drawdown Days": str(_np.round(bench_dd["days"].mean())),
         }
@@ -1557,9 +1431,7 @@ def _calc_dd(df, display=True, as_pct=False):
 
 
 def _html_table(obj, showindex="default"):
-    obj = _tabulate(
-        obj, headers="keys", tablefmt="html", floatfmt=".2f", showindex=showindex
-    )
+    obj = _tabulate(obj, headers="keys", tablefmt="html", floatfmt=".2f", showindex=showindex)
     obj = obj.replace(' style="text-align: right;"', "")
     obj = obj.replace(' style="text-align: left;"', "")
     obj = obj.replace(' style="text-align: center;"', "")
@@ -1581,9 +1453,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
     a.download="{{filename}}";
     a.hidden=true;document.body.appendChild(a);
     a.innerHTML="download report";
-    a.click();</script>""".replace(
-            "\n", ""
-        ),
+    a.click();</script>""".replace("\n", ""),
     )
     jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
     if _utils._in_notebook():
@@ -1596,9 +1466,7 @@ def _open_html(html):
         " ",
         """<script>
     var win=window.open();win.document.body.innerHTML='{{html}}';
-    </script>""".replace(
-            "\n", ""
-        ),
+    </script>""".replace("\n", ""),
     )
     jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
     if _utils._in_notebook():
@@ -1613,13 +1481,11 @@ def _embed_figure(figfiles, figfmt):
             if figfmt == "svg":
                 return figbytes.decode()
             data_uri = _b64encode(figbytes).decode()
-            embed_string.join(
-                '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
-            )
+            embed_string.join(f'<img src="data:image/{figfmt};base64,{data_uri}" />')
     else:
         figbytes = figfiles.getvalue()
         if figfmt == "svg":
             return figbytes.decode()
         data_uri = _b64encode(figbytes).decode()
-        embed_string = '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+        embed_string = f'<img src="data:image/{figfmt};base64,{data_uri}" />'
     return embed_string

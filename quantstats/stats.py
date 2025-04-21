@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -18,14 +17,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from math import ceil as _ceil
+from math import sqrt as _sqrt
 from warnings import warn
-import pandas as _pd
+
 import numpy as _np
-from math import ceil as _ceil, sqrt as _sqrt
-from scipy.stats import norm as _norm, linregress as _linregress
+import pandas as _pd
+from scipy.stats import linregress as _linregress
+from scipy.stats import norm as _norm
 
 from . import utils as _utils
-
 
 # ======== STATS ========
 
@@ -59,10 +60,7 @@ def distribution(returns, compounded=True, prepare_returns=True):
         }
 
     if isinstance(returns, _pd.DataFrame):
-        warn(
-            "Pandas DataFrame was passed (Series expected). "
-            "Only first column will be used."
-        )
+        warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)
         if len(returns.columns) > 1 and "close" in returns.columns:
@@ -234,9 +232,7 @@ def volatility(returns, periods=252, annualize=True, prepare_returns=True):
     return std
 
 
-def rolling_volatility(
-    returns, rolling_period=126, periods_per_year=252, prepare_returns=True
-):
+def rolling_volatility(returns, rolling_period=126, periods_per_year=252, prepare_returns=True):
     if prepare_returns:
         returns = _utils._prepare_returns(returns, rolling_period)
 
@@ -311,7 +307,6 @@ def rolling_sharpe(
     periods_per_year=252,
     prepare_returns=True,
 ):
-
     if rf != 0 and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -358,21 +353,14 @@ def smart_sortino(returns, rf=0, periods=252, annualize=True):
     return sortino(returns, rf, periods, annualize, True)
 
 
-def rolling_sortino(
-    returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs
-):
+def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs):
     if rf != 0 and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
     if kwargs.get("prepare_returns", True):
         returns = _utils._prepare_returns(returns, rf, rolling_period)
 
-    downside = (
-        returns.rolling(rolling_period).apply(
-            lambda x: (x.values[x.values < 0] ** 2).sum()
-        )
-        / rolling_period
-    )
+    downside = returns.rolling(rolling_period).apply(lambda x: (x.values[x.values < 0] ** 2).sum()) / rolling_period
 
     res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)
     if annualize:
@@ -390,10 +378,7 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     return data / _sqrt(2)
 
 
-def probabilistic_ratio(
-    series, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False
-):
-
+def probabilistic_ratio(series, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False):
     if base.lower() == "sharpe":
         base = sharpe(series, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "sortino":
@@ -401,18 +386,13 @@ def probabilistic_ratio(
     elif base.lower() == "adjusted_sortino":
         base = adjusted_sortino(series, periods=periods, annualize=False, smart=smart)
     else:
-        raise Exception(
-            "`metric` must be either `sharpe`, `sortino`, or `adjusted_sortino`"
-        )
+        raise Exception("`metric` must be either `sharpe`, `sortino`, or `adjusted_sortino`")
     skew_no = skew(series, prepare_returns=False)
     kurtosis_no = kurtosis(series, prepare_returns=False)
 
     n = len(series)
 
-    sigma_sr = _np.sqrt(
-        (1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2))
-        / (n - 1)
-    )
+    sigma_sr = _np.sqrt((1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2)) / (n - 1))
 
     ratio = (base - rf) / sigma_sr
     psr = _norm.cdf(ratio)
@@ -422,25 +402,15 @@ def probabilistic_ratio(
     return psr
 
 
-def probabilistic_sharpe_ratio(
-    series, rf=0.0, periods=252, annualize=False, smart=False
-):
-    return probabilistic_ratio(
-        series, rf, base="sharpe", periods=periods, annualize=annualize, smart=smart
-    )
+def probabilistic_sharpe_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(series, rf, base="sharpe", periods=periods, annualize=annualize, smart=smart)
 
 
-def probabilistic_sortino_ratio(
-    series, rf=0.0, periods=252, annualize=False, smart=False
-):
-    return probabilistic_ratio(
-        series, rf, base="sortino", periods=periods, annualize=annualize, smart=smart
-    )
+def probabilistic_sortino_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(series, rf, base="sortino", periods=periods, annualize=annualize, smart=smart)
 
 
-def probabilistic_adjusted_sortino_ratio(
-    series, rf=0.0, periods=252, annualize=False, smart=False
-):
+def probabilistic_adjusted_sortino_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
     return probabilistic_ratio(
         series,
         rf,
@@ -885,9 +855,7 @@ def r_squared(returns, benchmark, prepare_returns=True):
     # slope, intercept, r_val, p_val, std_err = _linregress(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-    _, _, r_val, _, _ = _linregress(
-        returns, _utils._prepare_benchmark(benchmark, returns.index)
-    )
+    _, _, r_val, _, _ = _linregress(returns, _utils._prepare_benchmark(benchmark, returns.index))
     return r_val**2
 
 
@@ -977,24 +945,17 @@ def compare(
     if isinstance(returns, _pd.Series):
         data = _pd.DataFrame(
             data={
-                "Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded)
-                * 100,
-                "Returns": _utils.aggregate_returns(returns, aggregate, compounded)
-                * 100,
+                "Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded) * 100,
+                "Returns": _utils.aggregate_returns(returns, aggregate, compounded) * 100,
             }
         )
 
         data["Multiplier"] = data["Returns"] / data["Benchmark"]
         data["Won"] = _np.where(data["Returns"] >= data["Benchmark"], "+", "-")
     elif isinstance(returns, _pd.DataFrame):
-        bench = {
-            "Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded)
-            * 100
-        }
+        bench = {"Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded) * 100}
         strategy = {
-            "Returns_"
-            + str(i): _utils.aggregate_returns(returns[col], aggregate, compounded)
-            * 100
+            "Returns_" + str(i): _utils.aggregate_returns(returns[col], aggregate, compounded) * 100
             for i, col in enumerate(returns.columns)
         }
         data = _pd.DataFrame(data={**bench, **strategy})
@@ -1008,10 +969,7 @@ def compare(
 def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     """Calculates monthly returns"""
     if isinstance(returns, _pd.DataFrame):
-        warn(
-            "Pandas DataFrame was passed (Series expected). "
-            "Only first column will be used."
-        )
+        warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)
         if len(returns.columns) > 1 and "close" in returns.columns:
@@ -1023,9 +981,7 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
     original_returns = returns.copy()
 
-    returns = _pd.DataFrame(
-        _utils.group_returns(returns, returns.index.strftime("%Y-%m-01"), compounded)
-    )
+    returns = _pd.DataFrame(_utils.group_returns(returns, returns.index.strftime("%Y-%m-01"), compounded))
 
     returns.columns = ["Returns"]
     returns.index = _pd.to_datetime(returns.index)

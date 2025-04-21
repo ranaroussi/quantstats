@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
@@ -25,4 +22,4 @@ try:
 except ImportError:
     pass
 
-from quantstats._plotting.wrappers import *
+from quantstats._plotting.wrappers import *  # noqa: F403

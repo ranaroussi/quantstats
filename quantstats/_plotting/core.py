@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
@@ -26,19 +23,19 @@ except Exception:
     pass
 
 import matplotlib.dates as _mdates
+import numpy as _np
+import pandas as _pd
+import seaborn as _sns
 from matplotlib.ticker import (
     FormatStrFormatter as _FormatStrFormatter,
+)
+from matplotlib.ticker import (
     FuncFormatter as _FuncFormatter,
 )
 
-import pandas as _pd
-import numpy as _np
-import seaborn as _sns
 from .. import (
     stats as _stats,
-    utils as _utils,
 )
-
 
 _sns.set(
     font_scale=1.1,
@@ -112,9 +109,8 @@ def plot_returns_bars(
     savefig=None,
     show=True,
 ):
-
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.loc[returns.index].std()
         returns = (returns / returns.std()) * bmark_vol
@@ -124,9 +120,7 @@ def plot_returns_bars(
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame(index=returns.index, data={returns.name: returns})
     elif isinstance(returns, _pd.DataFrame):
-        df = _pd.DataFrame(
-            index=returns.index, data={col: returns[col] for col in returns.columns}
-        )
+        df = _pd.DataFrame(index=returns.index, data={col: returns[col] for col in returns.columns})
     if isinstance(benchmark, _pd.Series):
         df[benchmark.name] = benchmark[benchmark.index.isin(returns.index)]
         if isinstance(returns, _pd.Series):
@@ -147,9 +141,7 @@ def plot_returns_bars(
     ax.spines["left"].set_visible(False)
 
     # use a more precise date string for the x axis locations in the toolbar
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -203,9 +195,7 @@ def plot_returns_bars(
 
     ax.set_xlabel("")
     if ylabel:
-        ax.set_ylabel(
-            "Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black"
-        )
+        ax.set_ylabel("Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black")
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
@@ -265,7 +255,6 @@ def plot_timeseries(
     savefig=None,
     show=True,
 ):
-
     colors, ls, alpha = _get_colors(grayscale)
 
     returns.fillna(0, inplace=True)
@@ -273,7 +262,7 @@ def plot_timeseries(
         benchmark.fillna(0, inplace=True)
 
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.std()
         returns = (returns / returns.std()) * bmark_vol
@@ -303,9 +292,7 @@ def plot_timeseries(
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
 
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -337,9 +324,7 @@ def plot_timeseries(
             ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=0.25)
         elif isinstance(returns, _pd.DataFrame):
             for i, col in enumerate(returns.columns):
-                ax.fill_between(
-                    returns[col].index, 0, returns[col], color=colors[i + 1], alpha=0.25
-                )
+                ax.fill_between(returns[col].index, 0, returns[col], color=colors[i + 1], alpha=0.25)
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
@@ -368,9 +353,7 @@ def plot_timeseries(
 
     ax.set_xlabel("")
     if ylabel:
-        ax.set_ylabel(
-            ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black"
-        )
+        ax.set_ylabel(ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black")
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
@@ -419,7 +402,6 @@ def plot_histogram(
     savefig=None,
     show=True,
 ):
-
     # colors = ['#348dc1', '#003366', 'red']
     # if grayscale:
     #     colors = ['silver', 'gray', 'black']
@@ -428,17 +410,9 @@ def plot_histogram(
 
     apply_fnc = _stats.comp if compounded else _np.sum
     if benchmark is not None:
-        benchmark = (
-            benchmark.fillna(0)
-            .resample(resample)
-            .apply(apply_fnc)
-            .resample(resample)
-            .last()
-        )
+        benchmark = benchmark.fillna(0).resample(resample).apply(apply_fnc).resample(resample).last()
 
-    returns = (
-        returns.fillna(0).resample(resample).apply(apply_fnc).resample(resample).last()
-    )
+    returns = returns.fillna(0).resample(resample).apply(apply_fnc).resample(resample).last()
 
     figsize = (0.995 * figsize[0], figsize[1])
     fig, ax = _plt.subplots(figsize=figsize)
@@ -448,9 +422,7 @@ def plot_histogram(
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
 
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -472,11 +444,7 @@ def plot_histogram(
     pallete = colors[1:2] if benchmark is None else colors[:2]
     alpha = 0.7
     if isinstance(returns, _pd.DataFrame):
-        pallete = (
-            colors[1 : len(returns.columns) + 1]
-            if benchmark is None
-            else colors[: len(returns.columns) + 1]
-        )
+        pallete = colors[1 : len(returns.columns) + 1] if benchmark is None else colors[: len(returns.columns) + 1]
         if len(returns.columns) > 1:
             alpha = 0.5
 
@@ -491,13 +459,9 @@ def plot_histogram(
             )
         elif isinstance(returns, _pd.DataFrame):
             combined_returns = (
-                benchmark.to_frame()
-                .join(returns)
-                .stack()
-                .reset_index()
-                .rename(columns={"level_1": "", 0: "Returns"})
+                benchmark.to_frame().join(returns).stack().reset_index().rename(columns={"level_1": "", 0: "Returns"})
             )
-        x = _sns.histplot(
+        _sns.histplot(
             data=combined_returns,
             x="Returns",
             bins=bins,
@@ -514,7 +478,7 @@ def plot_histogram(
             combined_returns = returns.copy()
             if kde:
                 _sns.kdeplot(data=combined_returns, color="black", ax=ax)
-            x = _sns.histplot(
+            _sns.histplot(
                 data=combined_returns,
                 bins=bins,
                 alpha=alpha,
@@ -525,13 +489,8 @@ def plot_histogram(
             )
 
         elif isinstance(returns, _pd.DataFrame):
-            combined_returns = (
-                returns.stack()
-                .reset_index()
-                .rename(columns={"level_1": "", 0: "Returns"})
-            )
-            # _sns.kdeplot(data=combined_returns, color='black', ax=ax)
-            x = _sns.histplot(
+            combined_returns = returns.stack().reset_index().rename(columns={"level_1": "", 0: "Returns"})
+            _sns.histplot(
                 data=combined_returns,
                 x="Returns",
                 bins=bins,
@@ -555,18 +514,14 @@ def plot_histogram(
         )
 
     # _plt.setp(x.get_legend().get_texts(), fontsize=11)
-    ax.xaxis.set_major_formatter(
-        _plt.FuncFormatter(lambda x, loc: "{:,}%".format(int(x * 100)))
-    )
+    ax.xaxis.set_major_formatter(_plt.FuncFormatter(lambda x, loc: f"{int(x * 100):,}%"))
 
     # Removed static lines for clarity
     # ax.axhline(0.01, lw=1, color="#000000", zorder=2)
     # ax.axvline(0, lw=1, color="#000000", zorder=2)
 
     ax.set_xlabel("")
-    ax.set_ylabel(
-        "Occurrences", fontname=fontname, fontweight="bold", fontsize=12, color="black"
-    )
+    ax.set_ylabel("Occurrences", fontname=fontname, fontweight="bold", fontsize=12, color="black")
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
     # fig.autofmt_xdate()
@@ -616,7 +571,6 @@ def plot_rolling_stats(
     savefig=None,
     show=True,
 ):
-
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -631,30 +585,22 @@ def plot_rolling_stats(
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame(index=returns.index, data={returns_label: returns})
     elif isinstance(returns, _pd.DataFrame):
-        df = _pd.DataFrame(
-            index=returns.index, data={col: returns[col] for col in returns.columns}
-        )
+        df = _pd.DataFrame(index=returns.index, data={col: returns[col] for col in returns.columns})
     if isinstance(benchmark, _pd.Series):
         df["Benchmark"] = benchmark[benchmark.index.isin(returns.index)]
         if isinstance(returns, _pd.Series):
             df = df[["Benchmark", returns_label]].dropna()
-            ax.plot(
-                df[returns_label].dropna(), lw=lw, label=returns.name, color=colors[1]
-            )
+            ax.plot(df[returns_label].dropna(), lw=lw, label=returns.name, color=colors[1])
         elif isinstance(returns, _pd.DataFrame):
             col_names = ["Benchmark", returns_label]
             df = df[list(_pd.core.common.flatten(col_names))].dropna()
             for i, col in enumerate(returns_label):
                 ax.plot(df[col], lw=lw, label=col, color=colors[i + 1])
-        ax.plot(
-            df["Benchmark"], lw=lw, label=benchmark.name, color=colors[0], alpha=0.8
-        )
+        ax.plot(df["Benchmark"], lw=lw, label=benchmark.name, color=colors[0], alpha=0.8)
     else:
         if isinstance(returns, _pd.Series):
             df = df[[returns_label]].dropna()
-            ax.plot(
-                df[returns_label].dropna(), lw=lw, label=returns.name, color=colors[1]
-            )
+            ax.plot(df[returns_label].dropna(), lw=lw, label=returns.name, color=colors[1])
         elif isinstance(returns, _pd.DataFrame):
             df = df[returns_label].dropna()
             for i, col in enumerate(returns_label):
@@ -665,9 +611,7 @@ def plot_rolling_stats(
 
     # use a more precise date string for the x axis locations in the toolbar
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')\
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -689,9 +633,7 @@ def plot_rolling_stats(
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
     if ylabel:
-        ax.set_ylabel(
-            ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black"
-        )
+        ax.set_ylabel(ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black")
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     ax.yaxis.set_major_formatter(_FormatStrFormatter("%.2f"))
@@ -745,7 +687,6 @@ def plot_rolling_beta(
     savefig=None,
     show=True,
 ):
-
     colors, _, _ = _get_colors(grayscale)
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -754,9 +695,7 @@ def plot_rolling_beta(
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
 
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -775,10 +714,7 @@ def plot_rolling_beta(
         ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
     elif isinstance(returns, _pd.DataFrame):
         beta = {
-            col: _stats.rolling_greeks(returns[col], benchmark, window1)["beta"].fillna(
-                0
-            )
-            for col in returns.columns
+            col: _stats.rolling_greeks(returns[col], benchmark, window1)["beta"].fillna(0) for col in returns.columns
         }
         for name, b in beta.items():
             ax.plot(b, lw=lw, label=name + " " + f"({window1_label})", color=colors[i])
@@ -796,10 +732,7 @@ def plot_rolling_beta(
                 alpha=0.8,
             )
         elif isinstance(returns, _pd.DataFrame):
-            betas_w2 = {
-                col: _stats.rolling_greeks(returns[col], benchmark, window2)["beta"]
-                for col in returns.columns
-            }
+            betas_w2 = {col: _stats.rolling_greeks(returns[col], benchmark, window2)["beta"] for col in returns.columns}
             for name, beta_w2 in betas_w2.items():
                 ax.plot(
                     beta_w2,
@@ -811,16 +744,8 @@ def plot_rolling_beta(
                 )
                 i += 1
 
-    beta_min = (
-        beta.min()
-        if isinstance(returns, _pd.Series)
-        else min([b.min() for b in beta.values()])
-    )
-    beta_max = (
-        beta.max()
-        if isinstance(returns, _pd.Series)
-        else max([b.max() for b in beta.values()])
-    )
+    beta_min = beta.min() if isinstance(returns, _pd.Series) else min([b.min() for b in beta.values()])
+    beta_max = beta.max() if isinstance(returns, _pd.Series) else max([b.max() for b in beta.values()])
     mmin = min([-100, int(beta_min * 100)])
     mmax = max([100, int(beta_max * 100)])
     step = 50 if (mmax - mmin) >= 200 else 100
@@ -838,9 +763,7 @@ def plot_rolling_beta(
     ax.fmt_xdata = _mdates.DateFormatter("%Y-%m-%d")
 
     if ylabel:
-        ax.set_ylabel(
-            "Beta", fontname=fontname, fontweight="bold", fontsize=12, color="black"
-        )
+        ax.set_ylabel("Beta", fontname=fontname, fontweight="bold", fontsize=12, color="black")
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     ax.legend(fontsize=11)
@@ -889,16 +812,13 @@ def plot_longest_drawdowns(
     savefig=None,
     show=True,
 ):
-
     colors = ["#348dc1", "#003366", "red"]
     if grayscale:
         colors = ["#000000"] * 3
 
     dd = _stats.to_drawdown_series(returns.fillna(0))
     dddf = _stats.drawdown_details(dd)
-    longest_dd = dddf.sort_values(by="days", ascending=False, kind="mergesort")[
-        :periods
-    ]
+    longest_dd = dddf.sort_values(by="days", ascending=False, kind="mergesort")[:periods]
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -1001,7 +921,6 @@ def plot_distribution(
     savefig=None,
     show=True,
 ):
-
     colors = _FLATUI_COLORS
     if grayscale:
         colors = ["#f9f9f9", "#dddddd", "#bbbbbb", "#999999", "#808080"]
@@ -1034,9 +953,7 @@ def plot_distribution(
         title = f"{title} - Return Quantiles"
     else:
         title = "Return Quantiles"
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
 
     if subtitle:
         ax.set_title(
@@ -1064,14 +981,10 @@ def plot_distribution(
         },
     )
 
-    ax.yaxis.set_major_formatter(
-        _plt.FuncFormatter(lambda x, loc: "{:,}%".format(int(x * 100)))
-    )
+    ax.yaxis.set_major_formatter(_plt.FuncFormatter(lambda x, loc: f"{int(x * 100):,}%"))
 
     if ylabel:
-        ax.set_ylabel(
-            "Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black"
-        )
+        ax.set_ylabel("Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black")
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     fig.autofmt_xdate()
@@ -1118,7 +1031,6 @@ def plot_table(
     savefig=None,
     show=False,
 ):
-
     if columns is not None:
         try:
             tbl.columns = columns
@@ -1129,9 +1041,7 @@ def plot_table(
     ax = _plt.subplot(111, frame_on=False)
 
     if title != "":
-        ax.set_title(
-            title, fontweight="bold", fontsize=14, color="black", loc=title_loc
-        )
+        ax.set_title(title, fontweight="bold", fontsize=14, color="black", loc=title_loc)
 
     the_table = ax.table(
         cellText=tbl.values,

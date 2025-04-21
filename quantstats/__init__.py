@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
@@ -18,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import version
-
-__version__ = version.version
 __author__ = "Ran Aroussi"
 
 from . import stats, utils, plots, reports
