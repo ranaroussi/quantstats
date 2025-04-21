@@ -1,0 +1,21 @@
+{
+    "extends": [
+        "config:recommended",
+        ":enablePreCommit",
+        ":automergeMinor",
+        ":dependencyDashboard",
+        ":maintainLockFilesWeekly",
+        ":semanticCommits",
+        ":pinDevDependencies"
+    ],
+    "enabledManagers": [
+        "pep621",
+        "pre-commit",
+        "github-actions",
+        "devcontainer"
+    ],
+    "timezone": "Asia/Dubai",
+    "schedule": [
+        "before 10am on tuesday"
+    ]
+}
