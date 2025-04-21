@@ -1,5 +1,5 @@
 [project]
-name = 'quantstats_reloaded'
+name = 'jqrquantstats'
 version = "0.0.0"
 description = "Toying with quantstats"
 # Please add authors and correct the email...
