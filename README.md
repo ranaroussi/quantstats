@@ -7,7 +7,6 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tschm/quantstats)
 
-
 **QuantStats** Python library that performs portfolio profiling,
 allowing quants and portfolio managers to understand
 their performance better by providing them with in-depth analytics and risk metrics.
