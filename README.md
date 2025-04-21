@@ -1,6 +1,6 @@
 # [jqrQuantStats](https://tschm.github.io/quantstats/book): Portfolio analytics for quants
 
-[![PyPI version](https://badge.fury.io/py/quantstats.svg)](https://badge.fury.io/py/jqrquantstats)
+[![PyPI version](https://badge.fury.io/py/jqrquantstats.svg)](https://badge.fury.io/py/jqrquantstats)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 [![CI](https://github.com/tschm/quantstats/actions/workflows/ci.yml/badge.svg)](https://github.com/tschm/quantstats/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/tschm/quantstats/badge.svg?branch=main)](https://coveralls.io/github/tschm/quantstats?branch=main)
