@@ -1,4 +1,12 @@
-# QuantStats: Portfolio analytics for quants
+# [QuantStats](https://tschm.github.io/quantstats/book): Portfolio analytics for quants
+
+[![PyPI version](https://badge.fury.io/py/quantstats.svg)](https://badge.fury.io/py/quantstats)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+[![CI](https://github.com/tschm/quantstats/actions/workflows/ci.yml/badge.svg)](https://github.com/tschm/quantstats/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/tschm/quantstats/badge.svg?branch=main)](https://coveralls.io/github/tschm/quantstats?branch=main)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tschm/quantstats)
+
 
 **QuantStats** Python library that performs portfolio profiling,
 allowing quants and portfolio managers to understand
@@ -12,7 +20,7 @@ QuantStats is comprised of 3 main modules:
                           rolling statistics, monthly returns, etc.
 3. ``quantstats.reports`` - for generating metrics reports,
                             batch plotting, and creating tear sheets
-4. that can be saved as an HTML file.
+                            that can be saved as an HTML file.
 
 Here's an example of a simple tear sheet analyzing a strategy:
 
