@@ -1,4 +1,4 @@
-# [jqr-QuantStats](https://tschm.github.io/quantstats/book): Portfolio analytics for quants
+# [jqrQuantStats](https://tschm.github.io/quantstats/book): Portfolio analytics for quants
 
 [![PyPI version](https://badge.fury.io/py/quantstats.svg)](https://badge.fury.io/py/jqrquantstats)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
