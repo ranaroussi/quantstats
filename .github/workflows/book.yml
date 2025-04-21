@@ -1,0 +1,57 @@
+name: "book"
+
+on:
+- push
+
+
+permissions:
+    checks: write
+    contents: read
+
+jobs:
+
+  pdoc:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Build the virtual environment"
+        uses: tschm/cradle/actions/environment@v0.1.60
+
+      - uses: tschm/cradle/actions/pdoc@v0.1.60
+        with:
+          source-folder: quantstats
+
+
+  test:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Build the virtual environment"
+        uses: tschm/cradle/actions/environment@v0.1.60
+
+      - uses: tschm/cradle/actions/coverage@main
+        with:
+          tests-folder: tests
+          source-folder: quantstats
+          coveralls: 'false'
+
+  jupyter:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Build the virtual environment"
+        uses: tschm/cradle/actions/environment@v0.1.60
+
+      - uses: tschm/cradle/actions/jupyter@v0.1.60
+
+  book:
+    runs-on: "ubuntu-latest"
+    needs: [test, pdoc, jupyter]
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Upload the book
+        if: ${{ env.ACT != 'true' }}  # Skip if running with 'act'
+        uses: tschm/cradle/actions/book@v0.1.60
