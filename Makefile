@@ -15,10 +15,6 @@ fmt:  install ## Run autoformatting and linting
 	@uv run pre-commit install
 	@uv run pre-commit run --all-files
 
-#.PHONY: clean
-#clean:  ## Clean up caches and build artifacts
-#	@git clean -X -d -f
-
 .PHONY: test
 test: install ## Run tests
 	@uv pip install pytest
@@ -28,3 +24,8 @@ test: install ## Run tests
 help:  ## Display this help screen
 	@echo -e "\033[1mAvailable commands:\033[0m"
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' | sort
+
+.PHONY: marimo
+marimo: install ## Install Marimo
+	@uv pip install marimo
+	@uv run marimo edit book/marimo

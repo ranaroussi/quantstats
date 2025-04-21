@@ -76,8 +76,6 @@ Output will generate something like this:
 
 [Tearsheet](https://github.com/ranaroussi/quantstats/blob/main/docs/report.jpg?raw=true)
 
-(`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/main/docs/tearsheet.html>`_)
-
 To view a complete list of available methods, run
 
 ```python
