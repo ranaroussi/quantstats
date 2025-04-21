@@ -1,18 +1,19 @@
 .DEFAULT_GOAL := help
 
-UV_SYSTEM_PYTHON := 1
+venv:
+	@curl -LsSf https://astral.sh/uv/install.sh | sh
+	@uv venv --python '3.12'
 
 .PHONY: install
-install:  ## Install a virtual environment
-	@curl -LsSf https://astral.sh/uv/install.sh | sh
-	@uv venv
-	@uv pip install -r requirements.txt
+install: venv ## Install a virtual environment
+	@uv pip install --upgrade pip
+	@uv sync --all-extras --dev --frozen
 
-#.PHONY: fmt
-#fmt:  install ## Run autoformatting and linting
-#	@uv pip install pre-commit
-#	@uv run pre-commit install
-#	@uv run pre-commit run --all-files
+.PHONY: fmt
+fmt:  install ## Run autoformatting and linting
+	@uv pip install pre-commit
+	@uv run pre-commit install
+	@uv run pre-commit run --all-files
 
 #.PHONY: clean
 #clean:  ## Clean up caches and build artifacts

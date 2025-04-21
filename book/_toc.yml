@@ -5,4 +5,3 @@ root: docs/index
 chapters:
     - file: docs/api
     - file: docs/reports
-
