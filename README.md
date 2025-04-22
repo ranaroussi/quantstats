@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 [![CI](https://github.com/tschm/quantstats/actions/workflows/ci.yml/badge.svg)](https://github.com/tschm/quantstats/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/tschm/quantstats/badge.svg?branch=main)](https://coveralls.io/github/tschm/quantstats?branch=main)
+[![CodeFactor](https://www.codefactor.io/repository/github/tschm/quantstats/badge)](https://www.codefactor.io/repository/github/tschm/quantstats)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tschm/quantstats)
 
