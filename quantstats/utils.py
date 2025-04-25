@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
