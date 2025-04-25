@@ -70,8 +70,8 @@ def html(
     match_dates=True,
     **kwargs,
 ):
-    if output is None and not _utils._in_notebook():
-        raise ValueError("`output` must be specified")
+    # if output is None and not _utils._in_notebook():
+    #    raise ValueError("`output` must be specified")
 
     if match_dates:
         returns = returns.dropna()
@@ -464,13 +464,13 @@ def html(
     tpl = _regex.sub(r"\{\{(.*?)\}\}", "", tpl)
     tpl = tpl.replace("white-space:pre;", "")
 
-    if output is None:
-        # _open_html(tpl)
-        _download_html(tpl, download_filename)
-        return
+    # if output is None:
+    # _open_html(tpl)
+    _download_html(tpl, download_filename)
+    return
 
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(tpl)
+    # with open(output, "w", encoding="utf-8") as f:
+    #    f.write(tpl)
 
 
 def full(
@@ -529,69 +529,69 @@ def full(
                 dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
             dd_info_dict[ptf] = dd_info
 
-    if _utils._in_notebook():
-        iDisplay(iHTML("<h4>Performance Metrics</h4>"))
-        iDisplay(
-            metrics(
-                returns=returns,
-                benchmark=benchmark,
-                rf=rf,
-                display=display,
-                mode="full",
-                compounded=compounded,
-                periods_per_year=periods_per_year,
-                prepare_returns=False,
-                benchmark_title=benchmark_title,
-                strategy_title=strategy_title,
-            )
-        )
-
-        if isinstance(dd, _pd.Series):
-            iDisplay(iHTML('<h4 style="margin-bottom:20px">Worst 5 Drawdowns</h4>'))
-            if dd_info.empty:
-                iDisplay(iHTML("<p>(no drawdowns)</p>"))
-            else:
-                iDisplay(dd_info)
-        elif isinstance(dd, _pd.DataFrame):
-            for ptf, dd_info in dd_info_dict.items():
-                iDisplay(iHTML('<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>' % ptf))
-                if dd_info.empty:
-                    iDisplay(iHTML("<p>(no drawdowns)</p>"))
-                else:
-                    iDisplay(dd_info)
-
-        iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
-    else:
-        print("[Performance Metrics]\n")
-        metrics(
-            returns=returns,
-            benchmark=benchmark,
-            rf=rf,
-            display=display,
-            mode="full",
-            compounded=compounded,
-            periods_per_year=periods_per_year,
-            prepare_returns=False,
-            benchmark_title=benchmark_title,
-            strategy_title=strategy_title,
-        )
-        print("\n\n")
-        print("[Worst 5 Drawdowns]\n")
-        if isinstance(dd, _pd.Series):
+    # if _utils._in_notebook():
+    #     iDisplay(iHTML("<h4>Performance Metrics</h4>"))
+    #     iDisplay(
+    #         metrics(
+    #             returns=returns,
+    #             benchmark=benchmark,
+    #             rf=rf,
+    #             display=display,
+    #             mode="full",
+    #             compounded=compounded,
+    #             periods_per_year=periods_per_year,
+    #             prepare_returns=False,
+    #             benchmark_title=benchmark_title,
+    #             strategy_title=strategy_title,
+    #         )
+    #     )
+    #
+    #     if isinstance(dd, _pd.Series):
+    #         iDisplay(iHTML('<h4 style="margin-bottom:20px">Worst 5 Drawdowns</h4>'))
+    #         if dd_info.empty:
+    #             iDisplay(iHTML("<p>(no drawdowns)</p>"))
+    #         else:
+    #             iDisplay(dd_info)
+    #     elif isinstance(dd, _pd.DataFrame):
+    #         for ptf, dd_info in dd_info_dict.items():
+    #             iDisplay(iHTML('<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>' % ptf))
+    #             if dd_info.empty:
+    #                 iDisplay(iHTML("<p>(no drawdowns)</p>"))
+    #             else:
+    #                 iDisplay(dd_info)
+    #
+    #     iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
+    # else:
+    print("[Performance Metrics]\n")
+    metrics(
+        returns=returns,
+        benchmark=benchmark,
+        rf=rf,
+        display=display,
+        mode="full",
+        compounded=compounded,
+        periods_per_year=periods_per_year,
+        prepare_returns=False,
+        benchmark_title=benchmark_title,
+        strategy_title=strategy_title,
+    )
+    print("\n\n")
+    print("[Worst 5 Drawdowns]\n")
+    if isinstance(dd, _pd.Series):
+        if dd_info.empty:
+            print("(no drawdowns)")
+        else:
+            print(_tabulate(dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"))
+    elif isinstance(dd, _pd.DataFrame):
+        for ptf, dd_info in dd_info_dict.items():
             if dd_info.empty:
                 print("(no drawdowns)")
             else:
+                print(f"{ptf}\n")
                 print(_tabulate(dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"))
-        elif isinstance(dd, _pd.DataFrame):
-            for ptf, dd_info in dd_info_dict.items():
-                if dd_info.empty:
-                    print("(no drawdowns)")
-                else:
-                    print(f"{ptf}\n")
-                    print(_tabulate(dd_info, headers="keys", tablefmt="simple", floatfmt=".2f"))
 
-        print("\n\n")
-        print("[Strategy Visualization]\nvia Matplotlib")
+    print("\n\n")
+    print("[Strategy Visualization]\nvia Matplotlib")
 
     plots(
         returns=returns,
@@ -1456,8 +1456,8 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
     a.click();</script>""".replace("\n", ""),
     )
     jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
-    if _utils._in_notebook():
-        iDisplay(iHTML(jscode.replace("{{filename}}", filename)))
+    # if _utils._in_notebook():
+    #    iDisplay(iHTML(jscode.replace("{{filename}}", filename)))
 
 
 def _open_html(html):
