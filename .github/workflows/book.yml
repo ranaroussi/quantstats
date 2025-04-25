@@ -31,7 +31,7 @@ jobs:
         with:
           tests-folder: tests
           source-folder: quantstats
-          coveralls: 'false'
+          coveralls: 'true'
 
   jupyter:
     runs-on: "ubuntu-latest"
