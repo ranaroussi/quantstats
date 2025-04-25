@@ -1,15 +1,9 @@
-import pandas as pd
 import pytest
 
 import quantstats as qs
 from quantstats.stats import calmar, kurtosis, sharpe, skew, smart_sortino
 
 qs.extend_pandas()
-
-
-@pytest.fixture
-def returns(resource_dir):
-    return pd.read_csv(resource_dir / "meta.csv", parse_dates=True, index_col=0)["Close"].dropna()
 
 
 def test_sharpe(returns):
