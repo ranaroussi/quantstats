@@ -186,10 +186,6 @@ def plot_returns_bars(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -338,10 +334,6 @@ def plot_timeseries(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -503,10 +495,6 @@ def plot_histogram(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -617,10 +605,6 @@ def plot_rolling_stats(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -742,10 +726,6 @@ def plot_rolling_beta(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
