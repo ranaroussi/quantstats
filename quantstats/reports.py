@@ -848,26 +848,16 @@ def plots(
         period=win_half_year,
     )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.drawdowns_periods(
-            returns,
+            returns[col],
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
+            title=col,
             prepare_returns=False,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.drawdowns_periods(
-                returns[col],
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                ylabel="",
-                title=col,
-                prepare_returns=False,
-            )
 
     _plots.drawdown(
         returns,
@@ -877,52 +867,29 @@ def plots(
         ylabel="",
     )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.monthly_heatmap(
-            returns,
+            returns[col],
             benchmark,
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
-            returns_label=returns.name,
             show=True,
             ylabel="",
+            returns_label=col,
+            compounded=compounded,
             active=active,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.monthly_heatmap(
-                returns[col],
-                benchmark,
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                ylabel="",
-                returns_label=col,
-                compounded=compounded,
-                active=active,
-            )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.distribution(
-            returns,
+            returns[col],
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            title=returns.name,
+            title=col,
             ylabel="",
             prepare_returns=False,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.distribution(
-                returns[col],
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                title=col,
-                ylabel="",
-                prepare_returns=False,
-            )
 
 
 def _calc_dd(df, display=True, as_pct=False):
