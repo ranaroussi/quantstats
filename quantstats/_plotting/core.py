@@ -930,10 +930,6 @@ def plot_distribution(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout(w_pad=0, h_pad=0)
     except Exception:
         pass
