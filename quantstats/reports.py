@@ -27,13 +27,6 @@ from . import plots as _plots
 from . import stats as _stats
 from . import utils as _utils
 
-try:
-    from IPython.display import HTML as iHTML
-    from IPython.display import display as iDisplay
-except ImportError:
-    from IPython.core.display import HTML as iHTML
-    from IPython.core.display import display as iDisplay
-
 
 def _get_trading_periods(periods_per_year=252):
     half_year = _ceil(periods_per_year / 2)
@@ -216,38 +209,22 @@ def basic(
         if len(returns.columns) > 1 and isinstance(strategy_title, str):
             strategy_title = list(returns.columns)
 
-    if _utils._in_notebook():
-        iDisplay(iHTML("<h4>Performance Metrics</h4>"))
-        metrics(
-            returns=returns,
-            benchmark=benchmark,
-            rf=rf,
-            display=display,
-            mode="basic",
-            compounded=compounded,
-            periods_per_year=periods_per_year,
-            prepare_returns=False,
-            benchmark_title=benchmark_title,
-            strategy_title=strategy_title,
-        )
-        iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
-    else:
-        print("[Performance Metrics]\n")
-        metrics(
-            returns=returns,
-            benchmark=benchmark,
-            rf=rf,
-            display=display,
-            mode="basic",
-            compounded=compounded,
-            periods_per_year=periods_per_year,
-            prepare_returns=False,
-            benchmark_title=benchmark_title,
-            strategy_title=strategy_title,
-        )
+    print("[Performance Metrics]\n")
+    metrics(
+        returns=returns,
+        benchmark=benchmark,
+        rf=rf,
+        display=display,
+        mode="basic",
+        compounded=compounded,
+        periods_per_year=periods_per_year,
+        prepare_returns=False,
+        benchmark_title=benchmark_title,
+        strategy_title=strategy_title,
+    )
 
-        print("\n\n")
-        print("[Strategy Visualization]\nvia Matplotlib")
+    print("\n\n")
+    print("[Strategy Visualization]\nvia Matplotlib")
 
     plots(
         returns=returns,
@@ -387,7 +364,9 @@ def metrics(
     metrics["Sortino/√2"] = metrics["Sortino"] / _sqrt(2)
     if mode.lower() == "full":
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
-    metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+
+    # todo: results in a KeyError when using multiple assets for the returns
+    # metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
