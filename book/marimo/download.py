@@ -13,31 +13,44 @@ def _():
 def _():
     import quantstats as qs
 
-    qs.extend_pandas()
     return (qs,)
 
 
 @app.cell
 def _(qs):
     stock = qs.utils.download_returns("META")
-    return (stock,)
-
-
-@app.cell
-def _(stock):
-    stock.sharpe()
-    return
-
-
-@app.cell
-def _(stock):
-    stock
-    return
-
-
-@app.cell
-def _(stock):
     stock.to_csv("meta.csv")
+    return
+
+
+@app.cell
+def _(qs):
+    spy = qs.utils.download_returns("SPY")
+    spy.to_csv("benchmark.csv")
+    return (spy,)
+
+
+@app.cell
+def _(qs):
+    portfolio = qs.utils.download_returns(ticker=["AAPL", "META"])
+    portfolio.to_csv("portfolio.csv")
+    return
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.metrics(spy)
+    return
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.plots(spy)
+    return
+
+
+@app.cell
+def _():
     return
 
 

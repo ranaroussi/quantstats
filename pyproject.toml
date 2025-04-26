@@ -15,7 +15,6 @@ dependencies = [
     "tabulate>=0.8.0",
     "yfinance>=0.1.70",
     "python-dateutil>=2.0",
-    "ipython>=8.0.0",
     "plotly>=6.0.0"
 ]
 
