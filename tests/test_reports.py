@@ -2,7 +2,10 @@ import quantstats as qs
 
 
 def test_metrics(returns, benchmark):
+    a = qs.reports.metrics(returns, mode="full")
+    print(a)
     qs.reports.metrics(returns, benchmark=benchmark)
+    qs.reports.metrics(returns, mode="full", compounded=False)
 
 
 def test_metrics_portfolio(portfolio, benchmark):
