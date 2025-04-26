@@ -22,12 +22,3 @@ def returns(resource_dir):
 @pytest.fixture
 def benchmark(resource_dir):
     return pd.read_csv(resource_dir / "benchmark.csv", parse_dates=True, index_col=0)["Close"].dropna()
-
-
-if __name__ == "__main__":
-    # fetch the daily returns for a stock
-    import quantstats as qs
-
-    spy = qs.utils.download_returns("SPY")
-    print(spy)
-    spy.to_csv("resources/benchmark.csv")
