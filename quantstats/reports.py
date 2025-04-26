@@ -147,7 +147,6 @@ def basic(
     returns,
     benchmark=None,
     rf=0.0,
-    grayscale=False,
     figsize=(8, 5),
     display=True,
     compounded=True,
@@ -194,7 +193,6 @@ def basic(
     plots(
         returns=returns,
         benchmark=benchmark,
-        grayscale=grayscale,
         figsize=figsize,
         mode="basic",
         periods_per_year=periods_per_year,
@@ -211,7 +209,6 @@ def metrics(
     rf=0.0,
     display=True,
     mode="basic",
-    sep=False,
     compounded=True,
     periods_per_year=252,
     prepare_returns=True,
