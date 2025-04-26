@@ -15,11 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from pandas.plotting import register_matplotlib_converters as _rmc
-
-    _rmc()
-except ImportError:
-    pass
-
 from ._plotting.wrappers import *  # noqa: F403
