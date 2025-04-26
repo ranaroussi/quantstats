@@ -31,8 +31,9 @@ def _(qs):
 
 
 @app.cell
-def _(qs, spy):
-    qs.reports.html(spy)
+def _(qs):
+    portfolio = qs.utils.download_returns(ticker=["AAPL", "META"])
+    portfolio.to_csv("portfolio.csv")
     return
 
 
@@ -49,8 +50,7 @@ def _(qs, spy):
 
 
 @app.cell
-def _(qs, spy):
-    qs.reports.html(spy)
+def _():
     return
 
 
