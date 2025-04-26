@@ -269,11 +269,11 @@ def metrics(
 
     if isinstance(returns, _pd.DataFrame):
         if len(returns.columns) > 1:
-            blank = [""] * len(returns.columns)
+            # blank = [""] * len(returns.columns)
             if isinstance(strategy_colname, str):
                 strategy_colname = list(returns.columns)
-    else:
-        blank = [""]
+    # else:
+    #    blank = [""]
 
     if prepare_returns:
         df = _utils._prepare_returns(returns)
@@ -291,10 +291,10 @@ def metrics(
             returns, benchmark = _match_dates(returns, benchmark)
         df["benchmark"] = benchmark
         if isinstance(returns, _pd.Series):
-            blank = ["", ""]
+            # blank = ["", ""]
             df["returns"] = returns
         elif isinstance(returns, _pd.DataFrame):
-            blank = [""] * len(returns.columns) + [""]
+            # blank = [""] * len(returns.columns) + [""]
             for i, strategy_col in enumerate(returns.columns):
                 df["returns_" + str(i + 1)] = returns[strategy_col]
 
@@ -339,7 +339,7 @@ def metrics(
     metrics["Risk-Free Rate %"] = _pd.Series(s_rf) * 100
     metrics["Time in Market %"] = _stats.exposure(df, prepare_returns=False) * pct
 
-    metrics["~"] = blank
+    # metrics["~"] = blank
 
     if compounded:
         metrics["Cumulative Return %"] = (_stats.comp(df) * pct).map("{:,.2f}".format)
@@ -348,7 +348,7 @@ def metrics(
 
     metrics["CAGR﹪%"] = _stats.cagr(df, rf, compounded) * pct
 
-    metrics["~~~~~~~~~~~~~~"] = blank
+    # metrics["~~~~~~~~~~~~~~"] = blank
 
     metrics["Sharpe"] = _stats.sharpe(df, rf, win_year, True)
     metrics["Prob. Sharpe Ratio %"] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
@@ -368,9 +368,9 @@ def metrics(
     # todo: results in a KeyError when using multiple assets for the returns
     # metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
-    metrics["~~~~~~~~"] = blank
-    metrics["Max Drawdown %"] = blank
-    metrics["Longest DD Days"] = blank
+    # metrics["~~~~~~~~"] = blank
+    # metrics["Max Drawdown %"] = blank
+    # metrics["Longest DD Days"] = blank
 
     if mode.lower() == "full":
         if isinstance(returns, _pd.Series):
@@ -417,7 +417,7 @@ def metrics(
         metrics["Skew"] = _stats.skew(df, prepare_returns=False)
         metrics["Kurtosis"] = _stats.kurtosis(df, prepare_returns=False)
 
-        metrics["~~~~~~~~~~"] = blank
+        # metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Expected Monthly %%"] = (
@@ -432,7 +432,7 @@ def metrics(
         metrics["Daily Value-at-Risk %"] = -abs(_stats.var(df, prepare_returns=False) * pct)
         metrics["Expected Shortfall (cVaR) %"] = -abs(_stats.cvar(df, prepare_returns=False) * pct)
 
-    metrics["~~~~~~"] = blank
+    # metrics["~~~~~~"] = blank
 
     if mode.lower() == "full":
         metrics["Max Consecutive Wins *int"] = _stats.consecutive_wins(df)
@@ -444,7 +444,7 @@ def metrics(
     #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "QE")
     #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
     #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "YE")
-    metrics["~~~~~~~"] = blank
+    # metrics["~~~~~~~"] = blank
 
     metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
     metrics["Profit Factor"] = _stats.profit_factor(df, prepare_returns=False)
@@ -455,7 +455,7 @@ def metrics(
     metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(df, prepare_returns=False)
 
     # # returns
-    metrics["~~"] = blank
+    # metrics["~~"] = blank
 
     today = df.index[-1]  # _dt.today()
     m3 = today - relativedelta(months=3)
@@ -487,7 +487,7 @@ def metrics(
 
     # best/worst
     if mode.lower() == "full":
-        metrics["~~~"] = blank
+        # metrics["~~~"] = blank
         metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
@@ -496,7 +496,7 @@ def metrics(
         metrics["Worst Year %"] = _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
 
     # dd
-    metrics["~~~~"] = blank
+    # metrics["~~~~"] = blank
     for ix, row in dd.iterrows():
         metrics[ix] = row
     metrics["Recovery Factor"] = _stats.recovery_factor(df)
@@ -505,7 +505,7 @@ def metrics(
 
     # win rate
     if mode.lower() == "full":
-        metrics["~~~~~"] = blank
+        # metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
             _stats.avg_win(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
@@ -522,7 +522,7 @@ def metrics(
         metrics["Win Year %%"] = _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
 
         if "benchmark" in df:
-            metrics["~~~~~~~~~~~~"] = blank
+            # metrics["~~~~~~~~~~~~"] = blank
             if isinstance(returns, _pd.Series):
                 greeks = _stats.greeks(df["returns"], df["benchmark"], win_year, prepare_returns=False)
                 metrics["Beta"] = [str(round(greeks["beta"], 2)), "-"]
@@ -580,6 +580,7 @@ def metrics(
                 metrics[col] = metrics[col].astype(str)
         except Exception:
             pass
+
         if (display or "internal" in kwargs) and "*int" in col:
             metrics[col] = metrics[col].str.replace(".0", "", regex=False)
             metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
@@ -641,17 +642,17 @@ def metrics(
     if "benchmark" in df:
         metrics = metrics[[benchmark_colname] + [col for col in metrics.columns if col != benchmark_colname]]
 
-    if display:
-        print(_tabulate(metrics, headers="keys", tablefmt="simple"))
-        return None
+    # if display:
+    #    print(_tabulate(metrics, headers="keys", tablefmt="simple"))
+    #    return None
 
-    if not sep:
-        metrics = metrics[metrics.index != ""]
+    # if not sep:
+    #    metrics = metrics[metrics.index != ""]
 
     # remove spaces from column names
-    metrics = metrics.T
-    metrics.columns = [c.replace(" %", "").replace(" *int", "").strip() for c in metrics.columns]
-    metrics = metrics.T
+    # metrics = metrics.T
+    # metrics.columns = [c.replace(" %", "").replace(" *int", "").strip() for c in metrics.columns]
+    # metrics = metrics.T
 
     return metrics
 
@@ -848,26 +849,16 @@ def plots(
         period=win_half_year,
     )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.drawdowns_periods(
-            returns,
+            returns[col],
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
+            title=col,
             prepare_returns=False,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.drawdowns_periods(
-                returns[col],
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                ylabel="",
-                title=col,
-                prepare_returns=False,
-            )
 
     _plots.drawdown(
         returns,
@@ -877,52 +868,29 @@ def plots(
         ylabel="",
     )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.monthly_heatmap(
-            returns,
+            returns[col],
             benchmark,
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
-            returns_label=returns.name,
             show=True,
             ylabel="",
+            returns_label=col,
+            compounded=compounded,
             active=active,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.monthly_heatmap(
-                returns[col],
-                benchmark,
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                ylabel="",
-                returns_label=col,
-                compounded=compounded,
-                active=active,
-            )
 
-    if isinstance(returns, _pd.Series):
+    for col in returns.columns:
         _plots.distribution(
-            returns,
+            returns[col],
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            title=returns.name,
+            title=col,
             ylabel="",
             prepare_returns=False,
         )
-    elif isinstance(returns, _pd.DataFrame):
-        for col in returns.columns:
-            _plots.distribution(
-                returns[col],
-                grayscale=grayscale,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                title=col,
-                ylabel="",
-                prepare_returns=False,
-            )
 
 
 def _calc_dd(df, display=True, as_pct=False):

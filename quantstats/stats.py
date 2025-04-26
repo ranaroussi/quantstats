@@ -17,7 +17,7 @@
 
 from math import ceil as _ceil
 from math import sqrt as _sqrt
-from warnings import warn
+from warnings import warn as _warn
 
 import numpy as _np
 import pandas as _pd
@@ -58,7 +58,7 @@ def distribution(returns, compounded=True, prepare_returns=True):
         }
 
     if isinstance(returns, _pd.DataFrame):
-        warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
+        _warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)
         if len(returns.columns) > 1 and "close" in returns.columns:
@@ -168,7 +168,7 @@ def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
     def _win_rate(series):
         try:
             return len(series[series > 0]) / len(series[series != 0])
-        except Exception:
+        except ZeroDivisionError:
             return 0.0
 
     if prepare_returns:
@@ -376,19 +376,19 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     return data / _sqrt(2)
 
 
-def probabilistic_ratio(series, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False):
+def probabilistic_ratio(returns, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False):
     if base.lower() == "sharpe":
-        base = sharpe(series, periods=periods, annualize=False, smart=smart)
+        base = sharpe(returns, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "sortino":
-        base = sortino(series, periods=periods, annualize=False, smart=smart)
+        base = sortino(returns, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "adjusted_sortino":
-        base = adjusted_sortino(series, periods=periods, annualize=False, smart=smart)
+        base = adjusted_sortino(returns, periods=periods, annualize=False, smart=smart)
     else:
         raise Exception("`metric` must be either `sharpe`, `sortino`, or `adjusted_sortino`")
-    skew_no = skew(series, prepare_returns=False)
-    kurtosis_no = kurtosis(series, prepare_returns=False)
+    skew_no = skew(returns, prepare_returns=False)
+    kurtosis_no = kurtosis(returns, prepare_returns=False)
 
-    n = len(series)
+    n = len(returns)
 
     sigma_sr = _np.sqrt((1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2)) / (n - 1))
 
@@ -400,17 +400,17 @@ def probabilistic_ratio(series, rf=0.0, base="sharpe", periods=252, annualize=Fa
     return psr
 
 
-def probabilistic_sharpe_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
-    return probabilistic_ratio(series, rf, base="sharpe", periods=periods, annualize=annualize, smart=smart)
+def probabilistic_sharpe_ratio(returns, rf=0.0, periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(returns, rf, base="sharpe", periods=periods, annualize=annualize, smart=smart)
 
 
-def probabilistic_sortino_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
-    return probabilistic_ratio(series, rf, base="sortino", periods=periods, annualize=annualize, smart=smart)
+def probabilistic_sortino_ratio(returns, rf=0.0, periods=252, annualize=False, smart=False):
+    return probabilistic_ratio(returns, rf, base="sortino", periods=periods, annualize=annualize, smart=smart)
 
 
-def probabilistic_adjusted_sortino_ratio(series, rf=0.0, periods=252, annualize=False, smart=False):
+def probabilistic_adjusted_sortino_ratio(returns, rf=0.0, periods=252, annualize=False, smart=False):
     return probabilistic_ratio(
-        series,
+        returns,
         rf,
         base="adjusted_sortino",
         periods=periods,
@@ -658,11 +658,11 @@ def profit_ratio(returns, prepare_returns=True):
     wins = returns[returns >= 0]
     loss = returns[returns < 0]
 
-    win_ratio = abs(wins.mean() / wins.count())
-    loss_ratio = abs(loss.mean() / loss.count())
     try:
+        win_ratio = abs(wins.mean() / wins.count())
+        loss_ratio = abs(loss.mean() / loss.count())
         return win_ratio / loss_ratio
-    except Exception:
+    except ZeroDivisionError:
         return 0.0
 
 
@@ -967,7 +967,7 @@ def compare(
 def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     """Calculates monthly returns"""
     if isinstance(returns, _pd.DataFrame):
-        warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
+        _warn("Pandas DataFrame was passed (Series expected). Only first column will be used.")
         returns = returns.copy()
         returns.columns = map(str.lower, returns.columns)
         if len(returns.columns) > 1 and "close" in returns.columns:
