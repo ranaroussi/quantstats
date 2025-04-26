@@ -14,9 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import re as _regex
-from base64 import b64encode as _b64encode
 from datetime import datetime as _dt
 from math import ceil as _ceil
 from math import sqrt as _sqrt
@@ -1009,64 +1006,3 @@ def _calc_dd(df, display=True, as_pct=False):
     dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(float) * pct
 
     return dd_stats.T
-
-
-def _html_table(obj, showindex="default"):
-    obj = _tabulate(obj, headers="keys", tablefmt="html", floatfmt=".2f", showindex=showindex)
-    obj = obj.replace(' style="text-align: right;"', "")
-    obj = obj.replace(' style="text-align: left;"', "")
-    obj = obj.replace(' style="text-align: center;"', "")
-    obj = _regex.sub("<td> +", "<td>", obj)
-    obj = _regex.sub(" +</td>", "</td>", obj)
-    obj = _regex.sub("<th> +", "<th>", obj)
-    obj = _regex.sub(" +</th>", "</th>", obj)
-    return obj
-
-
-def _download_html(html, filename="quantstats-tearsheet.html"):
-    jscode = _regex.sub(
-        " +",
-        " ",
-        """<script>
-    var bl=new Blob(['{{html}}'],{type:"text/html"});
-    var a=document.createElement("YE");
-    a.href=URL.createObjectURL(bl);
-    a.download="{{filename}}";
-    a.hidden=true;document.body.appendChild(a);
-    a.innerHTML="download report";
-    a.click();</script>""".replace("\n", ""),
-    )
-    jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
-    # if _utils._in_notebook():
-    #    iDisplay(iHTML(jscode.replace("{{filename}}", filename)))
-
-
-def _open_html(html):
-    jscode = _regex.sub(
-        " +",
-        " ",
-        """<script>
-    var win=window.open();win.document.body.innerHTML='{{html}}';
-    </script>""".replace("\n", ""),
-    )
-    jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
-    if _utils._in_notebook():
-        iDisplay(iHTML(jscode))
-
-
-def _embed_figure(figfiles, figfmt):
-    if isinstance(figfiles, list):
-        embed_string = "\n"
-        for figfile in figfiles:
-            figbytes = figfile.getvalue()
-            if figfmt == "svg":
-                return figbytes.decode()
-            data_uri = _b64encode(figbytes).decode()
-            embed_string.join(f'<img src="data:image/{figfmt};base64,{data_uri}" />')
-    else:
-        figbytes = figfiles.getvalue()
-        if figfmt == "svg":
-            return figbytes.decode()
-        data_uri = _b64encode(figbytes).decode()
-        embed_string = f'<img src="data:image/{figfmt};base64,{data_uri}" />'
-    return embed_string
