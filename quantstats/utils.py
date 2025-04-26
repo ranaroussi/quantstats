@@ -18,31 +18,33 @@ import datetime as _dt
 import inspect
 
 import numpy as _np
+import numpy as np
 import pandas as _pd
+import pandas as pd
 import yfinance as _yf
 
 from . import stats as _stats
 
 
 def _mtd(df):
-    return df[df.index >= _dt.datetime.now().strftime("%Y-%m-01")]
+    now = _dt.datetime.now()
+    return df[(df.index.month == now.month) & (df.index.year == now.year)]
 
 
 def _qtd(df):
-    date = _dt.datetime.now()
-    for q in [1, 4, 7, 10]:
-        if date.month <= q:
-            return df[df.index >= _dt.datetime(date.year, q, 1).strftime("%Y-%m-01")]
-    return df[df.index >= date.strftime("%Y-%m-01")]
+    now = _dt.datetime.now()
+    quarter = (now.month - 1) // 3 + 1
+    return df[((df.index.month - 1) // 3 + 1 == quarter) & (df.index.year == now.year)]
 
 
 def _ytd(df):
-    return df[df.index >= _dt.datetime.now().strftime("%Y-01-01")]
+    now = _dt.datetime.now()
+    return df[(df.index.year == now.year)]
 
 
-def _pandas_date(df, dates):
-    if not isinstance(dates, list):
-        dates = [dates]
+def _pandas_date(df, dates: list[pd.Timestamp]):
+    # if not isinstance(dates, list):
+    #    dates = [dates]
     return df[df.index.isin(dates)]
 
 
@@ -65,7 +67,9 @@ def multi_shift(df, shift=3):
 
 def to_returns(prices, rf=0.0):
     """Calculates the simple arithmetic returns of a price series"""
-    return _prepare_returns(prices, rf)
+    r = _prepare_returns(prices, rf)
+    r[prices.index[0]] = np.nan
+    return r
 
 
 def to_prices(returns, base=1e5):
@@ -83,10 +87,10 @@ def log_returns(returns, rf=0.0, nperiods=None):
 def to_log_returns(returns, rf=0.0, nperiods=None):
     """Converts returns series to log returns"""
     returns = _prepare_returns(returns, rf, nperiods)
-    try:
-        return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))
-    except Exception:
-        return 0.0
+    # try:
+    return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))
+    # except Exception:
+    #    return 0.0
 
 
 def exponential_stdev(returns, window=30, is_halflife=False):
