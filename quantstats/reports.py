@@ -99,39 +99,6 @@ def full(
                 dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
             dd_info_dict[ptf] = dd_info
 
-    # if _utils._in_notebook():
-    #     iDisplay(iHTML("<h4>Performance Metrics</h4>"))
-    #     iDisplay(
-    #         metrics(
-    #             returns=returns,
-    #             benchmark=benchmark,
-    #             rf=rf,
-    #             display=display,
-    #             mode="full",
-    #             compounded=compounded,
-    #             periods_per_year=periods_per_year,
-    #             prepare_returns=False,
-    #             benchmark_title=benchmark_title,
-    #             strategy_title=strategy_title,
-    #         )
-    #     )
-    #
-    #     if isinstance(dd, _pd.Series):
-    #         iDisplay(iHTML('<h4 style="margin-bottom:20px">Worst 5 Drawdowns</h4>'))
-    #         if dd_info.empty:
-    #             iDisplay(iHTML("<p>(no drawdowns)</p>"))
-    #         else:
-    #             iDisplay(dd_info)
-    #     elif isinstance(dd, _pd.DataFrame):
-    #         for ptf, dd_info in dd_info_dict.items():
-    #             iDisplay(iHTML('<h4 style="margin-bottom:20px">%s - Worst 5 Drawdowns</h4>' % ptf))
-    #             if dd_info.empty:
-    #                 iDisplay(iHTML("<p>(no drawdowns)</p>"))
-    #             else:
-    #                 iDisplay(dd_info)
-    #
-    #     iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
-    # else:
     print("[Performance Metrics]\n")
     metrics(
         returns=returns,
