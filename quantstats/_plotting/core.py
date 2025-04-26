@@ -332,11 +332,8 @@ def plot_timeseries(
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         ax.get_legend().remove()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
     if savefig:
         if isinstance(savefig, dict):
@@ -493,11 +490,8 @@ def plot_histogram(
 
     # fig.autofmt_xdate()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
     if savefig:
         if isinstance(savefig, dict):
@@ -928,11 +922,8 @@ def plot_distribution(
 
     fig.autofmt_xdate()
 
-    try:
-        _plt.subplots_adjust(hspace=0)
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0)
+    fig.tight_layout(w_pad=0, h_pad=0)
 
     if savefig:
         if isinstance(savefig, dict):
