@@ -27,6 +27,35 @@ def _(qs):
 def _(qs):
     spy = qs.utils.download_returns("SPY")
     spy.to_csv("benchmark.csv")
+    return (spy,)
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.html(spy)
+    return
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.metrics(spy)
+    return
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.plots(spy)
+    return
+
+
+@app.cell
+def _(qs, spy):
+    qs.reports.html(spy)
+    return
+
+
+@app.cell
+def _():
     return
 
 

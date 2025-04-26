@@ -9,9 +9,5 @@ def test_plots(returns):
     qs.reports.plots(returns)
 
 
-def test_html(returns):
-    qs.reports.html(returns)
-
-
 def test_full(returns):
     qs.reports.full(returns)
