@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
