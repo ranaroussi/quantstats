@@ -36,9 +36,9 @@ from .. import (
     utils as _utils,
 )
 from . import core as _core
+from .core import save
 
 _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64", "#4fa487", "#9b59b6", "#808080"]
-_GRAYSCALE_COLORS = (len(_FLATUI_COLORS) * ["black"]) + ["white"]
 
 _HAS_PLOTLY = False
 try:
@@ -60,7 +60,6 @@ def to_plotly(fig):
 
 def snapshot(
     returns,
-    grayscale=False,
     figsize=(10, 8),
     title="Portfolio Summary",
     fontname="Arial",
@@ -87,7 +86,7 @@ def snapshot(
                 title = title + " (daily equal-weighted*)"
         returns.columns = strategy_colname
 
-    colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
+    colors = _FLATUI_COLORS
     returns = _utils.make_portfolio(returns.dropna(), 1, mode).pct_change().fillna(0)
 
     if figsize is None:
@@ -148,7 +147,7 @@ def snapshot(
         axes[0].plot(
             _stats.compsum(returns) * 100,
             color=colors[1],
-            lw=1 if grayscale else lw,
+            lw=lw,
             zorder=1,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -156,7 +155,7 @@ def snapshot(
             axes[0].plot(
                 _stats.compsum(returns[col]) * 100,
                 label=col,
-                lw=1 if grayscale else lw,
+                lw=lw,
                 zorder=1,
             )
     axes[0].axhline(0, color="silver", lw=1, zorder=0)
@@ -177,17 +176,17 @@ def snapshot(
     axes[1].set_ylabel("Drawdown", fontname=fontname, fontweight="bold", fontsize=12)
     axes[1].set_yticks(_np.arange(-ddmin, 0, step=ddmin_ticks))
     if isinstance(dd, _pd.Series):
-        axes[1].plot(dd, color=colors[2], lw=1 if grayscale else lw, zorder=1)
+        axes[1].plot(dd, color=colors[2], lw=lw, zorder=1)
     elif isinstance(dd, _pd.DataFrame):
         for col in dd.columns:
-            axes[1].plot(dd[col], label=col, lw=1 if grayscale else lw, zorder=1)
+            axes[1].plot(dd[col], label=col, lw=lw, zorder=1)
     axes[1].axhline(0, color="silver", lw=1, zorder=0)
-    if not grayscale:
-        if isinstance(dd, _pd.Series):
-            axes[1].fill_between(dd.index, 0, dd, color=colors[2], alpha=0.25)
-        elif isinstance(dd, _pd.DataFrame):
-            for i, col in enumerate(dd.columns):
-                axes[1].fill_between(dd[col].index, 0, dd[col], color=colors[i + 1], alpha=0.25)
+
+    if isinstance(dd, _pd.Series):
+        axes[1].fill_between(dd.index, 0, dd, color=colors[2], alpha=0.25)
+    elif isinstance(dd, _pd.DataFrame):
+        for i, col in enumerate(dd.columns):
+            axes[1].fill_between(dd[col].index, 0, dd[col], color=colors[i + 1], alpha=0.25)
 
     axes[1].set_yscale("symlog" if log_scale else "linear")
     # axes[1].legend(fontsize=12)
@@ -223,27 +222,10 @@ def snapshot(
     _plt.subplots_adjust(hspace=0, bottom=0, top=1)
     fig.autofmt_xdate()
 
-    try:
-        _plt.subplots_adjust(hspace=0)
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0)
+    fig.tight_layout(w_pad=0, h_pad=0)
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    save(fig, savefig, show=show)
 
 
 def earnings(
@@ -326,21 +308,7 @@ def earnings(
     except Exception:
         pass
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig, show=show)
 
 
 def returns(
@@ -373,7 +341,7 @@ def returns(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    fig = _core.plot_timeseries(
+    return _core.plot_timeseries(
         returns,
         benchmark,
         title,
@@ -390,8 +358,6 @@ def returns(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def log_returns(
@@ -427,7 +393,7 @@ def log_returns(
 
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    fig = _core.plot_timeseries(
+    return _core.plot_timeseries(
         returns,
         benchmark,
         title,
@@ -444,8 +410,6 @@ def log_returns(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def daily_returns(
@@ -470,7 +434,7 @@ def daily_returns(
 
     plot_title = "Daily Active Returns" if active else "Daily Returns"
 
-    fig = _core.plot_timeseries(
+    return _core.plot_timeseries(
         returns,
         None,
         plot_title,
@@ -486,8 +450,6 @@ def daily_returns(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def yearly_returns(
@@ -523,7 +485,7 @@ def yearly_returns(
         returns = returns.resample("YE").apply(_df.sum)
     returns = returns.resample("YE").last()
 
-    fig = _core.plot_returns_bars(
+    return _core.plot_returns_bars(
         returns,
         benchmark,
         fontname=fontname,
@@ -541,14 +503,11 @@ def yearly_returns(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def distribution(
     returns,
     fontname="Arial",
-    grayscale=False,
     ylabel=True,
     figsize=(10, 6),
     subtitle=True,
@@ -561,7 +520,7 @@ def distribution(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    fig = _core.plot_distribution(
+    return _core.plot_distribution(
         returns,
         fontname=fontname,
         figsize=figsize,
@@ -572,8 +531,6 @@ def distribution(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def histogram(
@@ -634,7 +591,7 @@ def drawdown(
 ):
     dd = _stats.to_drawdown_series(returns)
 
-    fig = _core.plot_timeseries(
+    return _core.plot_timeseries(
         dd,
         title="Underwater Plot",
         hline=dd.mean(),
@@ -653,8 +610,6 @@ def drawdown(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def drawdowns_periods(
@@ -675,7 +630,7 @@ def drawdowns_periods(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    fig = _core.plot_longest_drawdowns(
+    return _core.plot_longest_drawdowns(
         returns,
         periods=periods,
         lw=lw,
@@ -689,8 +644,6 @@ def drawdowns_periods(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def rolling_beta(
@@ -714,7 +667,7 @@ def rolling_beta(
 
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    fig = _core.plot_rolling_beta(
+    return _core.plot_rolling_beta(
         returns,
         benchmark,
         window1=window1,
@@ -730,8 +683,6 @@ def rolling_beta(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def rolling_volatility(
@@ -754,7 +705,7 @@ def rolling_volatility(
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
         benchmark = _stats.rolling_volatility(benchmark, period, periods_per_year, prepare_returns=False)
 
-    fig = _core.plot_rolling_stats(
+    return _core.plot_rolling_stats(
         returns,
         benchmark,
         hline=returns.mean(),
@@ -768,8 +719,6 @@ def rolling_volatility(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def rolling_sharpe(
@@ -799,7 +748,7 @@ def rolling_sharpe(
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         benchmark = _stats.rolling_sharpe(benchmark, rf, period, True, periods_per_year, prepare_returns=False)
 
-    fig = _core.plot_rolling_stats(
+    return _core.plot_rolling_stats(
         returns,
         benchmark,
         hline=returns.mean(),
@@ -813,8 +762,6 @@ def rolling_sharpe(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def rolling_sortino(
@@ -838,7 +785,7 @@ def rolling_sortino(
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         benchmark = _stats.rolling_sortino(benchmark, rf, period, True, periods_per_year, prepare_returns=False)
 
-    fig = _core.plot_rolling_stats(
+    return _core.plot_rolling_stats(
         returns,
         benchmark,
         hline=returns.mean(),
@@ -852,8 +799,6 @@ def rolling_sortino(
         savefig=savefig,
         show=show,
     )
-    if not show:
-        return fig
 
 
 def monthly_heatmap(
@@ -866,7 +811,6 @@ def monthly_heatmap(
     returns_label="Strategy",
     compounded=True,
     eoy=False,
-    grayscale=False,
     fontname="Arial",
     ylabel=True,
     savefig=None,
@@ -874,7 +818,7 @@ def monthly_heatmap(
     active=False,
 ):
     # colors, ls, alpha = _core._get_colors(grayscale)
-    cmap = "gray" if grayscale else "RdYlGn"
+    cmap = "RdYlGn"
 
     returns = _stats.monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
 
@@ -961,27 +905,17 @@ def monthly_heatmap(
     _plt.xticks(rotation=0, fontsize=annot_size * 1.2)
     _plt.yticks(rotation=0, fontsize=annot_size * 1.2)
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout(w_pad=0, h_pad=0)
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
+    return save(fig, savefig=savefig, show=show)
 
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    # _plt.close()
+    #
+    # if not show:
+    #    return fig
+    #
+    # return None
 
 
 def monthly_returns(
@@ -992,7 +926,6 @@ def monthly_returns(
     square=False,
     compounded=True,
     eoy=False,
-    grayscale=False,
     fontname="Arial",
     ylabel=True,
     savefig=None,
@@ -1006,7 +939,6 @@ def monthly_returns(
         square=square,
         compounded=compounded,
         eoy=eoy,
-        grayscale=grayscale,
         fontname=fontname,
         ylabel=ylabel,
         savefig=savefig,

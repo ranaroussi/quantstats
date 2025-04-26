@@ -100,17 +100,6 @@ def exponential_stdev(returns, window=30, is_halflife=False):
     return returns.ewm(com=None, span=window, halflife=halflife, min_periods=window).std()
 
 
-def rebase(prices, base=100.0):
-    """
-    Rebase all series to a given intial base.
-    This makes comparing/plotting different series together easier.
-    Args:
-        * prices: Expects a price series/dataframe
-        * base (number): starting value for all series.
-    """
-    return prices.dropna() / prices.dropna().iloc[0] * base
-
-
 def group_returns(returns, groupby, compounded=False):
     """Summarize returns
     group_returns(df, df.index.year)
@@ -167,9 +156,6 @@ def to_excess_returns(returns, rf, nperiods=None):
     Returns:
         * excess_returns (Series, DataFrame): Returns - rf
     """
-    if isinstance(rf, int):
-        rf = float(rf)
-
     if not isinstance(rf, float):
         rf = rf[rf.index.isin(returns.index)]
 

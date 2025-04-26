@@ -10,7 +10,10 @@ from quantstats.utils import (
     _pandas_date,
     _qtd,
     _ytd,
+    download_returns,
+    exponential_stdev,
     log_returns,
+    multi_shift,
     to_excess_returns,
     to_prices,
     to_returns,
@@ -124,3 +127,17 @@ def test_pandas_date():
     expected_df = df.loc[expected_idx]
 
     pd.testing.assert_frame_equal(result, expected_df)
+
+
+def test_exponential_stdev(returns):
+    pd.testing.assert_series_equal(
+        returns.dropna().ewm(span=20, min_periods=20).std(), exponential_stdev(returns.dropna(), window=20)
+    )
+
+
+def test_multi_shift(returns):
+    multi_shift(returns, shift=3)
+
+
+def test_download_returns(returns):
+    download_returns(ticker="SPY")

@@ -207,7 +207,7 @@ def metrics(
     returns,
     benchmark=None,
     rf=0.0,
-    display=True,
+    # display=True,
     mode="basic",
     compounded=True,
     periods_per_year=252,
@@ -284,16 +284,12 @@ def metrics(
     df = df.fillna(0)
 
     # pct multiplier
-    pct = 100 if display or "internal" in kwargs else 1
-    if kwargs.get("as_pct", False):
-        pct = 100
+    pct = 100
+    # if kwargs.get("as_pct", False):
+    #    pct = 100
 
     # return df
-    dd = _calc_dd(
-        df,
-        display=(display or "internal" in kwargs),
-        as_pct=kwargs.get("as_pct", False),
-    )
+    dd = _calc_dd(df)
 
     metrics = _pd.DataFrame()
     metrics["Start Period"] = _pd.Series(s_start)
@@ -329,10 +325,6 @@ def metrics(
 
     # todo: results in a KeyError when using multiple assets for the returns
     # metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
-
-    # metrics["~~~~~~~~"] = blank
-    # metrics["Max Drawdown %"] = blank
-    # metrics["Longest DD Days"] = blank
 
     if mode.lower() == "full":
         if isinstance(returns, _pd.Series):
@@ -535,33 +527,33 @@ def metrics(
                 ) + ["-"]
 
     # prepare for display
-    for col in metrics.columns:
-        try:
-            metrics[col] = metrics[col].astype(float).round(2)
-            if display or "internal" in kwargs:
-                metrics[col] = metrics[col].astype(str)
-        except Exception:
-            pass
+    # for col in metrics.columns:
+    #    try:
+    #        metrics[col] = metrics[col].astype(float).round(2)
+    #        metrics[col] = metrics[col].astype(str)
+    #    except ValueError:
+    #        pass
 
-        if (display or "internal" in kwargs) and "*int" in col:
-            metrics[col] = metrics[col].str.replace(".0", "", regex=False)
-            metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
-        if (display or "internal" in kwargs) and "%" in col:
-            metrics[col] = metrics[col] + "%"
+    #    if "*int" in col:
+    #        metrics[col] = metrics[col].str.replace(".0", "", regex=False)
+    #        metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
+    #    if "%" in col:
+    #        metrics[col] = f"{metrics[col]} %"
 
-    try:
-        metrics["Longest DD Days"] = _pd.to_numeric(metrics["Longest DD Days"]).astype("int")
-        metrics["Avg. Drawdown Days"] = _pd.to_numeric(metrics["Avg. Drawdown Days"]).astype("int")
+    # try:
+    metrics["Longest DD Days"] = _pd.to_numeric(metrics["Longest DD Days"]).astype("int")
+    metrics["Avg. Drawdown Days"] = _pd.to_numeric(metrics["Avg. Drawdown Days"]).astype("int")
 
-        if display or "internal" in kwargs:
-            metrics["Longest DD Days"] = metrics["Longest DD Days"].astype(str)
-            metrics["Avg. Drawdown Days"] = metrics["Avg. Drawdown Days"].astype(str)
-    except Exception:
-        metrics["Longest DD Days"] = "-"
-        metrics["Avg. Drawdown Days"] = "-"
-        if display or "internal" in kwargs:
-            metrics["Longest DD Days"] = "-"
-            metrics["Avg. Drawdown Days"] = "-"
+    # if display or "internal" in kwargs:
+    metrics["Longest DD Days"] = metrics["Longest DD Days"].astype(str)
+    metrics["Avg. Drawdown Days"] = metrics["Avg. Drawdown Days"].astype(str)
+
+    # except Exception:
+    #    metrics["Longest DD Days"] = "-"
+    #    metrics["Avg. Drawdown Days"] = "-"
+    #    if display or "internal" in kwargs:
+    #        metrics["Longest DD Days"] = "-"
+    #        metrics["Avg. Drawdown Days"] = "-"
 
     metrics.columns = [col if "~" not in col else "" for col in metrics.columns]
     metrics.columns = [col[:-1] if "%" in col else col for col in metrics.columns]
@@ -836,7 +828,7 @@ def plots(
         )
 
 
-def _calc_dd(df, display=True, as_pct=False):
+def _calc_dd(df):
     dd = _stats.to_drawdown_series(df)
     dd_info = _stats.drawdown_details(dd)
 
@@ -860,12 +852,11 @@ def _calc_dd(df, display=True, as_pct=False):
     ):
         dd_stats = {
             col: {
-                "Max Drawdown %": ret_dd[col].sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0]
-                / 100,
+                "Max Drawdown %": ret_dd[col].sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0],
                 "Longest DD Days": str(
                     _np.round(ret_dd[col].sort_values(by="days", ascending=False)["days"].values[0])
                 ),
-                "Avg. Drawdown %": ret_dd[col]["max drawdown"].mean() / 100,
+                "Avg. Drawdown %": ret_dd[col]["max drawdown"].mean(),
                 "Avg. Drawdown Days": str(_np.round(ret_dd[col]["days"].mean())),
             }
             for col in ret_dd.columns.get_level_values(0)
@@ -873,26 +864,20 @@ def _calc_dd(df, display=True, as_pct=False):
     else:
         dd_stats = {
             "returns": {
-                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0] / 100,
+                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0],
                 "Longest DD Days": str(_np.round(ret_dd.sort_values(by="days", ascending=False)["days"].values[0])),
-                "Avg. Drawdown %": ret_dd["max drawdown"].mean() / 100,
+                "Avg. Drawdown %": ret_dd["max drawdown"].mean(),
                 "Avg. Drawdown Days": str(_np.round(ret_dd["days"].mean())),
             }
         }
     if "benchmark" in df and (dd_info.columns, _pd.MultiIndex):
         bench_dd = dd_info["benchmark"].sort_values(by="max drawdown")
         dd_stats["benchmark"] = {
-            "Max Drawdown %": bench_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0] / 100,
+            "Max Drawdown %": bench_dd.sort_values(by="max drawdown", ascending=True)["max drawdown"].values[0],
             "Longest DD Days": str(_np.round(bench_dd.sort_values(by="days", ascending=False)["days"].values[0])),
-            "Avg. Drawdown %": bench_dd["max drawdown"].mean() / 100,
+            "Avg. Drawdown %": bench_dd["max drawdown"].mean(),
             "Avg. Drawdown Days": str(_np.round(bench_dd["days"].mean())),
         }
 
-    # pct multiplier
-    pct = 100 if display or as_pct else 1
-
     dd_stats = _pd.DataFrame(dd_stats).T
-    dd_stats["Max Drawdown %"] = dd_stats["Max Drawdown %"].astype(float) * pct
-    dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(float) * pct
-
     return dd_stats.T

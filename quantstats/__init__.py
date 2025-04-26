@@ -103,7 +103,6 @@ def extend_pandas():
     _po.to_log_returns = utils.to_log_returns
     _po.log_returns = utils.log_returns
     _po.exponential_stdev = utils.exponential_stdev
-    _po.rebase = utils.rebase
     _po.aggregate_returns = utils.aggregate_returns
     _po.to_excess_returns = utils.to_excess_returns
     _po.multi_shift = utils.multi_shift

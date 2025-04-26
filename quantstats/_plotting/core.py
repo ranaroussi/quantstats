@@ -335,21 +335,7 @@ def plot_timeseries(
     _plt.subplots_adjust(hspace=0, bottom=0, top=1)
     fig.tight_layout()
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 def plot_histogram(
@@ -366,10 +352,6 @@ def plot_histogram(
     savefig=None,
     show=True,
 ):
-    # colors = ['#348dc1', '#003366', 'red']
-    # if grayscale:
-    #     colors = ['silver', 'gray', 'black']
-
     colors, _, _ = _get_colors()
 
     apply_fnc = _stats.comp if compounded else _np.sum
@@ -597,26 +579,10 @@ def plot_rolling_stats(
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         ax.get_legend().remove()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 def plot_rolling_beta(
@@ -718,27 +684,10 @@ def plot_rolling_beta(
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         ax.get_legend().remove()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 def plot_longest_drawdowns(
@@ -823,27 +772,10 @@ def plot_longest_drawdowns(
 
     fig.autofmt_xdate()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 def plot_distribution(
@@ -925,21 +857,7 @@ def plot_distribution(
     _plt.subplots_adjust(hspace=0)
     fig.tight_layout(w_pad=0, h_pad=0)
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 # def plot_table(
@@ -1029,6 +947,24 @@ def plot_distribution(
 #         return fig
 #
 #     return None
+
+
+def save(fig, savefig, show=True):
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(block=False)
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
 
 
 def format_cur_axis(x, _):

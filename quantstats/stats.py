@@ -31,7 +31,7 @@ from . import utils as _utils
 
 def pct_rank(prices, window=60):
     """Rank prices by window"""
-    rank = _utils.multi_shift(prices, window).T.rank(pct=True).T
+    rank = _utils.multishift(prices, window).T.rank(pct=True).T
     return rank.iloc[:, 0] * 100.0
 
 
