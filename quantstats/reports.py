@@ -48,7 +48,6 @@ def full(
     returns,
     benchmark=None,
     rf=0.0,
-    grayscale=False,
     figsize=(8, 5),
     display=True,
     compounded=True,
@@ -167,7 +166,6 @@ def full(
     plots(
         returns=returns,
         benchmark=benchmark,
-        grayscale=grayscale,
         figsize=figsize,
         mode="full",
         periods_per_year=periods_per_year,
@@ -660,7 +658,6 @@ def metrics(
 def plots(
     returns,
     benchmark=None,
-    grayscale=False,
     figsize=(8, 5),
     mode="basic",
     compounded=True,
@@ -694,7 +691,6 @@ def plots(
     if mode.lower() != "full":
         _plots.snapshot(
             returns,
-            grayscale=grayscale,
             figsize=(figsize[0], figsize[0]),
             show=True,
             mode=("comp" if compounded else "sum"),
@@ -706,7 +702,6 @@ def plots(
             _plots.monthly_heatmap(
                 returns,
                 benchmark,
-                grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 ylabel="",
@@ -718,7 +713,6 @@ def plots(
                 _plots.monthly_heatmap(
                     returns[col].dropna(),
                     benchmark,
-                    grayscale=grayscale,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
                     ylabel="",
@@ -741,7 +735,6 @@ def plots(
     _plots.returns(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
         ylabel="",
@@ -751,7 +744,6 @@ def plots(
     _plots.log_returns(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
         ylabel="",
@@ -763,7 +755,6 @@ def plots(
             returns,
             benchmark,
             match_volatility=True,
-            grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
@@ -773,7 +764,6 @@ def plots(
     _plots.yearly_returns(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
         ylabel="",
@@ -783,10 +773,8 @@ def plots(
     _plots.histogram(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel="",
         prepare_returns=False,
     )
 
@@ -800,7 +788,6 @@ def plots(
     _plots.daily_returns(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
         ylabel="",
@@ -812,7 +799,6 @@ def plots(
         _plots.rolling_beta(
             returns,
             benchmark,
-            grayscale=grayscale,
             window1=win_half_year,
             window2=win_year,
             figsize=small_fig_size,
@@ -824,7 +810,6 @@ def plots(
     _plots.rolling_volatility(
         returns,
         benchmark,
-        grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
         ylabel="",
@@ -833,7 +818,6 @@ def plots(
 
     _plots.rolling_sharpe(
         returns,
-        grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
         ylabel="",
@@ -842,7 +826,6 @@ def plots(
 
     _plots.rolling_sortino(
         returns,
-        grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
         ylabel="",
@@ -852,7 +835,6 @@ def plots(
     for col in returns.columns:
         _plots.drawdowns_periods(
             returns[col],
-            grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
@@ -862,7 +844,6 @@ def plots(
 
     _plots.drawdown(
         returns,
-        grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
         ylabel="",
@@ -872,7 +853,6 @@ def plots(
         _plots.monthly_heatmap(
             returns[col],
             benchmark,
-            grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
@@ -884,7 +864,6 @@ def plots(
     for col in returns.columns:
         _plots.distribution(
             returns[col],
-            grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=col,

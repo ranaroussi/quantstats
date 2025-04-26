@@ -16,7 +16,6 @@
 
 import datetime as _dt
 import inspect
-import io as _io
 
 import numpy as _np
 import pandas as _pd
@@ -284,9 +283,9 @@ def _round_to_closest(val, res, decimals=None):
     return round(round(val / res) * res, decimals)
 
 
-def _file_stream():
-    """Returns a file stream"""
-    return _io.BytesIO()
+# def _file_stream():
+#     """Returns a file stream"""
+#     return _io.BytesIO()
 
 
 def _count_consecutive(data):
@@ -407,14 +406,14 @@ def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):
     return portfolio
 
 
-def _flatten_dataframe(df, set_index=None):
-    """Dirty method for flattening multi-index dataframe"""
-    s_buf = _io.StringIO()
-    df.to_csv(s_buf)
-    s_buf.seek(0)
-
-    df = _pd.read_csv(s_buf)
-    if set_index is not None:
-        df.set_index(set_index, inplace=True)
-
-    return df
+# def _flatten_dataframe(df, set_index=None):
+#     """Dirty method for flattening multi-index dataframe"""
+#     s_buf = _io.StringIO()
+#     df.to_csv(s_buf)
+#     s_buf.seek(0)
+#
+#     df = _pd.read_csv(s_buf)
+#     if set_index is not None:
+#         df.set_index(set_index, inplace=True)
+#
+#     return df

@@ -37,7 +37,7 @@ from .. import (
     stats as _stats,
 )
 
-_sns.set(
+_sns.set_theme(
     font_scale=1.1,
     rc={
         "figure.figsize": (10, 6),
@@ -64,28 +64,12 @@ _FLATUI_COLORS = [
     "#559CAD",
     "#4A5899",
 ]
-_GRAYSCALE_COLORS = [
-    "#000000",
-    "#222222",
-    "#555555",
-    "#888888",
-    "#AAAAAA",
-    "#CCCCCC",
-    "#EEEEEE",
-    "#333333",
-    "#666666",
-    "#999999",
-]
 
 
-def _get_colors(grayscale):
+def _get_colors():
     colors = _FLATUI_COLORS
     ls = "-"
     alpha = 0.8
-    if grayscale:
-        colors = _GRAYSCALE_COLORS
-        ls = "-"
-        alpha = 0.5
     return colors, ls, alpha
 
 
@@ -102,7 +86,6 @@ def plot_returns_bars(
     match_volatility=False,
     log_scale=False,
     figsize=(10, 6),
-    grayscale=False,
     fontname="Arial",
     ylabel=True,
     subtitle=True,
@@ -116,7 +99,7 @@ def plot_returns_bars(
         returns = (returns / returns.std()) * bmark_vol
 
     # ---------------
-    colors, _, _ = _get_colors(grayscale)
+    colors, _, _ = _get_colors()
     if isinstance(returns, _pd.Series):
         df = _pd.DataFrame(index=returns.index, data={returns.name: returns})
     elif isinstance(returns, _pd.DataFrame):
@@ -182,8 +165,6 @@ def plot_returns_bars(
 
     if hline is not None:
         if not isinstance(hline, _pd.Series):
-            if grayscale:
-                hlcolor = "gray"
             ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
@@ -205,10 +186,6 @@ def plot_returns_bars(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -237,7 +214,6 @@ def plot_timeseries(
     compound=False,
     cumulative=True,
     fill=False,
-    returns_label="Strategy",
     hline=None,
     hlw=None,
     hlcolor="red",
@@ -249,13 +225,12 @@ def plot_timeseries(
     lw=1.5,
     figsize=(10, 6),
     ylabel="",
-    grayscale=False,
     fontname="Arial",
     subtitle=True,
     savefig=None,
     show=True,
 ):
-    colors, ls, alpha = _get_colors(grayscale)
+    colors, ls, alpha = _get_colors()
 
     returns.fillna(0, inplace=True)
     if isinstance(benchmark, _pd.Series):
@@ -311,7 +286,7 @@ def plot_timeseries(
     if isinstance(benchmark, _pd.Series):
         ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
 
-    alpha = 0.25 if grayscale else 1
+    alpha = 1
     if isinstance(returns, _pd.Series):
         ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
     elif isinstance(returns, _pd.DataFrame):
@@ -334,12 +309,10 @@ def plot_timeseries(
 
     if hline is not None:
         if not isinstance(hline, _pd.Series):
-            if grayscale:
-                hlcolor = "black"
             ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
 
     ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
-    ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
+    ax.axhline(0, ls="--", lw=1, color="black", zorder=2)
 
     # if isinstance(benchmark, _pd.Series) or hline is not None:
     ax.legend(fontsize=11)
@@ -361,10 +334,6 @@ def plot_timeseries(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -392,11 +361,9 @@ def plot_histogram(
     resample="ME",
     bins=20,
     fontname="Arial",
-    grayscale=False,
     title="Returns",
     kde=True,
     figsize=(10, 6),
-    ylabel=True,
     subtitle=True,
     compounded=True,
     savefig=None,
@@ -406,7 +373,7 @@ def plot_histogram(
     # if grayscale:
     #     colors = ['silver', 'gray', 'black']
 
-    colors, _, _ = _get_colors(grayscale)
+    colors, _, _ = _get_colors()
 
     apply_fnc = _stats.comp if compounded else _np.sum
     if benchmark is not None:
@@ -528,10 +495,6 @@ def plot_histogram(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -565,13 +528,12 @@ def plot_rolling_stats(
     lw=1.5,
     figsize=(10, 6),
     ylabel="",
-    grayscale=False,
     fontname="Arial",
     subtitle=True,
     savefig=None,
     show=True,
 ):
-    colors, _, _ = _get_colors(grayscale)
+    colors, _, _ = _get_colors()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -626,8 +588,6 @@ def plot_rolling_stats(
 
     if hline is not None:
         if not isinstance(hline, _pd.Series):
-            if grayscale:
-                hlcolor = "black"
             ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
@@ -645,10 +605,6 @@ def plot_rolling_stats(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -679,7 +635,6 @@ def plot_rolling_beta(
     title="",
     hlcolor="red",
     figsize=(10, 6),
-    grayscale=False,
     fontname="Arial",
     lw=1.5,
     ylabel=True,
@@ -687,7 +642,7 @@ def plot_rolling_beta(
     savefig=None,
     show=True,
 ):
-    colors, _, _ = _get_colors(grayscale)
+    colors, _, _ = _get_colors()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -752,7 +707,6 @@ def plot_rolling_beta(
     ax.set_yticks([x / 100 for x in list(range(mmin, mmax, step))])
 
     if isinstance(returns, _pd.Series):
-        hlcolor = "black" if grayscale else hlcolor
         ax.axhline(beta.mean(), ls="--", lw=1.5, color=hlcolor, zorder=2)
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
@@ -772,10 +726,6 @@ def plot_rolling_beta(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -802,7 +752,6 @@ def plot_longest_drawdowns(
     periods=5,
     lw=1.5,
     fontname="Arial",
-    grayscale=False,
     title=None,
     log_scale=False,
     figsize=(10, 6),
@@ -813,8 +762,6 @@ def plot_longest_drawdowns(
     show=True,
 ):
     colors = ["#348dc1", "#003366", "red"]
-    if grayscale:
-        colors = ["#000000"] * 3
 
     dd = _stats.to_drawdown_series(returns.fillna(0))
     dddf = _stats.drawdown_details(dd)
@@ -850,7 +797,7 @@ def plot_longest_drawdowns(
     series = _stats.compsum(returns) if compounded else returns.cumsum()
     ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
-    highlight = "black" if grayscale else "red"
+    highlight = "red"
     for _, row in longest_dd.iterrows():
         ax.axvspan(
             *_mdates.datestr2num([str(row["start"]), str(row["end"])]),
@@ -884,10 +831,6 @@ def plot_longest_drawdowns(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
-        pass
-
-    try:
         fig.tight_layout()
     except Exception:
         pass
@@ -913,7 +856,6 @@ def plot_distribution(
     returns,
     figsize=(10, 6),
     fontname="Arial",
-    grayscale=False,
     ylabel=True,
     subtitle=True,
     compounded=True,
@@ -922,9 +864,6 @@ def plot_distribution(
     show=True,
 ):
     colors = _FLATUI_COLORS
-    if grayscale:
-        colors = ["#f9f9f9", "#dddddd", "#bbbbbb", "#999999", "#808080"]
-    # colors, ls, alpha = _get_colors(grayscale)
 
     port = _pd.DataFrame(returns.fillna(0))
     port.columns = ["Daily"]
@@ -991,9 +930,6 @@ def plot_distribution(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
-        pass
-    try:
         fig.tight_layout(w_pad=0, h_pad=0)
     except Exception:
         pass
@@ -1015,93 +951,93 @@ def plot_distribution(
     return None
 
 
-def plot_table(
-    tbl,
-    columns=None,
-    title="",
-    title_loc="left",
-    header=True,
-    colWidths=None,
-    rowLoc="right",
-    colLoc="right",
-    colLabels=None,
-    edges="horizontal",
-    orient="horizontal",
-    figsize=(5.5, 6),
-    savefig=None,
-    show=False,
-):
-    if columns is not None:
-        try:
-            tbl.columns = columns
-        except Exception:
-            pass
-
-    fig = _plt.figure(figsize=figsize)
-    ax = _plt.subplot(111, frame_on=False)
-
-    if title != "":
-        ax.set_title(title, fontweight="bold", fontsize=14, color="black", loc=title_loc)
-
-    the_table = ax.table(
-        cellText=tbl.values,
-        colWidths=colWidths,
-        rowLoc=rowLoc,
-        colLoc=colLoc,
-        edges=edges,
-        colLabels=(tbl.columns if header else colLabels),
-        loc="center",
-        zorder=2,
-    )
-
-    the_table.auto_set_font_size(False)
-    the_table.set_fontsize(12)
-    the_table.scale(1, 1)
-
-    for (row, col), cell in the_table.get_celld().items():
-        cell.set_height(0.08)
-        cell.set_text_props(color="black")
-        cell.set_edgecolor("#dddddd")
-        if row == 0 and header:
-            cell.set_edgecolor("black")
-            cell.set_facecolor("black")
-            cell.set_linewidth(2)
-            cell.set_text_props(weight="bold", color="black")
-        elif col == 0 and "vertical" in orient:
-            cell.set_edgecolor("#dddddd")
-            cell.set_linewidth(1)
-            cell.set_text_props(weight="bold", color="black")
-        elif row > 1:
-            cell.set_linewidth(1)
-
-    ax.grid(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    try:
-        _plt.subplots_adjust(hspace=0)
-    except Exception:
-        pass
-    try:
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
-
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+# def plot_table(
+#     tbl,
+#     columns=None,
+#     title="",
+#     title_loc="left",
+#     header=True,
+#     colWidths=None,
+#     rowLoc="right",
+#     colLoc="right",
+#     colLabels=None,
+#     edges="horizontal",
+#     orient="horizontal",
+#     figsize=(5.5, 6),
+#     savefig=None,
+#     show=False,
+# ):
+#     if columns is not None:
+#         try:
+#             tbl.columns = columns
+#         except Exception:
+#             pass
+#
+#     fig = _plt.figure(figsize=figsize)
+#     ax = _plt.subplot(111, frame_on=False)
+#
+#     if title != "":
+#         ax.set_title(title, fontweight="bold", fontsize=14, color="black", loc=title_loc)
+#
+#     the_table = ax.table(
+#         cellText=tbl.values,
+#         colWidths=colWidths,
+#         rowLoc=rowLoc,
+#         colLoc=colLoc,
+#         edges=edges,
+#         colLabels=(tbl.columns if header else colLabels),
+#         loc="center",
+#         zorder=2,
+#     )
+#
+#     the_table.auto_set_font_size(False)
+#     the_table.set_fontsize(12)
+#     the_table.scale(1, 1)
+#
+#     for (row, col), cell in the_table.get_celld().items():
+#         cell.set_height(0.08)
+#         cell.set_text_props(color="black")
+#         cell.set_edgecolor("#dddddd")
+#         if row == 0 and header:
+#             cell.set_edgecolor("black")
+#             cell.set_facecolor("black")
+#             cell.set_linewidth(2)
+#             cell.set_text_props(weight="bold", color="black")
+#         elif col == 0 and "vertical" in orient:
+#             cell.set_edgecolor("#dddddd")
+#             cell.set_linewidth(1)
+#             cell.set_text_props(weight="bold", color="black")
+#         elif row > 1:
+#             cell.set_linewidth(1)
+#
+#     ax.grid(False)
+#     ax.set_xticks([])
+#     ax.set_yticks([])
+#
+#     try:
+#         _plt.subplots_adjust(hspace=0)
+#     except Exception:
+#         pass
+#     try:
+#         fig.tight_layout(w_pad=0, h_pad=0)
+#     except Exception:
+#         pass
+#
+#     if savefig:
+#         if isinstance(savefig, dict):
+#             _plt.savefig(**savefig)
+#         else:
+#             _plt.savefig(savefig)
+#
+#     if show:
+#         _plt.show(block=False)
+#
+#     _plt.close()
+#
+#     if not show:
+#         return fig
+#
+#     return None
 
 
 def format_cur_axis(x, _):
