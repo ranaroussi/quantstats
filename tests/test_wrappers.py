@@ -74,8 +74,9 @@ def test_rolling_volatility(returns):
     rolling_volatility(returns)
 
 
-def test_snapshot(returns):
+def test_snapshot(returns, portfolio):
     snapshot(returns)
+    snapshot(portfolio)
 
 
 def test_yearly_returns(returns):

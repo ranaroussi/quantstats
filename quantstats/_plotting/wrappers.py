@@ -20,6 +20,7 @@ import warnings
 import matplotlib.pyplot as _plt
 import numpy as _np
 import pandas as _pd
+import plotly
 import seaborn as _sns
 from matplotlib.ticker import (
     FuncFormatter as _FuncFormatter,
@@ -40,18 +41,8 @@ from .core import save
 
 _FLATUI_COLORS = ["#fedd78", "#348dc1", "#af4b64", "#4fa487", "#9b59b6", "#808080"]
 
-_HAS_PLOTLY = False
-try:
-    import plotly
-
-    _HAS_PLOTLY = True
-except ImportError:
-    pass
-
 
 def to_plotly(fig):
-    if not _HAS_PLOTLY:
-        return fig
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fig = plotly.tools.mpl_to_plotly(fig)
@@ -302,11 +293,8 @@ def earnings(
     ax.set_facecolor("white")
     fig.autofmt_xdate()
 
-    try:
-        _plt.subplots_adjust(hspace=0)
-        fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0)
+    fig.tight_layout(w_pad=0, h_pad=0)
 
     return save(fig, savefig, show=show)
 

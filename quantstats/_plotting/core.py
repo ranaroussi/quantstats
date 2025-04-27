@@ -184,27 +184,10 @@ def plot_returns_bars(
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         ax.get_legend().remove()
 
-    try:
-        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-        fig.tight_layout()
-    except Exception:
-        pass
+    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    fig.tight_layout()
 
-    if savefig:
-        if isinstance(savefig, dict):
-            _plt.savefig(**savefig)
-        else:
-            _plt.savefig(savefig)
-
-    if show:
-        _plt.show(block=False)
-
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    return save(fig, savefig=savefig, show=show)
 
 
 def plot_timeseries(
