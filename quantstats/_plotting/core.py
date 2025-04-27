@@ -15,14 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import matplotlib.pyplot as _plt
-
-try:
-    _plt.rcParams["font.family"] = "Arial"
-except Exception:
-    pass
-
+# try:
+# _plt.rcParams["font.family"] = "Arial"
+# except Exception:
+#    pass
 import matplotlib.dates as _mdates
+import matplotlib.pyplot as _plt
 import numpy as _np
 import pandas as _pd
 import seaborn as _sns
@@ -64,6 +62,8 @@ _FLATUI_COLORS = [
     "#559CAD",
     "#4A5899",
 ]
+
+_plt.rcParams["font.family"] = "Arial"
 
 
 def _get_colors():
