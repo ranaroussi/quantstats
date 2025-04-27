@@ -4,7 +4,7 @@
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -294,7 +294,7 @@ def earnings(
     ax.spines["left"].set_visible(False)
 
     fig.suptitle(
-        title, fontsize=14, y=0.995, fontname=fontname, fontweight="bold", color="black"
+        f"    {title}", fontsize=12, y=0.95, fontname=fontname, fontweight="bold", color="black"
     )
 
     if subtitle:
@@ -312,7 +312,7 @@ def earnings(
                     )
                 ),
             ),
-            fontsize=12,
+            fontsize=10,
             color="gray",
         )
 
@@ -336,11 +336,13 @@ def earnings(
         "Value of  ${:,.0f}".format(start_balance),
         fontname=fontname,
         fontweight="bold",
-        fontsize=12,
+        fontsize=11,
     )
 
     ax.yaxis.set_major_formatter(_FuncFormatter(_core.format_cur_axis))
     ax.yaxis.set_label_coords(-0.1, 0.5)
+    _plt.xticks(fontsize=11)
+    _plt.yticks(fontsize=11)
 
     fig.set_facecolor("white")
     ax.set_facecolor("white")
@@ -552,9 +554,9 @@ def yearly_returns(
         title += "  vs Benchmark"
         benchmark = (
             _utils._prepare_benchmark(benchmark, returns.index)
-            .resample("A")
+            .resample("YE")
             .apply(_stats.comp)
-            .resample("A")
+            .resample("YE")
             .last()
         )
 
@@ -562,10 +564,10 @@ def yearly_returns(
         returns = _utils._prepare_returns(returns)
 
     if compounded:
-        returns = returns.resample("A").apply(_stats.comp)
+        returns = returns.resample("YE").apply(_stats.comp)
     else:
-        returns = returns.resample("A").apply(_df.sum)
-    returns = returns.resample("A").last()
+        returns = returns.resample("YE").apply(_df.sum)
+    returns = returns.resample("YE").last()
 
     fig = _core.plot_returns_bars(
         returns,
@@ -625,7 +627,7 @@ def distribution(
 def histogram(
     returns,
     benchmark=None,
-    resample="M",
+    resample="ME",
     fontname="Arial",
     grayscale=False,
     figsize=(10, 5),
@@ -644,11 +646,11 @@ def histogram(
 
     if resample == "W":
         title = "Weekly "
-    elif resample == "M":
+    elif resample == "ME":
         title = "Monthly "
-    elif resample == "Q":
+    elif resample == "QE":
         title = "Quarterly "
-    elif resample == "A":
+    elif resample == "YE":
         title = "Annual "
     else:
         title = ""
@@ -934,8 +936,8 @@ def rolling_sortino(
 def monthly_heatmap(
     returns,
     benchmark=None,
-    annot_size=10,
-    figsize=(10, 5),
+    annot_size=13,
+    figsize=(8, 5),
     cbar=True,
     square=False,
     returns_label="Strategy",
@@ -1004,12 +1006,13 @@ def monthly_heatmap(
     else:
         ax.set_title(
             f"{returns_label} - Monthly Returns (%)\n",
-            fontsize=14,
+            fontsize=12,
             y=0.995,
             fontname=fontname,
             fontweight="bold",
             color="black",
         )
+
         ax = _sns.heatmap(
             returns,
             ax=ax,
@@ -1023,7 +1026,10 @@ def monthly_heatmap(
             cmap=cmap,
             cbar_kws={"format": "%.0f%%"},
         )
-    # _sns.set(font_scale=1)
+
+    if cbar:
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=annot_size)
 
     # align plot to match other
     if ylabel:
@@ -1062,7 +1068,7 @@ def monthly_heatmap(
 
 def monthly_returns(
     returns,
-    annot_size=10,
+    annot_size=9,
     figsize=(10, 5),
     cbar=True,
     square=False,
