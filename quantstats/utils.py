@@ -16,6 +16,7 @@
 
 import datetime as _dt
 import inspect
+import warnings
 
 import numpy as _np
 import numpy as np
@@ -112,35 +113,50 @@ def group_returns(returns, groupby, compounded=False):
 
 def aggregate_returns(returns, period=None, compounded=True):
     """Aggregates returns based on date periods"""
-    if period is None or "day" in period:
+    if period is None:
         return returns
     index = returns.index
 
-    if "month" in period:
-        return group_returns(returns, index.month, compounded=compounded)
+    periods = {
+        "YE": [index.year],
+        "ME": [index.year, index.month],
+        "QE": [index.year, index.quarter],
+    }
 
-    if "quarter" in period:
-        return group_returns(returns, index.quarter, compounded=compounded)
-
-    if period == "YE" or any(x in period for x in ["year", "eoy", "yoy"]):
-        return group_returns(returns, index.year, compounded=compounded)
-
-    if "week" in period:
-        return group_returns(returns, index.week, compounded=compounded)
-
-    if "eow" in period or period == "W":
-        return group_returns(returns, [index.year, index.week], compounded=compounded)
-
-    if "eom" in period or period == "ME":
-        return group_returns(returns, [index.year, index.month], compounded=compounded)
-
-    if "eoq" in period or period == "QE":
-        return group_returns(returns, [index.year, index.quarter], compounded=compounded)
-
-    if not isinstance(period, str):
+    try:
+        period = periods[period]
         return group_returns(returns, period, compounded)
+    except KeyError:
+        warnings.warn(f"Invalid period '{period}'. Use YE, ME or QE.")
+        return returns
 
-    return returns
+    # if "month" in period:
+    #    return group_returns(returns, index.month, compounded=compounded)
+
+    # if "quarter" in period:
+    #    return group_returns(returns, index.quarter, compounded=compounded)
+
+    # if period == "YE": #or any(x in period for x in ["year", "eoy", "yoy"]):
+    #    return group_returns(returns, index.year, compounded=compounded)
+
+    # if "week" in period:
+    #    return group_returns(returns, index.week, compounded=compounded)
+
+    # if "eow" in period or period == "W":
+    #    return group_returns(returns, [index.year, index.week], compounded=compounded)
+
+    # if "eom" in period or period == "ME":
+    # if period == "ME":
+    #    return group_returns(returns, [index.year, index.month], compounded=compounded)
+
+    # if period == "QE":
+    # if "eoq" in period or period == "QE":
+    #    return group_returns(returns, [index.year, index.quarter], compounded=compounded)
+
+    # if not isinstance(period, str):
+    #    return group_returns(returns, period, compounded)
+
+    # return returns
 
 
 def to_excess_returns(returns, rf, nperiods=None):
