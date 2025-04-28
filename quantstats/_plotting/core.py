@@ -23,6 +23,7 @@ import matplotlib.dates as _mdates
 import matplotlib.pyplot as _plt
 import numpy as _np
 import pandas as _pd
+import plotly.graph_objects as go
 import seaborn as _sns
 from matplotlib.ticker import (
     FormatStrFormatter as _FormatStrFormatter,
@@ -34,6 +35,7 @@ from matplotlib.ticker import (
 from .. import (
     stats as _stats,
 )
+from ..data import build_data
 
 _sns.set_theme(
     font_scale=1.1,
@@ -92,25 +94,17 @@ def plot_returns_bars(
     savefig=None,
     show=True,
 ):
+    d = build_data(returns=returns, benchmark=benchmark)
+
     if match_volatility and benchmark is None:
         raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
-        bmark_vol = benchmark.loc[returns.index].std()
-        returns = (returns / returns.std()) * bmark_vol
+        bmark_vol = d.benchmark.std()
+        returns = (d.returns / d.returns.std()) * bmark_vol
 
     # ---------------
     colors, _, _ = _get_colors()
-    if isinstance(returns, _pd.Series):
-        df = _pd.DataFrame(index=returns.index, data={returns.name: returns})
-    elif isinstance(returns, _pd.DataFrame):
-        df = _pd.DataFrame(index=returns.index, data={col: returns[col] for col in returns.columns})
-    if isinstance(benchmark, _pd.Series):
-        df[benchmark.name] = benchmark[benchmark.index.isin(returns.index)]
-        if isinstance(returns, _pd.Series):
-            df = df[[benchmark.name, returns.name]]
-        elif isinstance(returns, _pd.DataFrame):
-            col_names = [benchmark.name, returns.columns]
-            df = df[list(_pd.core.common.flatten(col_names))]
+    df = d.all()
 
     df = df.dropna()
     if resample is not None:
@@ -196,17 +190,14 @@ def plot_timeseries(
     title="Returns",
     compound=False,
     cumulative=True,
-    fill=False,
     hline=None,
-    hlw=None,
+    hlw=1,
     hlcolor="red",
     hllabel="",
     percent=True,
     match_volatility=False,
     log_scale=False,
-    resample=None,
     lw=1.5,
-    figsize=(10, 6),
     ylabel="",
     fontname="Arial",
     subtitle=True,
@@ -214,111 +205,121 @@ def plot_timeseries(
     show=True,
 ):
     colors, ls, alpha = _get_colors()
+    d = build_data(returns, benchmark=benchmark)
 
-    returns.fillna(0, inplace=True)
-    if isinstance(benchmark, _pd.Series):
-        benchmark.fillna(0, inplace=True)
+    d.returns.fillna(0, inplace=True)
+    if isinstance(d.benchmark, _pd.Series):
+        d.benchmark.fillna(0, inplace=True)
 
-    if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of benchmark.")
-    if match_volatility and benchmark is not None:
-        bmark_vol = benchmark.std()
-        returns = (returns / returns.std()) * bmark_vol
+    if match_volatility and d.benchmark is None:
+        raise ValueError("match_volatility requires a benchmark.")
 
-    # ---------------
-    if compound is True:
+    if match_volatility and d.benchmark is not None:
+        bmark_vol = d.benchmark.std()
+        d.returns = (d.returns / d.returns.std()) * bmark_vol
+
+    # Handle compounding
+    if compound:
         if cumulative:
-            returns = _stats.compsum(returns)
-            if isinstance(benchmark, _pd.Series):
-                benchmark = _stats.compsum(benchmark)
+            returns = _stats.compsum(d.returns)
+            if isinstance(d.benchmark, _pd.Series):
+                benchmark = _stats.compsum(d.benchmark)
         else:
-            returns = returns.cumsum()
-            if isinstance(benchmark, _pd.Series):
-                benchmark = benchmark.cumsum()
+            returns = d.returns.cumsum()
+            if isinstance(d.benchmark, _pd.Series):
+                benchmark = d.benchmark.cumsum()
+    else:
+        returns = d.returns
 
-    if resample:
-        returns = returns.resample(resample).last() if compound else returns.resample(resample).sum()
-
+    # Combine returns and benchmark into one DataFrame
+    x = returns.to_frame() if isinstance(returns, _pd.Series) else returns.copy()
+    if benchmark is not None:
         if isinstance(benchmark, _pd.Series):
-            benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound else benchmark.sum()
-    # ---------------
+            x["Benchmark"] = benchmark
 
-    fig, ax = _plt.subplots(figsize=figsize)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
+    fig = go.Figure()
 
-    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
-
-    if subtitle:
-        ax.set_title(
-            "%s - %s            \n"
-            % (
-                returns.index.date[:1][0].strftime("%e %b '%y"),
-                returns.index.date[-1:][0].strftime("%e %b '%y"),
-            ),
-            fontsize=12,
-            color="gray",
+    # Plot each series
+    for i, col in enumerate(x.columns):
+        fig.add_trace(
+            go.Scatter(
+                x=x.index,
+                y=x[col],
+                mode="lines",
+                name=col,
+                line=dict(color=colors[i + 1], width=lw),
+                opacity=alpha,
+                hovertemplate=f"<b>{col}</b><br>%{{y:.2%}}<extra></extra>"
+                if percent
+                else f"<b>{col}</b><br>%{{y:.2f}}<extra></extra>",
+            )
         )
 
-    fig.set_facecolor("white")
-    ax.set_facecolor("white")
-
-    if isinstance(benchmark, _pd.Series):
-        ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
-
-    alpha = 1
-    if isinstance(returns, _pd.Series):
-        ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
-    elif isinstance(returns, _pd.DataFrame):
-        # color_dict = {col: colors[i+1] for i, col in enumerate(returns.columns)}
-        for i, col in enumerate(returns.columns):
-            ax.plot(returns[col], lw=lw, label=col, alpha=alpha, color=colors[i + 1])
-
-    if fill:
-        if isinstance(returns, _pd.Series):
-            ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=0.25)
-        elif isinstance(returns, _pd.DataFrame):
-            for i, col in enumerate(returns.columns):
-                ax.fill_between(returns[col].index, 0, returns[col], color=colors[i + 1], alpha=0.25)
-
-    # rotate and align the tick labels so they look better
-    fig.autofmt_xdate()
-
-    # use a more precise date string for the x axis locations in the toolbar
-    # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-
+    # Add horizontal lines
     if hline is not None:
-        if not isinstance(hline, _pd.Series):
-            ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
+        if isinstance(hline, _pd.Series):
+            fig.add_trace(
+                go.Scatter(
+                    x=hline.index,
+                    y=hline.values,
+                    mode="lines",
+                    name=hllabel,
+                    line=dict(color=hlcolor, width=hlw, dash="dash"),
+                )
+            )
+        else:
+            fig.add_hline(
+                y=hline,
+                line_dash="dash",
+                line_color=hlcolor,
+                line_width=hlw,
+                annotation_text=hllabel,
+                annotation_position="top left",
+                annotation_font_size=12,
+            )
 
-    ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
-    ax.axhline(0, ls="--", lw=1, color="black", zorder=2)
+    # Always add 0-line
+    fig.add_hline(y=0, line_dash="solid", line_color="gray", line_width=1)
 
-    # if isinstance(benchmark, _pd.Series) or hline is not None:
-    ax.legend(fontsize=11)
+    # Layout polish
+    date_range = f"{d.index.min():%d %b '%y} - {d.index.max():%d %b '%y}"
 
-    _plt.yscale("symlog" if log_scale else "linear")
+    fig.update_layout(
+        title={
+            "text": f"<b>{title}</b><br><sub>{date_range}</sub>" if subtitle else f"<b>{title}</b>",
+            "y": 0.93,
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+        font=dict(family=fontname, size=14),
+        yaxis_title=ylabel if ylabel else None,
+        yaxis_tickformat=".0%" if percent else None,
+        yaxis_type="log" if log_scale else "linear",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=12)),
+        hovermode="x unified",
+        margin=dict(l=30, r=30, t=60, b=30),
+    )
 
-    if percent:
-        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
-        # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
-        #     lambda x, loc: "{:,}%".format(int(x*100))))
+    # Softer gridlines
+    fig.update_xaxes(showgrid=True, gridwidth=0.5, gridcolor="lightgray", zeroline=False)
+    fig.update_yaxes(showgrid=True, gridwidth=0.5, gridcolor="lightgray", zeroline=False)
 
-    ax.set_xlabel("")
-    if ylabel:
-        ax.set_ylabel(ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black")
-    ax.yaxis.set_label_coords(-0.1, 0.5)
+    # Save if needed
+    if savefig:
+        if savefig.endswith(".html"):
+            fig.write_html(savefig)
+        elif savefig.endswith(".png"):
+            fig.write_image(savefig)
+        else:
+            raise ValueError("savefig must end with '.html' or '.png'")
 
-    if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+    if show:
+        fig.show()
 
-    _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    fig.tight_layout()
-
-    return save(fig, savefig=savefig, show=show)
+    return fig
 
 
 def plot_histogram(
@@ -749,84 +750,75 @@ def plot_longest_drawdowns(
 
 def plot_distribution(
     returns,
-    figsize=(10, 6),
     fontname="Arial",
-    ylabel=True,
-    subtitle=True,
     compounded=True,
     title=None,
     savefig=None,
     show=True,
 ):
-    colors = _FLATUI_COLORS
+    colors = _FLATUI_COLORS  # your color palette
 
+    # Ensure DataFrame and fill missing values
     port = _pd.DataFrame(returns.fillna(0))
     port.columns = ["Daily"]
 
     apply_fnc = _stats.comp if compounded else _np.sum
 
-    port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
-    port["Weekly"].ffill(inplace=True)
+    # Resample returns
+    port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc).ffill()
+    port["Monthly"] = port["Daily"].resample("M").apply(apply_fnc).ffill()
+    port["Quarterly"] = port["Daily"].resample("Q").apply(apply_fnc).ffill()
+    port["Yearly"] = port["Daily"].resample("Y").apply(apply_fnc).ffill()
 
-    port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
-    port["Monthly"].ffill(inplace=True)
+    # Create box plots for each frequency
+    fig = go.Figure()
 
-    port["Quarterly"] = port["Daily"].resample("QE").apply(apply_fnc)
-    port["Quarterly"].ffill(inplace=True)
-
-    port["Yearly"] = port["Daily"].resample("YE").apply(apply_fnc)
-    port["Yearly"].ffill(inplace=True)
-
-    fig, ax = _plt.subplots(figsize=figsize)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-
-    if title:
-        title = f"{title} - Return Quantiles"
-    else:
-        title = "Return Quantiles"
-    fig.suptitle(title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black")
-
-    if subtitle:
-        ax.set_title(
-            "%s - %s            \n"
-            % (
-                returns.index.date[:1][0].strftime("%e %b '%y"),
-                returns.index.date[-1:][0].strftime("%e %b '%y"),
-            ),
-            fontsize=12,
-            color="gray",
+    for i, col in enumerate(["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"]):
+        fig.add_trace(
+            go.Box(
+                y=port[col],
+                name=col,
+                marker_color=colors[i],
+                boxmean="sd",  # show mean and std
+            )
         )
 
-    fig.set_facecolor("white")
-    ax.set_facecolor("white")
+    # Title and layout
+    if not title:
+        title = "Return Quantiles"
+    else:
+        title = f"{title} - Return Quantiles"
 
-    _sns.boxplot(
-        data=port,
-        ax=ax,
-        palette={
-            "Daily": colors[0],
-            "Weekly": colors[1],
-            "Monthly": colors[2],
-            "Quarterly": colors[3],
-            "Yearly": colors[4],
+    date_range = f"{returns.index.min():%d %b '%y} - {returns.index.max():%d %b '%y}"
+
+    fig.update_layout(
+        title={
+            "text": f"<b>{title}</b><br><sub>{date_range}</sub>",
+            "y": 0.9,
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
         },
+        font=dict(family=fontname, size=14),
+        yaxis_title="Returns (%)",
+        yaxis_tickformat=".0%",
+        boxmode="group",
+        plot_bgcolor="white",
     )
 
-    ax.yaxis.set_major_formatter(_plt.FuncFormatter(lambda x, loc: f"{int(x * 100):,}%"))
+    # Save if path is given
+    if savefig:
+        if savefig.endswith(".html"):
+            fig.write_html(savefig)
+        elif savefig.endswith(".png"):
+            fig.write_image(savefig)
+        else:
+            raise ValueError("savefig must end with '.html' or '.png'")
 
-    if ylabel:
-        ax.set_ylabel("Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black")
-        ax.yaxis.set_label_coords(-0.1, 0.5)
+    if show:
+        fig.show()
 
-    fig.autofmt_xdate()
-
-    _plt.subplots_adjust(hspace=0)
-    fig.tight_layout(w_pad=0, h_pad=0)
-
-    return save(fig, savefig=savefig, show=show)
+    return fig
 
 
 # def plot_table(

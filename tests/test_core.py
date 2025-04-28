@@ -21,6 +21,8 @@ def test_longest_drawdowns(returns):
 
 
 def test_returns_bars(returns, benchmark):
+    returns = returns.to_frame(name="AAPL")
+    # benchmark = benchmark.to_frame(name="Benchmark")
     plot_returns_bars(returns)
     plot_returns_bars(returns, benchmark)
 
@@ -34,6 +36,11 @@ def test_rolling_stats(returns, benchmark):
     plot_rolling_stats(returns, benchmark)
 
 
-def test_plot_timeseries(returns, benchmark):
+def test_plot_timeseries_1(returns):
+    returns = returns.to_frame(name="AAPL")
     plot_timeseries(returns)
+
+
+def test_plot_timeseries_2(returns, benchmark):
+    returns = returns.to_frame(name="AAPL")
     plot_timeseries(returns, benchmark)

@@ -336,11 +336,9 @@ def returns(
         ylabel=ylabel,
         match_volatility=match_volatility,
         log_scale=False,
-        resample=resample,
         compound=compound,
         cumulative=cumulative,
         lw=lw,
-        figsize=figsize,
         fontname=fontname,
         subtitle=subtitle,
         savefig=savefig,
@@ -357,7 +355,6 @@ def log_returns(
     match_volatility=False,
     compound=True,
     cumulative=True,
-    resample=None,
     ylabel="Cumulative Returns",
     subtitle=True,
     savefig=None,
@@ -388,11 +385,9 @@ def log_returns(
         ylabel=ylabel,
         match_volatility=match_volatility,
         log_scale=True,
-        resample=resample,
         compound=compound,
         cumulative=cumulative,
         lw=lw,
-        figsize=figsize,
         fontname=fontname,
         subtitle=subtitle,
         savefig=savefig,
@@ -429,10 +424,8 @@ def daily_returns(
         ylabel=ylabel,
         match_volatility=False,
         log_scale=log_scale,
-        resample="D",
         compound=False,
         lw=lw,
-        figsize=figsize,
         fontname=fontname,
         subtitle=subtitle,
         savefig=savefig,
@@ -496,9 +489,6 @@ def yearly_returns(
 def distribution(
     returns,
     fontname="Arial",
-    ylabel=True,
-    figsize=(10, 6),
-    subtitle=True,
     compounded=True,
     savefig=None,
     show=True,
@@ -511,9 +501,6 @@ def distribution(
     return _core.plot_distribution(
         returns,
         fontname=fontname,
-        figsize=figsize,
-        ylabel=ylabel,
-        subtitle=subtitle,
         title=title,
         compounded=compounded,
         savefig=savefig,
@@ -588,10 +575,7 @@ def drawdown(
         compound=compound,
         match_volatility=match_volatility,
         log_scale=log_scale,
-        resample=resample,
-        fill=True,
         lw=lw,
-        figsize=figsize,
         ylabel=ylabel,
         fontname=fontname,
         subtitle=subtitle,
@@ -791,7 +775,6 @@ def rolling_sortino(
 
 def monthly_heatmap(
     returns,
-    benchmark=None,
     annot_size=13,
     figsize=(8, 5),
     cbar=True,
@@ -803,9 +786,7 @@ def monthly_heatmap(
     ylabel=True,
     savefig=None,
     show=True,
-    active=False,
 ):
-    # colors, ls, alpha = _core._get_colors(grayscale)
     cmap = "RdYlGn"
 
     returns = _stats.monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
@@ -830,55 +811,28 @@ def monthly_heatmap(
     fig.set_facecolor("white")
     ax.set_facecolor("white")
 
-    # _sns.set(font_scale=.9)
-    if active and benchmark is not None:
-        ax.set_title(
-            f"{returns_label} - Monthly Active Returns (%)\n",
-            fontsize=14,
-            y=0.995,
-            fontname=fontname,
-            fontweight="bold",
-            color="black",
-        )
-        benchmark = _stats.monthly_returns(benchmark, eoy=eoy, compounded=compounded) * 100
-        active_returns = returns - benchmark
+    ax.set_title(
+        f"{returns_label} - Monthly Returns (%)\n",
+        fontsize=12,
+        y=0.995,
+        fontname=fontname,
+        fontweight="bold",
+        color="black",
+    )
 
-        ax = _sns.heatmap(
-            active_returns,
-            ax=ax,
-            annot=True,
-            center=0,
-            annot_kws={"size": annot_size},
-            fmt="0.2f",
-            linewidths=0.5,
-            square=square,
-            cbar=cbar,
-            cmap=cmap,
-            cbar_kws={"format": "%.0f%%"},
-        )
-    else:
-        ax.set_title(
-            f"{returns_label} - Monthly Returns (%)\n",
-            fontsize=12,
-            y=0.995,
-            fontname=fontname,
-            fontweight="bold",
-            color="black",
-        )
-
-        ax = _sns.heatmap(
-            returns,
-            ax=ax,
-            annot=True,
-            center=0,
-            annot_kws={"size": annot_size},
-            fmt="0.2f",
-            linewidths=0.5,
-            square=square,
-            cbar=cbar,
-            cmap=cmap,
-            cbar_kws={"format": "%.0f%%"},
-        )
+    ax = _sns.heatmap(
+        returns,
+        ax=ax,
+        annot=True,
+        center=0,
+        annot_kws={"size": annot_size},
+        fmt="0.2f",
+        linewidths=0.5,
+        square=square,
+        cbar=cbar,
+        cmap=cmap,
+        cbar_kws={"format": "%.0f%%"},
+    )
 
     if cbar:
         cbar = ax.collections[0].colorbar
@@ -897,13 +851,6 @@ def monthly_heatmap(
     fig.tight_layout(w_pad=0, h_pad=0)
 
     return save(fig, savefig=savefig, show=show)
-
-    # _plt.close()
-    #
-    # if not show:
-    #    return fig
-    #
-    # return None
 
 
 def monthly_returns(

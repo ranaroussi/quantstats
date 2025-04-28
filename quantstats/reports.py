@@ -656,25 +656,17 @@ def plots(
 
         if isinstance(returns, _pd.Series):
             _plots.monthly_heatmap(
-                returns,
-                benchmark,
-                figsize=(figsize[0], figsize[0] * 0.5),
-                show=True,
-                ylabel="",
-                compounded=compounded,
-                active=active,
+                returns, figsize=(figsize[0], figsize[0] * 0.5), show=True, ylabel="", compounded=compounded
             )
         elif isinstance(returns, _pd.DataFrame):
             for col in returns.columns:
                 _plots.monthly_heatmap(
                     returns[col].dropna(),
-                    benchmark,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
                     ylabel="",
                     returns_label=col,
                     compounded=compounded,
-                    active=active,
                 )
 
         return
@@ -808,22 +800,18 @@ def plots(
     for col in returns.columns:
         _plots.monthly_heatmap(
             returns[col],
-            benchmark,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             ylabel="",
             returns_label=col,
             compounded=compounded,
-            active=active,
         )
 
     for col in returns.columns:
         _plots.distribution(
             returns[col],
-            figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=col,
-            ylabel="",
             prepare_returns=False,
         )
 
