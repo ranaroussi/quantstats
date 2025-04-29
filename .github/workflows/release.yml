@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Generate Tag
         id: tag_step
-        uses: tschm/cradle/actions/tag@v0.1.60
+        uses: tschm/cradle/actions/tag@v0.1.63
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -24,7 +24,7 @@ jobs:
     needs: tagging
     steps:
       - name: build
-        uses: tschm/cradle/actions/build@v0.1.60
+        uses: tschm/cradle/actions/build@v0.1.63
         with:
           tag: ${{ needs.tagging.outputs.new_tag }}
 

@@ -16,10 +16,10 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: "Build the virtual environment"
-        uses: tschm/cradle/actions/environment@v0.1.60
+        uses: tschm/cradle/actions/environment@v0.1.63
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: tschm/cradle/actions/test@v0.1.60
+      - uses: tschm/cradle/actions/test@v0.1.63
         with:
           tests-folder: tests

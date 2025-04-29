@@ -11,4 +11,4 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: tschm/cradle/actions/pre-commit@v0.1.60
+      - uses: tschm/cradle/actions/pre-commit@v0.1.63

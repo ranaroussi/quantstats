@@ -14,9 +14,9 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Build the virtual environment"
-        uses: tschm/cradle/actions/environment@v0.1.60
+        uses: tschm/cradle/actions/environment@v0.1.63
 
-      - uses: tschm/cradle/actions/pdoc@v0.1.60
+      - uses: tschm/cradle/actions/pdoc@v0.1.63
         with:
           source-folder: quantstats
 
@@ -25,7 +25,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Build the virtual environment"
-        uses: tschm/cradle/actions/environment@v0.1.60
+        uses: tschm/cradle/actions/environment@v0.1.63
 
       - uses: tschm/cradle/actions/coverage@main
         with:
@@ -37,9 +37,9 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Build the virtual environment"
-        uses: tschm/cradle/actions/environment@v0.1.60
+        uses: tschm/cradle/actions/environment@v0.1.63
 
-      - uses: tschm/cradle/actions/jupyter@v0.1.60
+      - uses: tschm/cradle/actions/jupyter@v0.1.63
 
   book:
     runs-on: "ubuntu-latest"
@@ -54,4 +54,4 @@ jobs:
 
       - name: Upload the book
         if: ${{ env.ACT != 'true' }}  # Skip if running with 'act'
-        uses: tschm/cradle/actions/book@v0.1.60
+        uses: tschm/cradle/actions/book@v0.1.63
