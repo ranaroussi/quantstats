@@ -2,23 +2,6 @@ import inspect
 
 import quantstats as qs
 
-#
-# import matplotlib
-# matplotlib.rcParams.update({
-#     'font.family': 'DejaVu Sans',
-# })
-#
-# def test_plot(returns, benchmark):
-#     for fname in dir(qs.plots):
-#         if not fname.startswith('_'):
-#             func = getattr(qs.plots, fname)
-#             if callable(func):
-#                 print(f"Calling {fname}")
-#                 try:
-#                     func(returns, benchmark)
-#                 except Exception as e:
-#                     print(f"Plot {fname} failed with error: {e}")
-
 
 def test_stats(returns, benchmark):
     for fname in dir(qs.stats):

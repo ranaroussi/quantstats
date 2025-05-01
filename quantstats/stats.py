@@ -297,19 +297,12 @@ def smart_sharpe(returns, rf=0.0, periods=252, annualize=True):
     return sharpe(returns, rf, periods, annualize, True)
 
 
-def rolling_sharpe(
-    returns,
-    rf=0.0,
-    rolling_period=126,
-    annualize=True,
-    periods_per_year=252,
-    prepare_returns=True,
-):
-    if rf != 0 and rolling_period is None:
-        raise Exception("Must provide periods if rf != 0")
+def rolling_sharpe(returns, rolling_period=126, annualize=True, periods_per_year=252):
+    # if rf != 0 and rolling_period is None:
+    #    raise Exception("Must provide periods if rf != 0")
 
-    if prepare_returns:
-        returns = _utils._prepare_returns(returns, rf, rolling_period)
+    # if prepare_returns:
+    #    returns = _utils._prepare_returns(returns, rf, rolling_period)
 
     res = returns.rolling(rolling_period).mean() / returns.rolling(rolling_period).std()
 
@@ -351,13 +344,7 @@ def smart_sortino(returns, rf=0, periods=252, annualize=True):
     return sortino(returns, rf, periods, annualize, True)
 
 
-def rolling_sortino(returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs):
-    if rf != 0 and rolling_period is None:
-        raise Exception("Must provide periods if rf != 0")
-
-    if kwargs.get("prepare_returns", True):
-        returns = _utils._prepare_returns(returns, rf, rolling_period)
-
+def rolling_sortino(returns, rolling_period=126, annualize=True, periods_per_year=252):
     downside = returns.rolling(rolling_period).apply(lambda x: (x.values[x.values < 0] ** 2).sum()) / rolling_period
 
     res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)
@@ -737,6 +724,7 @@ def max_drawdown(prices):
 
 def to_drawdown_series(returns):
     """Convert returns series to drawdown series"""
+    print(type(returns))
     prices = _utils._prepare_prices(returns)
     dd = prices / _np.maximum.accumulate(prices) - 1.0
     return dd.replace([_np.inf, -_np.inf, -0], 0)

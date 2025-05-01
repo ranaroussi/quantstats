@@ -17,9 +17,9 @@
 
 __author__ = "Ran Aroussi"
 
-from . import stats, utils, plots, reports
+from . import stats, utils
 
-__all__ = ["stats", "plots", "reports", "utils", "extend_pandas"]
+__all__ = ["stats", "utils", "extend_pandas"]
 
 
 def extend_pandas():
@@ -121,23 +121,23 @@ def extend_pandas():
     _po.compare = stats.compare
 
     # plotting methods
-    _po.plot_snapshot = plots.snapshot
-    _po.plot_earnings = plots.earnings
-    _po.plot_daily_returns = plots.daily_returns
-    _po.plot_distribution = plots.distribution
-    _po.plot_drawdown = plots.drawdown
-    _po.plot_drawdowns_periods = plots.drawdowns_periods
-    _po.plot_histogram = plots.histogram
-    _po.plot_log_returns = plots.log_returns
-    _po.plot_returns = plots.returns
-    _po.plot_rolling_beta = plots.rolling_beta
-    _po.plot_rolling_sharpe = plots.rolling_sharpe
-    _po.plot_rolling_sortino = plots.rolling_sortino
-    _po.plot_rolling_volatility = plots.rolling_volatility
-    _po.plot_yearly_returns = plots.yearly_returns
-    _po.plot_monthly_heatmap = plots.monthly_heatmap
+    #_po.plot_snapshot = plots.snapshot
+    #_po.plot_earnings = plots.earnings
+    #_po.plot_daily_returns = plots.daily_returns
+    #_po.plot_distribution = plots.distribution
+    #_po.plot_drawdown = plots.drawdown
+    #_po.plot_drawdowns_periods = plots.drawdowns_periods
+    #_po.plot_histogram = plots.histogram
+    #_po.plot_log_returns = plots.log_returns
+    #_po.plot_returns = plots.returns
+    #_po.plot_rolling_beta = plots.rolling_beta
+    #_po.plot_rolling_sharpe = plots.rolling_sharpe
+    #_po.plot_rolling_sortino = plots.rolling_sortino
+    #_po.plot_rolling_volatility = plots.rolling_volatility
+    #_po.plot_yearly_returns = plots.yearly_returns
+    #_po.plot_monthly_heatmap = plots.monthly_heatmap
 
-    _po.metrics = reports.metrics
+    #_po.metrics = reports.metrics
 
 
 # extend_pandas()
