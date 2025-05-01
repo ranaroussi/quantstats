@@ -43,7 +43,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["quantstats"]
+packages = ["src/quantstats"]
 
 [tool.hatch.build]
 include = [
@@ -53,7 +53,7 @@ include = [
 ]
 
 [tool.bandit]
-exclude_dirs = ["tests"]
+exclude_dirs = ["src/tests"]
 
 
 [tool.deptry]
