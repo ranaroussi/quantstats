@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from quantstats.data import build_data
+from src.quantstats.data import build_data
 
 
 def test_names(data):

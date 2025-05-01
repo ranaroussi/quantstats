@@ -1,7 +1,7 @@
 *.pyc
 .idea
 __pycache__/*
-quantstats/__pycache__/*
+src/quantstats/__pycache__/*
 dist
 Icon
 .vscode

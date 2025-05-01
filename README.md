@@ -28,20 +28,21 @@ Here's an example of a simple tear sheet analyzing a strategy:
 ## Quick Start
 
 ```python
-    %matplotlib inline
-    import quantstats as qs
+    %matplotlib
+inline
+from src import quantstats as qs
 
-    # extend pandas functionality with metrics, etc.
-    qs.extend_pandas()
+# extend pandas functionality with metrics, etc.
+qs.extend_pandas()
 
-    # fetch the daily returns for a stock
-    stock = qs.utils.download_returns('META')
+# fetch the daily returns for a stock
+stock = src.quantstats.utils.download_returns('META')
 
-    # show sharpe ratio
-    qs.stats.sharpe(stock)
+# show sharpe ratio
+qs.stats.sharpe(stock)
 
-    # or using extend_pandas() :)
-    stock.sharpe()
+# or using extend_pandas() :)
+stock.sharpe()
 ```
 
 Output:

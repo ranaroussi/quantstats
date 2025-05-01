@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantstats.utils import (
+from src.quantstats.utils import (
     _mtd,
     _pandas_current_month,
     _pandas_date,

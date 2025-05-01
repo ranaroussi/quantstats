@@ -22,4 +22,4 @@ jobs:
 
       - uses: tschm/cradle/actions/test@v0.1.63
         with:
-          tests-folder: tests
+          tests-folder: src/tests

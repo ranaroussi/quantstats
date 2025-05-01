@@ -18,7 +18,7 @@ jobs:
 
       - uses: tschm/cradle/actions/pdoc@v0.1.63
         with:
-          source-folder: quantstats
+          source-folder: src/quantstats
 
 
   test:
@@ -29,8 +29,8 @@ jobs:
 
       - uses: tschm/cradle/actions/coverage@main
         with:
-          tests-folder: tests
-          source-folder: quantstats
+          tests-folder: src/tests
+          source-folder: src/quantstats
           coveralls: 'true'
 
   jupyter:

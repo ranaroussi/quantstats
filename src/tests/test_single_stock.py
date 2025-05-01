@@ -1,7 +1,7 @@
 import pytest
 
-import quantstats as qs
 from quantstats.stats import calmar, kurtosis, sharpe, skew, smart_sortino
+from src import quantstats as qs
 
 qs.extend_pandas()
 

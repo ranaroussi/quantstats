@@ -1,4 +1,4 @@
-from quantstats.core import (
+from src.quantstats import (
     plot_distribution,
     plot_histogram,
     plot_longest_drawdowns,

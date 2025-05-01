@@ -1,6 +1,6 @@
 import inspect
 
-import quantstats as qs
+from src import quantstats as qs
 
 
 def test_stats(returns, benchmark):

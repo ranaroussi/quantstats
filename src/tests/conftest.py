@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from quantstats.data import _Data, build_data
+from src.quantstats.data import _Data, build_data
 
 
 @pytest.fixture(scope="session", name="resource_dir")
