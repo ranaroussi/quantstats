@@ -236,9 +236,9 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
 
 
 def download_returns(ticker, period="max", proxy=None):
+    _yf.set_config(proxy)
     params = {
         "tickers": ticker,
-        "proxy": proxy,
         "auto_adjust": True,
         "multi_level_index": False,
         "progress": False,
