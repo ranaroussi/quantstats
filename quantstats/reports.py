@@ -85,10 +85,9 @@ def html(
         returns = returns.dropna()
     returns = _utils._prepare_returns(returns)
 
-    strategy_title = kwargs.get("strategy_title", "Strategy")
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
-            strategy_title = list(returns.columns)
+    strategy_title = list(returns.columns)
+    if len(set(returns.columns)) != len(returns.columns):
+        strategy_title = [f'Strategy_{i+1}' for i in range(len(returns.columns))]
 
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
@@ -750,10 +749,9 @@ def metrics(
             )
 
     if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1:
-            blank = [""] * len(returns.columns)
-            if isinstance(strategy_colname, str):
-                strategy_colname = list(returns.columns)
+        blank = [""] * len(returns.columns)
+        if isinstance(strategy_colname, str):
+            strategy_colname = list(returns.columns)
     else:
         blank = [""]
 
@@ -766,7 +764,7 @@ def metrics(
         df = _utils._prepare_returns(returns)
 
     if isinstance(returns, _pd.Series):
-        df = _pd.DataFrame({"returns": returns})
+        df = _pd.DataFrame({"returns_1": returns})
     elif isinstance(returns, _pd.DataFrame):
         df = _pd.DataFrame(
             {
@@ -859,7 +857,7 @@ def metrics(
         # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
         # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
-    metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+    metrics["Omega"] = _stats.omega(df["returns_1"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
@@ -1492,44 +1490,24 @@ def _calc_dd(df, display=True, as_pct=False):
     else:
         ret_dd = dd_info
 
-    if (
-        any(ret_dd.columns.get_level_values(0).str.contains("returns"))
-        and ret_dd.columns.get_level_values(0).nunique() > 1
-    ):
-        dd_stats = {
-            col: {
-                "Max Drawdown %": ret_dd[col]
-                .sort_values(by="max drawdown", ascending=True)["max drawdown"]
-                .values[0]
-                / 100,
-                "Longest DD Days": str(
-                    _np.round(
-                        ret_dd[col]
-                        .sort_values(by="days", ascending=False)["days"]
-                        .values[0]
-                    )
-                ),
-                "Avg. Drawdown %": ret_dd[col]["max drawdown"].mean() / 100,
-                "Avg. Drawdown Days": str(_np.round(ret_dd[col]["days"].mean())),
-            }
-            for col in ret_dd.columns.get_level_values(0)
+    dd_stats = {
+        col: {
+            "Max Drawdown %": ret_dd[col]
+            .sort_values(by="max drawdown", ascending=True)["max drawdown"]
+            .values[0]
+            / 100,
+            "Longest DD Days": str(
+                _np.round(
+                    ret_dd[col]
+                    .sort_values(by="days", ascending=False)["days"]
+                    .values[0]
+                )
+            ),
+            "Avg. Drawdown %": ret_dd[col]["max drawdown"].mean() / 100,
+            "Avg. Drawdown Days": str(_np.round(ret_dd[col]["days"].mean())),
         }
-    else:
-        dd_stats = {
-            "returns": {
-                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)[
-                    "max drawdown"
-                ].values[0]
-                / 100,
-                "Longest DD Days": str(
-                    _np.round(
-                        ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
-                    )
-                ),
-                "Avg. Drawdown %": ret_dd["max drawdown"].mean() / 100,
-                "Avg. Drawdown Days": str(_np.round(ret_dd["days"].mean())),
-            }
-        }
+        for col in ret_dd.columns.get_level_values(0)
+    }
     if "benchmark" in df and (dd_info.columns, _pd.MultiIndex):
         bench_dd = dd_info["benchmark"].sort_values(by="max drawdown")
         dd_stats["benchmark"] = {

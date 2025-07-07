@@ -291,7 +291,7 @@ def plot_timeseries(
 
     if resample:
         returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum(axis=0)
+        returns = returns.last() if compound is True else returns.sum()
         if isinstance(benchmark, _pd.Series):
             benchmark = benchmark.resample(resample)
             benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
