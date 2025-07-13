@@ -38,6 +38,7 @@ from .. import (
     stats as _stats,
     utils as _utils,
 )
+from .._compat import safe_resample
 
 
 _sns.set(
@@ -1010,18 +1011,20 @@ def plot_distribution(
     port = _pd.DataFrame(returns.fillna(0))
     port.columns = ["Daily"]
 
-    apply_fnc = _stats.comp if compounded else _np.sum
-
-    port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
+    if compounded:
+        port["Weekly"] = safe_resample(port["Daily"], "W-MON", _stats.comp)
+        port["Monthly"] = safe_resample(port["Daily"], "ME", _stats.comp)
+        port["Quarterly"] = safe_resample(port["Daily"], "QE", _stats.comp)
+        port["Yearly"] = safe_resample(port["Daily"], "YE", _stats.comp)
+    else:
+        port["Weekly"] = safe_resample(port["Daily"], "W-MON", "sum")
+        port["Monthly"] = safe_resample(port["Daily"], "ME", "sum")
+        port["Quarterly"] = safe_resample(port["Daily"], "QE", "sum")
+        port["Yearly"] = safe_resample(port["Daily"], "YE", "sum")
+    
     port["Weekly"].ffill(inplace=True)
-
-    port["Monthly"] = port["Daily"].resample("ME").apply(apply_fnc)
     port["Monthly"].ffill(inplace=True)
-
-    port["Quarterly"] = port["Daily"].resample("QE").apply(apply_fnc)
     port["Quarterly"].ffill(inplace=True)
-
-    port["Yearly"] = port["Daily"].resample("YE").apply(apply_fnc)
     port["Yearly"].ffill(inplace=True)
 
     fig, ax = _plt.subplots(figsize=figsize)

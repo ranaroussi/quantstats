@@ -26,6 +26,7 @@ from base64 import b64encode as _b64encode
 import re as _regex
 from tabulate import tabulate as _tabulate
 from . import __version__, stats as _stats, utils as _utils, plots as _plots
+from ._compat import safe_resample, safe_append, safe_concat
 from dateutil.relativedelta import relativedelta
 from io import StringIO
 

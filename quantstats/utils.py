@@ -23,6 +23,7 @@ import pandas as _pd
 import numpy as _np
 import yfinance as _yf
 from . import stats as _stats
+from ._compat import safe_concat, safe_resample
 import inspect
 
 
@@ -62,7 +63,7 @@ def multi_shift(df, shift=3):
     dfs = [df.shift(i) for i in _np.arange(shift)]
     for ix, dfi in enumerate(dfs[1:]):
         dfs[ix + 1].columns = [str(col) for col in dfi.columns + str(ix + 1)]
-    return _pd.concat(dfs, axis=1, sort=True)
+    return safe_concat(dfs, axis=1, sort=True)
 
 
 def to_returns(prices, rf=0.0):
@@ -386,11 +387,11 @@ def make_index(
     last_day = index.index[-1]
 
     # rebalance marker
-    rbdf = index.resample(rebalance).first()
+    rbdf = safe_resample(index, rebalance, "first")
     rbdf["break"] = rbdf.index.strftime("%s")
 
     # index returns with rebalance markers
-    index = _pd.concat([index, rbdf["break"]], axis=1)
+    index = safe_concat([index, rbdf["break"]], axis=1)
 
     # mark first day day
     index["first_day"] = _pd.isna(index["break"]) & ~_pd.isna(index["break"].shift(1))
@@ -428,7 +429,7 @@ def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):
     # add day before with starting balance
     p0 = _pd.Series(data=start_balance, index=p1.index + _pd.Timedelta(days=-1))[:1]
 
-    portfolio = _pd.concat([p0, p1])
+    portfolio = safe_concat([p0, p1])
 
     if isinstance(returns, _pd.DataFrame):
         portfolio.iloc[:1, :] = start_balance

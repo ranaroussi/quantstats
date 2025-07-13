@@ -25,6 +25,7 @@ from math import ceil as _ceil, sqrt as _sqrt
 from scipy.stats import norm as _norm, linregress as _linregress
 
 from . import utils as _utils
+from ._compat import safe_concat
 
 
 # ======== STATS ========
@@ -857,7 +858,7 @@ def drawdown_details(drawdown):
         _dfs = {}
         for col in drawdown.columns:
             _dfs[col] = _drawdown_details(drawdown[col])
-        return _pd.concat(_dfs, axis=1)
+        return safe_concat(_dfs, axis=1)
 
     return _drawdown_details(drawdown)
 

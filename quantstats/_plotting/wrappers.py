@@ -28,6 +28,7 @@ from matplotlib.ticker import (
 import numpy as _np
 from pandas import DataFrame as _df
 import pandas as _pd
+from .._compat import safe_resample
 import seaborn as _sns
 
 from .. import (
@@ -554,20 +555,18 @@ def yearly_returns(
         title += "  vs Benchmark"
         benchmark = (
             _utils._prepare_benchmark(benchmark, returns.index)
-            .resample("YE")
-            .apply(_stats.comp)
-            .resample("YE")
-            .last()
         )
+        benchmark = safe_resample(benchmark, "YE", _stats.comp)
+        benchmark = safe_resample(benchmark, "YE", "last")
 
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
     if compounded:
-        returns = returns.resample("YE").apply(_stats.comp)
+        returns = safe_resample(returns, "YE", _stats.comp)
     else:
-        returns = returns.resample("YE").apply(_df.sum)
-    returns = returns.resample("YE").last()
+        returns = safe_resample(returns, "YE", "sum")
+    returns = safe_resample(returns, "YE", "last")
 
     fig = _core.plot_returns_bars(
         returns,
