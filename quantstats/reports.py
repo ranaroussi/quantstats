@@ -1577,7 +1577,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
         " ",
         """<script>
     var bl=new Blob(['{{html}}'],{type:"text/html"});
-    var a=document.createElement("YE");
+    var a=document.createElement("a");
     a.href=URL.createObjectURL(bl);
     a.download="{{filename}}";
     a.hidden=true;document.body.appendChild(a);
