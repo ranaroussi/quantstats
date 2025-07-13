@@ -64,7 +64,7 @@ try:
     import matplotlib
     matplotlib.use('Agg')  # Use non-interactive backend
     
-    from quantstats._plotting.core import _get_trading_periods
+    from quantstats.reports import _get_trading_periods
     periods = _get_trading_periods(252)
     print(f"✅ Trading periods calculation: {periods}")
     

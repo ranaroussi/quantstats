@@ -41,7 +41,7 @@ from .. import (
 from .._compat import safe_resample
 
 
-_sns.set(
+_sns.set_theme(
     font_scale=1.1,
     rc={
         "figure.figsize": (10, 6),
@@ -197,8 +197,10 @@ def plot_returns_bars(
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
-    # if isinstance(benchmark, _pd.Series) or hline:
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -212,7 +214,12 @@ def plot_returns_bars(
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except Exception:
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -357,8 +364,10 @@ def plot_timeseries(
     ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
     ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
 
-    # if isinstance(benchmark, _pd.Series) or hline is not None:
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -375,7 +384,12 @@ def plot_timeseries(
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except Exception:
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -697,10 +711,18 @@ def plot_rolling_stats(
 
     ax.yaxis.set_major_formatter(_FormatStrFormatter("%.2f"))
 
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except Exception:
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
@@ -844,9 +866,18 @@ def plot_rolling_beta(
         )
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
+    
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except Exception:
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
