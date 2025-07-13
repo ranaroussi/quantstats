@@ -4,7 +4,7 @@
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import matplotlib.pyplot as _plt
 
 try:
     _plt.rcParams["font.family"] = "Arial"
-except Exception:
+except (KeyError, ValueError, OSError):
     pass
 
 import matplotlib.dates as _mdates
@@ -38,9 +38,10 @@ from .. import (
     stats as _stats,
     utils as _utils,
 )
+from .._compat import safe_resample
 
 
-_sns.set(
+_sns.set_theme(
     font_scale=1.1,
     rc={
         "figure.figsize": (10, 6),
@@ -100,7 +101,7 @@ def plot_returns_bars(
     hlw=None,
     hlcolor="red",
     hllabel="",
-    resample="A",
+    resample="YE",
     title="Returns",
     match_volatility=False,
     log_scale=False,
@@ -137,7 +138,8 @@ def plot_returns_bars(
 
     df = df.dropna()
     if resample is not None:
-        df = df.resample(resample).apply(_stats.comp).resample(resample).last()
+        df = safe_resample(df, resample, _stats.comp)
+        df = safe_resample(df, resample, 'last')
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -196,8 +198,10 @@ def plot_returns_bars(
 
     ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
 
-    # if isinstance(benchmark, _pd.Series) or hline:
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -211,16 +215,21 @@ def plot_returns_bars(
     ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except (ValueError, AttributeError, TypeError, RuntimeError):
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -267,9 +276,9 @@ def plot_timeseries(
 
     colors, ls, alpha = _get_colors(grayscale)
 
-    returns.fillna(0, inplace=True)
+    returns = returns.fillna(0)
     if isinstance(benchmark, _pd.Series):
-        benchmark.fillna(0, inplace=True)
+        benchmark = benchmark.fillna(0)
 
     if match_volatility and benchmark is None:
         raise ValueError("match_volatility requires passing of " "benchmark.")
@@ -288,11 +297,10 @@ def plot_timeseries(
             benchmark = benchmark.cumsum()
 
     if resample:
-        returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum()
+        from .._compat import safe_resample
+        returns = safe_resample(returns, resample, 'last' if compound is True else 'sum')
         if isinstance(benchmark, _pd.Series):
-            benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound is True else benchmark.sum()
+            benchmark = safe_resample(benchmark, resample, 'last' if compound is True else 'sum')
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -354,8 +362,10 @@ def plot_timeseries(
     ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
     ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
 
-    # if isinstance(benchmark, _pd.Series) or hline is not None:
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
@@ -372,16 +382,21 @@ def plot_timeseries(
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except (ValueError, AttributeError, TypeError, RuntimeError):
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -404,7 +419,7 @@ def plot_timeseries(
 def plot_histogram(
     returns,
     benchmark,
-    resample="M",
+    resample="ME",
     bins=20,
     fontname="Arial",
     grayscale=False,
@@ -426,17 +441,13 @@ def plot_histogram(
 
     apply_fnc = _stats.comp if compounded else _np.sum
     if benchmark is not None:
-        benchmark = (
-            benchmark.fillna(0)
-            .resample(resample)
-            .apply(apply_fnc)
-            .resample(resample)
-            .last()
-        )
+        benchmark = benchmark.fillna(0)
+        benchmark = safe_resample(benchmark, resample, apply_fnc)
+        benchmark = safe_resample(benchmark, resample, 'last')
 
-    returns = (
-        returns.fillna(0).resample(resample).apply(apply_fnc).resample(resample).last()
-    )
+    returns = returns.fillna(0)
+    returns = safe_resample(returns, resample, apply_fnc)
+    returns = safe_resample(returns, resample, 'last')
 
     figsize = (0.995 * figsize[0], figsize[1])
     fig, ax = _plt.subplots(figsize=figsize)
@@ -571,12 +582,12 @@ def plot_histogram(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -694,19 +705,27 @@ def plot_rolling_stats(
 
     ax.yaxis.set_major_formatter(_FormatStrFormatter("%.2f"))
 
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except (ValueError, AttributeError, TypeError, RuntimeError):
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -841,18 +860,27 @@ def plot_rolling_beta(
         )
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
-    ax.legend(fontsize=11)
+    # Only show legend if there are labeled elements
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(fontsize=11)
+    
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
-        ax.get_legend().remove()
+        try:
+            legend = ax.get_legend()
+            if legend:
+                legend.remove()
+        except (ValueError, AttributeError, TypeError, RuntimeError):
+            pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -929,9 +957,10 @@ def plot_longest_drawdowns(
     ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
     highlight = "black" if grayscale else "red"
-    for _, row in longest_dd.iterrows():
+    # Vectorized approach instead of iterrows
+    for start, end in zip(longest_dd["start"], longest_dd["end"]):
         ax.axvspan(
-            *_mdates.datestr2num([str(row["start"]), str(row["end"])]),
+            *_mdates.datestr2num([str(start), str(end)]),
             color=highlight,
             alpha=0.1,
         )
@@ -962,12 +991,12 @@ def plot_longest_drawdowns(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -1008,19 +1037,21 @@ def plot_distribution(
     port = _pd.DataFrame(returns.fillna(0))
     port.columns = ["Daily"]
 
-    apply_fnc = _stats.comp if compounded else _np.sum
-
-    port["Weekly"] = port["Daily"].resample("W-MON").apply(apply_fnc)
-    port["Weekly"].ffill(inplace=True)
-
-    port["Monthly"] = port["Daily"].resample("M").apply(apply_fnc)
-    port["Monthly"].ffill(inplace=True)
-
-    port["Quarterly"] = port["Daily"].resample("Q").apply(apply_fnc)
-    port["Quarterly"].ffill(inplace=True)
-
-    port["Yearly"] = port["Daily"].resample("A").apply(apply_fnc)
-    port["Yearly"].ffill(inplace=True)
+    if compounded:
+        port["Weekly"] = safe_resample(port["Daily"], "W-MON", _stats.comp)
+        port["Monthly"] = safe_resample(port["Daily"], "ME", _stats.comp)
+        port["Quarterly"] = safe_resample(port["Daily"], "QE", _stats.comp)
+        port["Yearly"] = safe_resample(port["Daily"], "YE", _stats.comp)
+    else:
+        port["Weekly"] = safe_resample(port["Daily"], "W-MON", "sum")
+        port["Monthly"] = safe_resample(port["Daily"], "ME", "sum")
+        port["Quarterly"] = safe_resample(port["Daily"], "QE", "sum")
+        port["Yearly"] = safe_resample(port["Daily"], "YE", "sum")
+    
+    port["Weekly"] = port["Weekly"].ffill()
+    port["Monthly"] = port["Monthly"].ffill()
+    port["Quarterly"] = port["Quarterly"].ffill()
+    port["Yearly"] = port["Yearly"].ffill()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -1076,11 +1107,11 @@ def plot_distribution(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
     try:
         fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -1120,7 +1151,7 @@ def plot_table(
     if columns is not None:
         try:
             tbl.columns = columns
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     fig = _plt.figure(figsize=figsize)
@@ -1168,11 +1199,11 @@ def plot_table(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
     try:
         fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -1201,7 +1232,7 @@ def format_cur_axis(x, _):
         return res.replace(".0B", "B")
     if x >= 1e6:
         res = "$%1.1fM" % (x * 1e-6)
-        return res.replace(".0M", "M")
+        return res.replace(".0M", "ME")
     if x >= 1e3:
         res = "$%1.0fK" % (x * 1e-3)
         return res.replace(".0K", "K")

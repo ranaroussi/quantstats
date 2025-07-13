@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ from math import ceil as _ceil, sqrt as _sqrt
 from scipy.stats import norm as _norm, linregress as _linregress
 
 from . import utils as _utils
+from ._compat import safe_concat
+from .utils import validate_input, DataValidationError
 
 
 # ======== STATS ========
@@ -38,12 +40,12 @@ def pct_rank(prices, window=60):
 
 def compsum(returns):
     """Calculates rolling compounded returns"""
-    return returns.add(1).cumprod() - 1
+    return returns.add(1).cumprod(axis=0) - 1
 
 
 def comp(returns):
     """Calculates total compounded returns"""
-    return returns.add(1).prod() - 1
+    return returns.add(1).prod(axis=0) - 1
 
 
 def distribution(returns, compounded=True, prepare_returns=True):
@@ -79,9 +81,9 @@ def distribution(returns, compounded=True, prepare_returns=True):
     return {
         "Daily": get_outliers(daily),
         "Weekly": get_outliers(daily.resample("W-MON").apply(apply_fnc)),
-        "Monthly": get_outliers(daily.resample("M").apply(apply_fnc)),
-        "Quarterly": get_outliers(daily.resample("Q").apply(apply_fnc)),
-        "Yearly": get_outliers(daily.resample("A").apply(apply_fnc)),
+        "Monthly": get_outliers(daily.resample("ME").apply(apply_fnc)),
+        "Quarterly": get_outliers(daily.resample("QE").apply(apply_fnc)),
+        "Yearly": get_outliers(daily.resample("YE").apply(apply_fnc)),
     }
 
 
@@ -93,17 +95,17 @@ def expected_return(returns, aggregate=None, compounded=True, prepare_returns=Tr
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     returns = _utils.aggregate_returns(returns, aggregate, compounded)
-    return _np.product(1 + returns) ** (1 / len(returns)) - 1
+    return _np.prod(1 + returns, axis=0) ** (1 / len(returns)) - 1
 
 
-def geometric_mean(retruns, aggregate=None, compounded=True):
+def geometric_mean(returns, aggregate=None, compounded=True):
     """Shorthand for expected_return()"""
-    return expected_return(retruns, aggregate, compounded)
+    return expected_return(returns, aggregate, compounded)
 
 
-def ghpr(retruns, aggregate=None, compounded=True):
+def ghpr(returns, aggregate=None, compounded=True):
     """Shorthand for expected_return()"""
-    return expected_return(retruns, aggregate, compounded)
+    return expected_return(returns, aggregate, compounded)
 
 
 def outliers(returns, quantile=0.95):
@@ -172,7 +174,7 @@ def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
     def _win_rate(series):
         try:
             return len(series[series > 0]) / len(series[series != 0])
-        except Exception:
+        except (ZeroDivisionError, ValueError, TypeError):
             return 0.0
 
     if prepare_returns:
@@ -262,7 +264,10 @@ def autocorr_penalty(returns, prepare_returns=False):
     # returns.to_csv('/Users/ran/Desktop/test.csv')
     num = len(returns)
     coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
-    corr = [((num - x) / num) * coef**x for x in range(1, num)]
+
+    # Vectorized calculation instead of list comprehension
+    x = _np.arange(1, num)
+    corr = ((num - x) / num) * (coef ** x)
     return _np.sqrt(1 + 2 * _np.sum(corr))
 
 
@@ -271,7 +276,7 @@ def autocorr_penalty(returns, prepare_returns=False):
 
 def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
     """
-    Calculates the sharpe ratio of access returns
+    Calculates the sharpe ratio of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -283,6 +288,8 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
         * annualize: return annualize sharpe?
         * smart: return smart sharpe ratio
     """
+    validate_input(returns)
+
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -327,7 +334,7 @@ def rolling_sharpe(
 
 def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     """
-    Calculates the sortino ratio of access returns
+    Calculates the sortino ratio of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -335,6 +342,8 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     Calculation is based on this paper by Red Rock Capital
     http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
     """
+    validate_input(returns)
+
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -367,10 +376,14 @@ def rolling_sortino(
     if kwargs.get("prepare_returns", True):
         returns = _utils._prepare_returns(returns, rf, rolling_period)
 
+    # Optimized downside calculation using vectorized operations
+    def calc_downside(x):
+        """Calculate downside variance more efficiently"""
+        negative_returns = x[x < 0]
+        return (negative_returns ** 2).sum() if len(negative_returns) > 0 else 0
+
     downside = (
-        returns.rolling(rolling_period).apply(
-            lambda x: (x.values[x.values < 0] ** 2).sum()
-        )
+        returns.rolling(rolling_period).apply(calc_downside, raw=True)
         / rolling_period
     )
 
@@ -410,12 +423,7 @@ def probabilistic_ratio(
     n = len(series)
 
     sigma_sr = _np.sqrt(
-        (
-            1
-            + (0.5 * base**2)
-            - (skew_no * base)
-            + (((kurtosis_no - 3) / 4) * base**2)
-        )
+        (1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2))
         / (n - 1)
     )
 
@@ -493,8 +501,8 @@ def omega(returns, rf=0.0, required_return=0.0, periods=252):
         return_threshold = (1 + required_return) ** (1.0 / periods) - 1
 
     returns_less_thresh = returns - return_threshold
-    numer = returns_less_thresh[returns_less_thresh > 0.0].sum().values[0]
-    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum().values[0]
+    numer = returns_less_thresh[returns_less_thresh > 0.0].sum()
+    denom = -1.0 * returns_less_thresh[returns_less_thresh < 0.0].sum()
 
     if denom > 0.0:
         return numer / denom
@@ -515,7 +523,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
 def cagr(returns, rf=0.0, compounded=True, periods=252):
     """
     Calculates the communicative annualized growth return
-    (CAGR%) of access returns
+    (CAGR%) of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -524,7 +532,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
     if compounded:
         total = comp(total)
     else:
-        total = _np.sum(total)
+        total = _np.sum(total, axis=0)
 
     years = (returns.index[-1] - returns.index[0]).days / periods
 
@@ -539,7 +547,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
 
 def rar(returns, rf=0.0):
     """
-    Calculates the risk-adjusted return of access returns
+    Calculates the risk-adjusted return of excess returns
     (CAGR / exposure. takes time into account.)
 
     If rf is non-zero, you must specify periods.
@@ -699,7 +707,7 @@ def profit_ratio(returns, prepare_returns=True):
     loss_ratio = abs(loss.mean() / loss.count())
     try:
         return win_ratio / loss_ratio
-    except Exception:
+    except (ZeroDivisionError, ValueError, TypeError):
         return 0.0
 
 
@@ -747,7 +755,7 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
     return returns.quantile(quantile).mean() / returns[returns < 0].mean()
 
 
-def recovery_factor(returns, rf=0., prepare_returns=True):
+def recovery_factor(returns, rf=0.0, prepare_returns=True):
     """Measures how fast the strategy recovers from drawdowns"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -862,7 +870,7 @@ def drawdown_details(drawdown):
         _dfs = {}
         for col in drawdown.columns:
             _dfs[col] = _drawdown_details(drawdown[col])
-        return _pd.concat(_dfs, axis=1)
+        return safe_concat(_dfs, axis=1)
 
     return _drawdown_details(drawdown)
 
@@ -910,7 +918,10 @@ def information_ratio(returns, benchmark, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
     diff_rets = returns - _utils._prepare_benchmark(benchmark, returns.index)
 
-    return diff_rets.mean() / diff_rets.std()
+    std = diff_rets.std()
+    if std != 0:
+        return diff_rets.mean() / diff_rets.std()
+    return 0
 
 
 def greeks(returns, benchmark, periods=252.0, prepare_returns=True):

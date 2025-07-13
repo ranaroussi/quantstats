@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2023 Ran Aroussi
+# Copyright 2019-2024 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from base64 import b64encode as _b64encode
 import re as _regex
 from tabulate import tabulate as _tabulate
 from . import __version__, stats as _stats, utils as _utils, plots as _plots
+from ._compat import safe_resample, safe_append, safe_concat
 from dateutil.relativedelta import relativedelta
 from io import StringIO
 
@@ -155,7 +156,7 @@ def html(
 
     if benchmark is not None:
         yoy = _stats.compare(
-            returns, benchmark, "A", compounded=compounded, prepare_returns=False
+            returns, benchmark, "YE", compounded=compounded, prepare_returns=False
         )
         if isinstance(returns, _pd.Series):
             yoy.columns = [benchmark_title, strategy_title, "Multiplier", "Won"]
@@ -267,7 +268,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         compounded=compounded,
         prepare_returns=False,
     )
@@ -282,7 +283,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         compounded=compounded,
         prepare_returns=False,
     )
@@ -297,7 +298,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         active=active,
     )
@@ -315,7 +316,7 @@ def html(
             window2=win_year,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
         tpl = tpl.replace("{{rolling_beta}}", _embed_figure(figfile, figfmt))
@@ -329,7 +330,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -343,7 +344,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -357,7 +358,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -373,7 +374,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             prepare_returns=False,
         )
@@ -389,7 +390,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -404,7 +405,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel='',
     )
     tpl = tpl.replace("{{dd_plot}}", _embed_figure(figfile, figfmt))
 
@@ -419,7 +420,7 @@ def html(
             returns_label=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             active=active,
         )
@@ -436,7 +437,7 @@ def html(
                 returns_label=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 active=active,
             )
@@ -454,7 +455,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel='',
             compounded=compounded,
             prepare_returns=False,
         )
@@ -470,7 +471,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -861,7 +862,7 @@ def metrics(
         # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
         # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
-    metrics["Omega"] = _stats.omega(df, rf, 0.0, win_year)
+    metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
@@ -935,10 +936,10 @@ def metrics(
             _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -959,11 +960,11 @@ def metrics(
         metrics["Max Consecutive Losses *int"] = _stats.consecutive_losses(df)
 
     metrics["Gain/Pain Ratio"] = _stats.gain_to_pain_ratio(df, rf)
-    metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "M")
+    metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "ME")
     # if mode.lower() == 'full':
-    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "Q")
+    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "QE")
     #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
-    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "A")
+    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "YE")
     metrics["~~~~~~~"] = blank
 
     metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
@@ -974,23 +975,25 @@ def metrics(
     metrics["Outlier Win Ratio"] = _stats.outlier_win_ratio(df, prepare_returns=False)
     metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(df, prepare_returns=False)
 
-    # returns
+    # # returns
     metrics["~~"] = blank
-    comp_func = _stats.comp if compounded else _np.sum
 
     today = df.index[-1]  # _dt.today()
-    metrics["MTD %"] = comp_func(df[df.index >= _dt(today.year, today.month, 1)]) * pct
-
-    d = today - relativedelta(months=3)
-    metrics["3M %"] = comp_func(df[df.index >= d]) * pct
-
-    d = today - relativedelta(months=6)
-    metrics["6M %"] = comp_func(df[df.index >= d]) * pct
-
-    metrics["YTD %"] = comp_func(df[df.index >= _dt(today.year, 1, 1)]) * pct
-
-    d = today - relativedelta(years=1)
-    metrics["1Y %"] = comp_func(df[df.index >= d]) * pct
+    m3 = today - relativedelta(months=3)
+    m6 = today - relativedelta(months=6)
+    y1 = today - relativedelta(years=1)
+    if compounded:
+        metrics["MTD %"] = _stats.comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+        metrics["3M %"] = _stats.comp(df[df.index >= m3]) * pct
+        metrics["6M %"] = _stats.comp(df[df.index >= m6]) * pct
+        metrics["YTD %"] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+        metrics["1Y %"] = _stats.comp(df[df.index >= y1]) * pct
+    else:
+        metrics["MTD %"] = _np.sum(df[df.index >= _dt(today.year, today.month, 1)], axis=0) * pct
+        metrics["3M %"] = _np.sum(df[df.index >= m3], axis=0) * pct
+        metrics["6M %"] = _np.sum(df[df.index >= m6], axis=0) * pct
+        metrics["YTD %"] = _np.sum(df[df.index >= _dt(today.year, 1, 1)], axis=0) * pct
+        metrics["1Y %"] = _np.sum(df[df.index >= y1], axis=0) * pct
 
     d = today - relativedelta(months=35)
     metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
@@ -1009,22 +1012,22 @@ def metrics(
         metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Worst Month %"] = (
-            _stats.worst(df, aggregate="M", prepare_returns=False) * pct
+            _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
 
     # dd
     metrics["~~~~"] = blank
-    for ix, row in dd.iterrows():
-        metrics[ix] = row
+    # Vectorized approach instead of iterrows
+    metrics.update(dd.to_dict())
     metrics["Recovery Factor"] = _stats.recovery_factor(df)
     metrics["Ulcer Index"] = _stats.ulcer_index(df)
     metrics["Serenity Index"] = _stats.serenity_index(df, rf)
@@ -1033,20 +1036,20 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="QE", prepare_returns=False) * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
 
         if "benchmark" in df:
@@ -1115,7 +1118,7 @@ def metrics(
             metrics[col] = metrics[col].astype(float).round(2)
             if display or "internal" in kwargs:
                 metrics[col] = metrics[col].astype(str)
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             pass
         if (display or "internal" in kwargs) and "*int" in col:
             metrics[col] = metrics[col].str.replace(".0", "", regex=False)
@@ -1255,7 +1258,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 compounded=compounded,
                 active=active,
             )
@@ -1267,7 +1270,7 @@ def plots(
                     grayscale=grayscale,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
-                    ylabel=False,
+                    ylabel='',
                     returns_label=col,
                     compounded=compounded,
                     active=active,
@@ -1290,7 +1293,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         compound=compounded,
     )
@@ -1301,7 +1304,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         compound=compounded,
     )
@@ -1314,7 +1317,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
             compound=compounded,
         )
@@ -1325,7 +1328,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         compounded=compounded,
     )
@@ -1336,7 +1339,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         compounded=compounded,
     )
@@ -1354,7 +1357,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         prepare_returns=False,
         active=active,
     )
@@ -1368,7 +1371,7 @@ def plots(
             window2=win_year,
             figsize=small_fig_size,
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
         )
 
@@ -1378,7 +1381,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1387,7 +1390,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1396,7 +1399,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel=False,
+        ylabel='',
         period=win_half_year,
     )
 
@@ -1406,7 +1409,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
             compounded=compounded,
         )
@@ -1417,7 +1420,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 title=col,
                 prepare_returns=False,
                 compounded=compounded,
@@ -1452,7 +1455,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel=False,
+                ylabel='',
                 returns_label=col,
                 compounded=compounded,
                 active=active,
@@ -1465,7 +1468,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=returns.name,
-            ylabel=False,
+            ylabel='',
             prepare_returns=False,
             compounded=compounded,
         )
@@ -1477,7 +1480,7 @@ def plots(
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 title=col,
-                ylabel=False,
+                ylabel='',
                 prepare_returns=False,
                 compounded=compounded,
             )
