@@ -254,7 +254,6 @@ def plot_timeseries(
     benchmark=None,
     title="Returns",
     compound=False,
-    cumulative=True,
     fill=False,
     returns_label="Strategy",
     hline=None,
@@ -288,15 +287,14 @@ def plot_timeseries(
         returns = (returns / returns.std()) * bmark_vol
 
     # ---------------
-    if compound is True:
-        if cumulative:
-            returns = _stats.compsum(returns)
-            if isinstance(benchmark, _pd.Series):
-                benchmark = _stats.compsum(benchmark)
-        else:
-            returns = returns.cumsum()
-            if isinstance(benchmark, _pd.Series):
-                benchmark = benchmark.cumsum()
+    if compound:
+        returns = _stats.compsum(returns)
+        if isinstance(benchmark, _pd.Series):
+            benchmark = _stats.compsum(benchmark)
+    else:
+        returns = returns.cumsum()
+        if isinstance(benchmark, _pd.Series):
+            benchmark = benchmark.cumsum()
 
     if resample:
         from .._compat import safe_resample

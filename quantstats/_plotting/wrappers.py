@@ -152,17 +152,26 @@ def snapshot(
     axes[0].set_ylabel(
         "Cumulative Return", fontname=fontname, fontweight="bold", fontsize=12
     )
+
     if isinstance(returns, _pd.Series):
+        if mode.lower() in ["cumsum", "sum"]:
+            cum_ret = returns.cumsum() * 100
+        else:
+            cum_ret = _stats.compsum(returns) * 100
         axes[0].plot(
-            _stats.compsum(returns) * 100,
+            cum_ret,
             color=colors[1],
             lw=1 if grayscale else lw,
             zorder=1,
         )
     elif isinstance(returns, _pd.DataFrame):
         for col in returns.columns:
+            if mode.lower() in ["cumsum", "sum"]:
+                cum_ret = returns[col].cumsum() * 100
+            else:
+                cum_ret = _stats.compsum(returns[col]) * 100
             axes[0].plot(
-                _stats.compsum(returns[col]) * 100,
+                cum_ret,
                 label=col,
                 lw=1 if grayscale else lw,
                 zorder=1,
@@ -384,7 +393,6 @@ def returns(
     lw=1.5,
     match_volatility=False,
     compound=True,
-    cumulative=True,
     resample=None,
     ylabel="Cumulative Returns",
     subtitle=True,
@@ -416,7 +424,6 @@ def returns(
         log_scale=False,
         resample=resample,
         compound=compound,
-        cumulative=cumulative,
         lw=lw,
         figsize=figsize,
         fontname=fontname,
@@ -438,7 +445,6 @@ def log_returns(
     lw=1.5,
     match_volatility=False,
     compound=True,
-    cumulative=True,
     resample=None,
     ylabel="Cumulative Returns",
     subtitle=True,
@@ -473,7 +479,6 @@ def log_returns(
         log_scale=True,
         resample=resample,
         compound=compound,
-        cumulative=cumulative,
         lw=lw,
         figsize=figsize,
         fontname=fontname,
