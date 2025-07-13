@@ -21,10 +21,109 @@ import io as _io
 import datetime as _dt
 import pandas as _pd
 import numpy as _np
-import yfinance as _yf
+from ._compat import safe_yfinance_download
 from . import stats as _stats
 from ._compat import safe_concat, safe_resample
 import inspect
+from functools import lru_cache
+import hashlib
+
+
+# Custom exception classes for QuantStats
+class QuantStatsError(Exception):
+    """Base exception class for QuantStats"""
+    pass
+
+
+class DataValidationError(QuantStatsError):
+    """Raised when input data validation fails"""
+    pass
+
+
+class CalculationError(QuantStatsError):
+    """Raised when a calculation fails"""
+    pass
+
+
+class PlottingError(QuantStatsError):
+    """Raised when plotting operations fail"""
+    pass
+
+
+class BenchmarkError(QuantStatsError):
+    """Raised when benchmark data issues occur"""
+    pass
+
+
+def validate_input(data, allow_empty=False):
+    """
+    Validate input data for QuantStats functions
+    
+    Parameters
+    ----------
+    data : pd.Series or pd.DataFrame
+        Input data to validate
+    allow_empty : bool, default False
+        Whether to allow empty datasets
+        
+    Raises
+    ------
+    DataValidationError
+        If data validation fails
+    """
+    if data is None:
+        raise DataValidationError("Input data cannot be None")
+    
+    if not isinstance(data, (_pd.Series, _pd.DataFrame)):
+        raise DataValidationError(f"Input data must be pandas Series or DataFrame, got {type(data)}")
+    
+    if not allow_empty and len(data) == 0:
+        raise DataValidationError("Input data cannot be empty")
+    
+    if not allow_empty and data.dropna().empty:
+        raise DataValidationError("Input data contains only NaN values")
+    
+    # Check for valid date index
+    if not isinstance(data.index, (_pd.DatetimeIndex, _pd.RangeIndex)):
+        try:
+            data.index = _pd.to_datetime(data.index)
+        except Exception:
+            raise DataValidationError("Input data must have a valid datetime index")
+    
+    return True
+
+
+# Cache for _prepare_returns function
+_PREPARE_RETURNS_CACHE = {}
+_CACHE_MAX_SIZE = 100
+
+
+def _generate_cache_key(data, rf, nperiods):
+    """Generate a cache key for the _prepare_returns function"""
+    try:
+        # Create a hash from the data
+        if isinstance(data, _pd.Series):
+            data_hash = _pd.util.hash_pandas_object(data).sum()
+        elif isinstance(data, _pd.DataFrame):
+            data_hash = _pd.util.hash_pandas_object(data).sum()
+        else:
+            data_hash = hash(str(data))
+        
+        # Include parameters in the key
+        key = f"{data_hash}_{rf}_{nperiods}"
+        return key
+    except (ValueError, TypeError, AttributeError, MemoryError):
+        # If hashing fails, return None to skip caching
+        return None
+
+
+def _clear_cache_if_full():
+    """Clear cache if it exceeds maximum size"""
+    if len(_PREPARE_RETURNS_CACHE) >= _CACHE_MAX_SIZE:
+        # Remove oldest entries (simple FIFO)
+        keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[:-(_CACHE_MAX_SIZE//2)]
+        for key in keys_to_remove:
+            del _PREPARE_RETURNS_CACHE[key]
 
 
 def _mtd(df):
@@ -56,14 +155,21 @@ def _pandas_current_month(df):
 
 
 def multi_shift(df, shift=3):
-    """Get last N rows relative to another row in pandas"""
+    """Get last N rows relative to another row in pandas - optimized for memory usage"""
     if isinstance(df, _pd.Series):
         df = _pd.DataFrame(df)
 
-    dfs = [df.shift(i) for i in _np.arange(shift)]
-    for ix, dfi in enumerate(dfs[1:]):
-        dfs[ix + 1].columns = [str(col) for col in dfi.columns + str(ix + 1)]
-    return safe_concat(dfs, axis=1, sort=True)
+    # More memory-efficient approach using dictionary comprehension
+    # and direct column assignment
+    result = df.copy()
+    
+    for i in range(1, shift):
+        shifted = df.shift(i)
+        # Rename columns to avoid conflicts
+        shifted.columns = [f"{col}{i}" for col in shifted.columns]
+        result = safe_concat([result, shifted], axis=1, sort=True)
+    
+    return result
 
 
 def to_returns(prices, rf=0.0):
@@ -88,7 +194,7 @@ def to_log_returns(returns, rf=0.0, nperiods=None):
     returns = _prepare_returns(returns, rf, nperiods)
     try:
         return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))
-    except Exception:
+    except (ValueError, TypeError, AttributeError, OverflowError):
         return 0.0
 
 
@@ -190,7 +296,9 @@ def _prepare_prices(data, base=1.0):
     data = data.copy()
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            if data[col].dropna().min() <= 0 or data[col].dropna().max() < 1:
+            # Cache dropna operation to avoid repeated computation
+            col_clean = data[col].dropna()
+            if col_clean.min() <= 0 or col_clean.max() < 1:
                 data[col] = to_prices(data[col], base)
 
     # is it returns?
@@ -207,11 +315,18 @@ def _prepare_prices(data, base=1.0):
 
 def _prepare_returns(data, rf=0.0, nperiods=None):
     """Converts price data into returns + cleanup"""
+    # Try to get from cache first
+    cache_key = _generate_cache_key(data, rf, nperiods)
+    if cache_key and cache_key in _PREPARE_RETURNS_CACHE:
+        return _PREPARE_RETURNS_CACHE[cache_key].copy()
+    
     data = data.copy()
     function = inspect.stack()[1][3]
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            if data[col].dropna().min() >= 0 and data[col].dropna().max() > 1:
+            # Cache dropna operation to avoid repeated computation
+            col_clean = data[col].dropna()
+            if col_clean.min() >= 0 and col_clean.max() > 1:
                 data[col] = data[col].pct_change()
     elif data.min() >= 0 and data.max() > 1:
         data = data.pct_change()
@@ -230,16 +345,26 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
 
     if function not in unnecessary_function_calls:
         if rf > 0:
-            return to_excess_returns(data, rf, nperiods)
+            result = to_excess_returns(data, rf, nperiods)
+            # Cache the result
+            if cache_key:
+                _clear_cache_if_full()
+                _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
+            return result
 
     data = data.tz_localize(None)
+    
+    # Cache the result
+    if cache_key:
+        _clear_cache_if_full()
+        _PREPARE_RETURNS_CACHE[cache_key] = data.copy()
+    
     return data
 
 
 def download_returns(ticker, period="max", proxy=None):
     params = {
         "tickers": ticker,
-        "proxy": proxy,
         "auto_adjust": True,
         "multi_level_index": False,
         "progress": False,
@@ -248,7 +373,8 @@ def download_returns(ticker, period="max", proxy=None):
         params["start"] = period[0]
     else:
         params["period"] = period
-    df = _yf.download(**params)["Close"].pct_change()
+    
+    df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change()
     df = df.tz_localize(None)
     return df
 

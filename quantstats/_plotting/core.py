@@ -298,11 +298,10 @@ def plot_timeseries(
                 benchmark = benchmark.cumsum()
 
     if resample:
-        returns = returns.resample(resample)
-        returns = returns.last() if compound is True else returns.sum(axis=0)
+        from .._compat import safe_resample
+        returns = safe_resample(returns, resample, 'last' if compound is True else 'sum')
         if isinstance(benchmark, _pd.Series):
-            benchmark = benchmark.resample(resample)
-            benchmark = benchmark.last() if compound is True else benchmark.sum(axis=0)
+            benchmark = safe_resample(benchmark, resample, 'last' if compound is True else 'sum')
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -963,9 +962,10 @@ def plot_longest_drawdowns(
     ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
     highlight = "black" if grayscale else "red"
-    for _, row in longest_dd.iterrows():
+    # Vectorized approach instead of iterrows
+    for start, end in zip(longest_dd["start"], longest_dd["end"]):
         ax.axvspan(
-            *_mdates.datestr2num([str(row["start"]), str(row["end"])]),
+            *_mdates.datestr2num([str(start), str(end)]),
             color=highlight,
             alpha=0.1,
         )

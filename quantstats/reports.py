@@ -1024,8 +1024,8 @@ def metrics(
 
     # dd
     metrics["~~~~"] = blank
-    for ix, row in dd.iterrows():
-        metrics[ix] = row
+    # Vectorized approach instead of iterrows
+    metrics.update(dd.to_dict())
     metrics["Recovery Factor"] = _stats.recovery_factor(df)
     metrics["Ulcer Index"] = _stats.ulcer_index(df)
     metrics["Serenity Index"] = _stats.serenity_index(df, rf)

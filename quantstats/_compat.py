@@ -10,6 +10,11 @@ import pandas as pd
 import numpy as np
 import warnings
 from packaging import version
+try:
+    import yfinance as yf
+    YF_AVAILABLE = True
+except ImportError:
+    YF_AVAILABLE = False
 
 # Version detection
 PANDAS_VERSION = version.parse(pd.__version__)
@@ -215,3 +220,41 @@ def get_string_accessor(series):
         The string accessor
     """
     return series.str
+
+def safe_yfinance_download(tickers, proxy=None, **kwargs):
+    """
+    Safe yfinance download that handles proxy configuration properly
+    
+    Parameters
+    ----------
+    tickers : str or list
+        Ticker symbols to download
+    proxy : str, optional
+        Proxy configuration (handled for compatibility)
+    **kwargs
+        Additional arguments passed to yfinance.download
+        
+    Returns
+    -------
+    pd.DataFrame
+        Downloaded data
+    """
+    if not YF_AVAILABLE:
+        raise ImportError("yfinance is required for downloading data")
+    
+    # Handle proxy configuration based on yfinance version
+    if proxy is not None:
+        # Check if the new configuration method exists
+        if hasattr(yf, 'set_config'):
+            # New method: use set_config for proxy configuration
+            yf.set_config(proxy=proxy)
+            # Don't pass proxy to download function
+            kwargs.pop('proxy', None)
+        else:
+            # Old method: pass proxy directly to download
+            kwargs['proxy'] = proxy
+    
+    # Suppress yfinance warnings about deprecation
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning, module="yfinance")
+        return yf.download(tickers, **kwargs)

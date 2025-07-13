@@ -26,6 +26,7 @@ from scipy.stats import norm as _norm, linregress as _linregress
 
 from . import utils as _utils
 from ._compat import safe_concat
+from .utils import validate_input, DataValidationError
 
 
 # ======== STATS ========
@@ -173,7 +174,7 @@ def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
     def _win_rate(series):
         try:
             return len(series[series > 0]) / len(series[series != 0])
-        except Exception:
+        except (ZeroDivisionError, ValueError, TypeError):
             return 0.0
 
     if prepare_returns:
@@ -263,7 +264,10 @@ def autocorr_penalty(returns, prepare_returns=False):
     # returns.to_csv('/Users/ran/Desktop/test.csv')
     num = len(returns)
     coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
-    corr = [((num - x) / num) * coef**x for x in range(1, num)]
+    
+    # Vectorized calculation instead of list comprehension
+    x = _np.arange(1, num)
+    corr = ((num - x) / num) * (coef ** x)
     return _np.sqrt(1 + 2 * _np.sum(corr))
 
 
@@ -284,6 +288,8 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
         * annualize: return annualize sharpe?
         * smart: return smart sharpe ratio
     """
+    validate_input(returns)
+    
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -336,6 +342,8 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     Calculation is based on this paper by Red Rock Capital
     http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
     """
+    validate_input(returns)
+    
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -368,10 +376,14 @@ def rolling_sortino(
     if kwargs.get("prepare_returns", True):
         returns = _utils._prepare_returns(returns, rf, rolling_period)
 
+    # Optimized downside calculation using vectorized operations
+    def calc_downside(x):
+        """Calculate downside variance more efficiently"""
+        negative_returns = x[x < 0]
+        return (negative_returns ** 2).sum() if len(negative_returns) > 0 else 0
+    
     downside = (
-        returns.rolling(rolling_period).apply(
-            lambda x: (x.values[x.values < 0] ** 2).sum()
-        )
+        returns.rolling(rolling_period).apply(calc_downside, raw=True)
         / rolling_period
     )
 
@@ -695,7 +707,7 @@ def profit_ratio(returns, prepare_returns=True):
     loss_ratio = abs(loss.mean() / loss.count())
     try:
         return win_ratio / loss_ratio
-    except Exception:
+    except (ZeroDivisionError, ValueError, TypeError):
         return 0.0
 
 
