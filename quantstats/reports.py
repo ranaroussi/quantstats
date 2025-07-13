@@ -758,7 +758,8 @@ def metrics(
 
     # if isinstance(returns, _pd.DataFrame):
     #     if len(returns.columns) > 1:
-    #         raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. multi colums DataFrame was passed")
+    #         raise ValueError("`returns` needs to be a Pandas Series or one column DataFrame. "
+    #                          "multi colums DataFrame was passed")
     #     returns = returns[returns.columns[0]]
 
     if prepare_returns:
@@ -844,13 +845,16 @@ def metrics(
     if mode.lower() == "full":
         # metrics['Prob. Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False) * pct
         metrics["Smart Sortino"] = _stats.smart_sortino(df, rf, win_year, True)
-        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False, True) * pct
+        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(
+        #     df, rf, win_year, False, True) * pct
 
     metrics["Sortino/√2"] = metrics["Sortino"] / _sqrt(2)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False) * pct
+        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(
+        #     df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
-        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(df, rf, win_year, False, True) * pct
+        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(
+        #     df, rf, win_year, False, True) * pct
     metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
 
     metrics["~~~~~~~~"] = blank

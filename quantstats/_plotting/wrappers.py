@@ -26,7 +26,6 @@ from matplotlib.ticker import (
 )
 
 import numpy as _np
-from pandas import DataFrame as _df
 import pandas as _pd
 from .._compat import safe_resample
 import seaborn as _sns
@@ -106,7 +105,8 @@ def snapshot(
             0,
             -0.05,
             "            * When a multi-column DataFrame is passed, the mean of all columns will be used as returns.\n"
-            "              To change this behavior, use a pandas Series or pass the column name in the `strategy_col` parameter.",
+            "              To change this behavior, use a pandas Series or pass the column name in the "
+            "`strategy_col` parameter.",
             ha="left",
             fontsize=11,
             color="black",

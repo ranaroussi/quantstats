@@ -484,7 +484,7 @@ def plot_histogram(
     alpha = 0.7
     if isinstance(returns, _pd.DataFrame):
         pallete = (
-            colors[1 : len(returns.columns) + 1]
+            colors[1: len(returns.columns) + 1]
             if benchmark is None
             else colors[: len(returns.columns) + 1]
         )
@@ -508,7 +508,7 @@ def plot_histogram(
                 .reset_index()
                 .rename(columns={"level_1": "", 0: "Returns"})
             )
-        x = _sns.histplot(
+        _sns.histplot(
             data=combined_returns,
             x="Returns",
             bins=bins,
@@ -526,7 +526,7 @@ def plot_histogram(
             if kde:
                 _sns.kdeplot(data=combined_returns, color="black", ax=ax)
 
-            x = _sns.histplot(
+            _sns.histplot(
                 data=combined_returns,
                 bins=bins,
                 alpha=alpha,
@@ -543,7 +543,7 @@ def plot_histogram(
                 .rename(columns={"level_1": "", 0: "Returns"})
             )
             # _sns.kdeplot(data=combined_returns, color='black', ax=ax)
-            x = _sns.histplot(
+            _sns.histplot(
                 data=combined_returns,
                 x="Returns",
                 bins=bins,

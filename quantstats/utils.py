@@ -25,8 +25,6 @@ from ._compat import safe_yfinance_download
 from . import stats as _stats
 from ._compat import safe_concat, safe_resample
 import inspect
-from functools import lru_cache
-import hashlib
 
 
 # Custom exception classes for QuantStats
@@ -509,7 +507,7 @@ def make_index(
     index = _pd.DataFrame(portfolio).dropna()
 
     if match_dates:
-        index = index[max(index.ne(0).idxmax()) :]
+        index = index[max(index.ne(0).idxmax()):]
 
     # no rebalance?
     if rebalance is None:
