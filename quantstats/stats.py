@@ -264,7 +264,7 @@ def autocorr_penalty(returns, prepare_returns=False):
     # returns.to_csv('/Users/ran/Desktop/test.csv')
     num = len(returns)
     coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
-    
+
     # Vectorized calculation instead of list comprehension
     x = _np.arange(1, num)
     corr = ((num - x) / num) * (coef ** x)
@@ -276,7 +276,7 @@ def autocorr_penalty(returns, prepare_returns=False):
 
 def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
     """
-    Calculates the sharpe ratio of access returns
+    Calculates the sharpe ratio of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -289,7 +289,7 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
         * smart: return smart sharpe ratio
     """
     validate_input(returns)
-    
+
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -334,7 +334,7 @@ def rolling_sharpe(
 
 def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     """
-    Calculates the sortino ratio of access returns
+    Calculates the sortino ratio of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -343,7 +343,7 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf
     """
     validate_input(returns)
-    
+
     if rf != 0 and periods is None:
         raise Exception("Must provide periods if rf != 0")
 
@@ -381,7 +381,7 @@ def rolling_sortino(
         """Calculate downside variance more efficiently"""
         negative_returns = x[x < 0]
         return (negative_returns ** 2).sum() if len(negative_returns) > 0 else 0
-    
+
     downside = (
         returns.rolling(rolling_period).apply(calc_downside, raw=True)
         / rolling_period
@@ -523,7 +523,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
 def cagr(returns, rf=0.0, compounded=True, periods=252):
     """
     Calculates the communicative annualized growth return
-    (CAGR%) of access returns
+    (CAGR%) of excess returns
 
     If rf is non-zero, you must specify periods.
     In this case, rf is assumed to be expressed in yearly (annualized) terms
@@ -547,7 +547,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
 
 def rar(returns, rf=0.0):
     """
-    Calculates the risk-adjusted return of access returns
+    Calculates the risk-adjusted return of excess returns
     (CAGR / exposure. takes time into account.)
 
     If rf is non-zero, you must specify periods.
