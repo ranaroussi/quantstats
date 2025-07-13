@@ -67,7 +67,6 @@ def html(
     match_dates=True,
     **kwargs,
 ):
-
     if output is None and not _utils._in_notebook():
         raise ValueError("`output` must be specified")
 
@@ -221,7 +220,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel="",
+        ylabel=False,
         compound=compounded,
         prepare_returns=False,
     )
@@ -236,7 +235,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel="",
+        ylabel=False,
         compound=compounded,
         prepare_returns=False,
     )
@@ -253,7 +252,7 @@ def html(
             subtitle=False,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel="",
+            ylabel=False,
             compound=compounded,
             prepare_returns=False,
         )
@@ -502,7 +501,6 @@ def full(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -653,7 +651,6 @@ def basic(
     match_dates=True,
     **kwargs,
 ):
-
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -734,7 +731,6 @@ def metrics(
     match_dates=True,
     **kwargs,
 ):
-
     if match_dates:
         returns = returns.dropna()
     returns.index = returns.index.tz_localize(None)
@@ -819,13 +815,6 @@ def metrics(
     if kwargs.get("as_pct", False):
         pct = 100
 
-    # return df
-    dd = _calc_dd(
-        df,
-        display=(display or "internal" in kwargs),
-        as_pct=kwargs.get("as_pct", False),
-    )
-
     metrics = _pd.DataFrame()
     metrics["Start Period"] = _pd.Series(s_start)
     metrics["End Period"] = _pd.Series(s_end)
@@ -866,6 +855,9 @@ def metrics(
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
+    metrics["Max Drawdown Date"] = blank
+    metrics["Max Drawdown Period Start"] = blank
+    metrics["Max Drawdown Period End"] = blank
     metrics["Longest DD Days"] = blank
 
     if mode.lower() == "full":
@@ -933,7 +925,8 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, prepare_returns=False)
+            * pct
         )
         metrics["Expected Monthly %%"] = (
             _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
@@ -1009,7 +1002,9 @@ def metrics(
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        metrics["Best Day %"] = (
+            _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        )
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
             _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
@@ -1024,7 +1019,14 @@ def metrics(
             _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
         )
 
-    # dd
+    # return drawdown (dd) df
+    dd = _calc_dd(
+        df,
+        display=(display or "internal" in kwargs),
+        as_pct=kwargs.get("as_pct", False),
+    )
+
+    # drawdown (dd) detail
     metrics["~~~~"] = blank
     # Vectorized approach instead of iterrows
     metrics.update(dd.to_dict())
@@ -1217,7 +1219,6 @@ def plots(
     match_dates=True,
     **kwargs,
 ):
-
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active", "False")
@@ -1431,7 +1432,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
-        ylabel="",
+        ylabel=False,
         compound=compounded,
     )
 
@@ -1443,7 +1444,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
             show=True,
-            ylabel="",
+            ylabel=False,
             compounded=compounded,
             active=active,
         )
@@ -1516,6 +1517,15 @@ def _calc_dd(df, display=True, as_pct=False):
                 .sort_values(by="max drawdown", ascending=True)["max drawdown"]
                 .values[0]
                 / 100,
+                "Max Drawdown Date": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["valley"]
+                .values[0],
+                "Max Drawdown Period Start": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["start"]
+                .values[0],
+                "Max Drawdown Period End": ret_dd[col]
+                .sort_values(by="max drawdown", ascending=True)["end"]
+                .values[0],
                 "Longest DD Days": str(
                     _np.round(
                         ret_dd[col]
@@ -1535,6 +1545,15 @@ def _calc_dd(df, display=True, as_pct=False):
                     "max drawdown"
                 ].values[0]
                 / 100,
+                "Max Drawdown Date": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["valley"].values[0],
+                "Max Drawdown Period Start": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["start"].values[0],
+                "Max Drawdown Period End": ret_dd.sort_values(
+                    by="max drawdown", ascending=True
+                )["end"].values[0],
                 "Longest DD Days": str(
                     _np.round(
                         ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
@@ -1551,6 +1570,15 @@ def _calc_dd(df, display=True, as_pct=False):
                 "max drawdown"
             ].values[0]
             / 100,
+            "Max Drawdown Date": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["valley"].values[0],
+            "Max Drawdown Period Start": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["start"].values[0],
+            "Max Drawdown Period End": bench_dd.sort_values(
+                by="max drawdown", ascending=True
+            )["end"].values[0],
             "Longest DD Days": str(
                 _np.round(
                     bench_dd.sort_values(by="days", ascending=False)["days"].values[0]
