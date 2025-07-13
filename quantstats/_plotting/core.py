@@ -574,7 +574,7 @@ def plot_histogram(
             color="black"
         )
     else:
-        ax.set_ylabel(None)
+        ax.set_ylabel("")
 
     ax.yaxis.set_label_coords(-0.1, 0.5)
 
