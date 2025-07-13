@@ -22,7 +22,7 @@ import matplotlib.pyplot as _plt
 
 try:
     _plt.rcParams["font.family"] = "Arial"
-except Exception:
+except (KeyError, ValueError, OSError):
     pass
 
 import matplotlib.dates as _mdates
@@ -138,7 +138,8 @@ def plot_returns_bars(
 
     df = df.dropna()
     if resample is not None:
-        df = df.resample(resample).apply(_stats.comp).resample(resample).last()
+        df = safe_resample(df, resample, _stats.comp)
+        df = safe_resample(df, resample, 'last')
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -218,17 +219,17 @@ def plot_returns_bars(
             legend = ax.get_legend()
             if legend:
                 legend.remove()
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -276,9 +277,9 @@ def plot_timeseries(
 
     colors, ls, alpha = _get_colors(grayscale)
 
-    returns.fillna(0, inplace=True)
+    returns = returns.fillna(0)
     if isinstance(benchmark, _pd.Series):
-        benchmark.fillna(0, inplace=True)
+        benchmark = benchmark.fillna(0)
 
     if match_volatility and benchmark is None:
         raise ValueError("match_volatility requires passing of " "benchmark.")
@@ -387,17 +388,17 @@ def plot_timeseries(
             legend = ax.get_legend()
             if legend:
                 legend.remove()
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -442,17 +443,13 @@ def plot_histogram(
 
     apply_fnc = _stats.comp if compounded else _np.sum
     if benchmark is not None:
-        benchmark = (
-            benchmark.fillna(0)
-            .resample(resample)
-            .apply(apply_fnc)
-            .resample(resample)
-            .last()
-        )
+        benchmark = benchmark.fillna(0)
+        benchmark = safe_resample(benchmark, resample, apply_fnc)
+        benchmark = safe_resample(benchmark, resample, 'last')
 
-    returns = (
-        returns.fillna(0).resample(resample).apply(apply_fnc).resample(resample).last()
-    )
+    returns = returns.fillna(0)
+    returns = safe_resample(returns, resample, apply_fnc)
+    returns = safe_resample(returns, resample, 'last')
 
     figsize = (0.995 * figsize[0], figsize[1])
     fig, ax = _plt.subplots(figsize=figsize)
@@ -587,12 +584,12 @@ def plot_histogram(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -720,17 +717,17 @@ def plot_rolling_stats(
             legend = ax.get_legend()
             if legend:
                 legend.remove()
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -875,17 +872,17 @@ def plot_rolling_beta(
             legend = ax.get_legend()
             if legend:
                 legend.remove()
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -996,12 +993,12 @@ def plot_longest_drawdowns(
 
     try:
         _plt.subplots_adjust(hspace=0, bottom=0, top=1)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     try:
         fig.tight_layout()
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -1053,10 +1050,10 @@ def plot_distribution(
         port["Quarterly"] = safe_resample(port["Daily"], "QE", "sum")
         port["Yearly"] = safe_resample(port["Daily"], "YE", "sum")
     
-    port["Weekly"].ffill(inplace=True)
-    port["Monthly"].ffill(inplace=True)
-    port["Quarterly"].ffill(inplace=True)
-    port["Yearly"].ffill(inplace=True)
+    port["Weekly"] = port["Weekly"].ffill()
+    port["Monthly"] = port["Monthly"].ffill()
+    port["Quarterly"] = port["Quarterly"].ffill()
+    port["Yearly"] = port["Yearly"].ffill()
 
     fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
@@ -1112,11 +1109,11 @@ def plot_distribution(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
     try:
         fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:
@@ -1156,7 +1153,7 @@ def plot_table(
     if columns is not None:
         try:
             tbl.columns = columns
-        except Exception:
+        except (ValueError, AttributeError, TypeError, RuntimeError):
             pass
 
     fig = _plt.figure(figsize=figsize)
@@ -1204,11 +1201,11 @@ def plot_table(
 
     try:
         _plt.subplots_adjust(hspace=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
     try:
         fig.tight_layout(w_pad=0, h_pad=0)
-    except Exception:
+    except (ValueError, AttributeError, TypeError, RuntimeError):
         pass
 
     if savefig:

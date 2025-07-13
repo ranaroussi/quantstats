@@ -1116,7 +1116,7 @@ def metrics(
             metrics[col] = metrics[col].astype(float).round(2)
             if display or "internal" in kwargs:
                 metrics[col] = metrics[col].astype(str)
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             pass
         if (display or "internal" in kwargs) and "*int" in col:
             metrics[col] = metrics[col].str.replace(".0", "", regex=False)

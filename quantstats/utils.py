@@ -530,10 +530,10 @@ def make_index(
         )
 
     # drop first marker
-    index.drop(columns=["first_day"], inplace=True)
+    index = index.drop(columns=["first_day"])
 
     # drop when all are NaN
-    index.dropna(how="all", inplace=True)
+    index = index.dropna(how="all")
     return index[index.index <= last_day].sum(axis=1)
 
 
