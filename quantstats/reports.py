@@ -221,7 +221,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel="",
         compound=compounded,
         prepare_returns=False,
     )
@@ -236,7 +236,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel=False,
+        ylabel="",
         compound=compounded,
         prepare_returns=False,
     )
@@ -253,7 +253,7 @@ def html(
             subtitle=False,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel=False,
+            ylabel="",
             compound=compounded,
             prepare_returns=False,
         )
@@ -1431,7 +1431,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
-        ylabel=False,
+        ylabel="",
         compound=compounded,
     )
 
@@ -1443,7 +1443,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
             show=True,
-            ylabel=False,
+            ylabel="",
             compounded=compounded,
             active=active,
         )
