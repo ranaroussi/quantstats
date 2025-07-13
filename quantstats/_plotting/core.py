@@ -4,7 +4,7 @@
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
-# Copyright 2019-2024 Ran Aroussi
+# Copyright 2019-2025 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,10 +34,7 @@ from matplotlib.ticker import (
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
-from .. import (
-    stats as _stats,
-    utils as _utils,
-)
+from .. import stats as _stats
 from .._compat import safe_resample
 
 
@@ -139,7 +136,7 @@ def plot_returns_bars(
     df = df.dropna()
     if resample is not None:
         df = safe_resample(df, resample, _stats.comp)
-        df = safe_resample(df, resample, 'last')
+        df = safe_resample(df, resample, "last")
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -298,9 +295,14 @@ def plot_timeseries(
 
     if resample:
         from .._compat import safe_resample
-        returns = safe_resample(returns, resample, 'last' if compound is True else 'sum')
+
+        returns = safe_resample(
+            returns, resample, "last" if compound is True else "sum"
+        )
         if isinstance(benchmark, _pd.Series):
-            benchmark = safe_resample(benchmark, resample, 'last' if compound is True else 'sum')
+            benchmark = safe_resample(
+                benchmark, resample, "last" if compound is True else "sum"
+            )
     # ---------------
 
     fig, ax = _plt.subplots(figsize=figsize)
@@ -443,11 +445,11 @@ def plot_histogram(
     if benchmark is not None:
         benchmark = benchmark.fillna(0)
         benchmark = safe_resample(benchmark, resample, apply_fnc)
-        benchmark = safe_resample(benchmark, resample, 'last')
+        benchmark = safe_resample(benchmark, resample, "last")
 
     returns = returns.fillna(0)
     returns = safe_resample(returns, resample, apply_fnc)
-    returns = safe_resample(returns, resample, 'last')
+    returns = safe_resample(returns, resample, "last")
 
     figsize = (0.995 * figsize[0], figsize[1])
     fig, ax = _plt.subplots(figsize=figsize)
@@ -523,6 +525,7 @@ def plot_histogram(
             combined_returns = returns.copy()
             if kde:
                 _sns.kdeplot(data=combined_returns, color="black", ax=ax)
+
             x = _sns.histplot(
                 data=combined_returns,
                 bins=bins,
@@ -580,7 +583,7 @@ def plot_histogram(
             fontname=fontname,
             fontweight="bold",
             fontsize=12,
-            color="black"
+            color="black",
         )
     else:
         ax.set_ylabel("")
@@ -873,7 +876,7 @@ def plot_rolling_beta(
     handles, labels = ax.get_legend_handles_labels()
     if handles:
         ax.legend(fontsize=11)
-    
+
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         try:
             legend = ax.get_legend()
@@ -1056,7 +1059,7 @@ def plot_distribution(
         port["Monthly"] = safe_resample(port["Daily"], "ME", "sum")
         port["Quarterly"] = safe_resample(port["Daily"], "QE", "sum")
         port["Yearly"] = safe_resample(port["Daily"], "YE", "sum")
-    
+
     port["Weekly"] = port["Weekly"].ffill()
     port["Monthly"] = port["Monthly"].ffill()
     port["Quarterly"] = port["Quarterly"].ffill()

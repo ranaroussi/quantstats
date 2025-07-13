@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2024 Ran Aroussi
+# Copyright 2019-2025 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -267,7 +267,7 @@ def autocorr_penalty(returns, prepare_returns=False):
 
     # Vectorized calculation instead of list comprehension
     x = _np.arange(1, num)
-    corr = ((num - x) / num) * (coef ** x)
+    corr = ((num - x) / num) * (coef**x)
     return _np.sqrt(1 + 2 * _np.sum(corr))
 
 
@@ -380,11 +380,10 @@ def rolling_sortino(
     def calc_downside(x):
         """Calculate downside variance more efficiently"""
         negative_returns = x[x < 0]
-        return (negative_returns ** 2).sum() if len(negative_returns) > 0 else 0
+        return (negative_returns**2).sum() if len(negative_returns) > 0 else 0
 
     downside = (
-        returns.rolling(rolling_period).apply(calc_downside, raw=True)
-        / rolling_period
+        returns.rolling(rolling_period).apply(calc_downside, raw=True) / rolling_period
     )
 
     res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)

@@ -4,7 +4,7 @@
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
 #
-# Copyright 2019-2024 Ran Aroussi
+# Copyright 2019-2025 Ran Aroussi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -304,7 +304,12 @@ def earnings(
     ax.spines["left"].set_visible(False)
 
     fig.suptitle(
-        f"    {title}", fontsize=12, y=0.95, fontname=fontname, fontweight="bold", color="black"
+        f"    {title}",
+        fontsize=12,
+        y=0.95,
+        fontname=fontname,
+        fontweight="bold",
+        color="black",
     )
 
     if subtitle:
@@ -558,9 +563,7 @@ def yearly_returns(
     title = "EOY Returns"
     if benchmark is not None:
         title += "  vs Benchmark"
-        benchmark = (
-            _utils._prepare_benchmark(benchmark, returns.index)
-        )
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
         benchmark = safe_resample(benchmark, "YE", _stats.comp)
         benchmark = safe_resample(benchmark, "YE", "last")
 

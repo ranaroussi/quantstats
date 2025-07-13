@@ -24,15 +24,16 @@ FREQUENCY_ALIASES = {
     "Y": "YE" if PANDAS_VERSION >= version.parse("2.2.0") else "Y",
 }
 
+
 def get_frequency_alias(freq):
     """
     Get the correct frequency alias for current pandas version
-    
+
     Parameters
     ----------
     freq : str
         The frequency string (e.g., 'M', 'Q', 'A', 'Y')
-        
+
     Returns
     -------
     str
@@ -40,10 +41,11 @@ def get_frequency_alias(freq):
     """
     return FREQUENCY_ALIASES.get(freq, freq)
 
+
 def safe_resample(data, freq, func_name=None, **kwargs):
     """
     Safe resample operation that works with all pandas versions
-    
+
     Parameters
     ----------
     data : pd.Series or pd.DataFrame
@@ -54,7 +56,7 @@ def safe_resample(data, freq, func_name=None, **kwargs):
         The aggregation function to apply
     **kwargs
         Additional arguments passed to the aggregation function
-        
+
     Returns
     -------
     pd.Series or pd.DataFrame
@@ -62,10 +64,10 @@ def safe_resample(data, freq, func_name=None, **kwargs):
     """
     freq_alias = get_frequency_alias(freq)
     resampler = data.resample(freq_alias)
-    
+
     if func_name is None:
         return resampler
-    
+
     # Use proper aggregation methods instead of numpy functions
     if isinstance(func_name, str):
         if func_name == "sum":
@@ -95,10 +97,11 @@ def safe_resample(data, freq, func_name=None, **kwargs):
         # For callable functions, use apply
         return resampler.apply(func_name, **kwargs)
 
+
 def safe_concat(objs, axis=0, ignore_index=False, sort=False, **kwargs):
     """
     Safe concatenation that handles pandas version differences
-    
+
     Parameters
     ----------
     objs : list of pd.Series or pd.DataFrame
@@ -111,7 +114,7 @@ def safe_concat(objs, axis=0, ignore_index=False, sort=False, **kwargs):
         Whether to sort the result
     **kwargs
         Additional arguments passed to pd.concat
-        
+
     Returns
     -------
     pd.Series or pd.DataFrame
@@ -119,17 +122,18 @@ def safe_concat(objs, axis=0, ignore_index=False, sort=False, **kwargs):
     """
     # Handle sort parameter for older pandas versions
     if PANDAS_VERSION < version.parse("1.0.0"):
-        kwargs.pop('sort', None)
+        kwargs.pop("sort", None)
     else:
-        kwargs['sort'] = sort
-    
+        kwargs["sort"] = sort
+
     return pd.concat(objs, axis=axis, ignore_index=ignore_index, **kwargs)
+
 
 def safe_append(df, other, ignore_index=False, sort=False):
     """
     Safe append operation that works with all pandas versions
     DataFrame.append() was deprecated in pandas 1.4.0
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -140,7 +144,7 @@ def safe_append(df, other, ignore_index=False, sort=False):
         Whether to ignore the index
     sort : bool, default False
         Whether to sort the result
-        
+
     Returns
     -------
     pd.DataFrame
@@ -153,30 +157,32 @@ def safe_append(df, other, ignore_index=False, sort=False):
         # Use append for older pandas versions
         return df.append(other, ignore_index=ignore_index, sort=sort)
 
+
 def safe_frequency_conversion(data, freq):
     """
     Safe frequency conversion for time series data
-    
+
     Parameters
     ----------
     data : pd.Series or pd.DataFrame
         Time series data
     freq : str
         Target frequency
-        
+
     Returns
     -------
     pd.Series or pd.DataFrame
         Data with converted frequency
     """
     freq_alias = get_frequency_alias(freq)
-    
+
     # Handle different methods for frequency conversion
-    if hasattr(data, 'asfreq'):
+    if hasattr(data, "asfreq"):
         return data.asfreq(freq_alias)
     else:
         # Fallback to resampling
-        return safe_resample(data, freq_alias, 'last')
+        return safe_resample(data, freq_alias, "last")
+
 
 def handle_pandas_warnings():
     """
@@ -184,16 +190,17 @@ def handle_pandas_warnings():
     """
     return warnings.catch_warnings()
 
+
 # Pandas accessor compatibility
 def get_datetime_accessor(series):
     """
     Get datetime accessor for pandas Series
-    
+
     Parameters
     ----------
     series : pd.Series
         The series to get the accessor for
-        
+
     Returns
     -------
     pd.Series.dt
@@ -201,15 +208,16 @@ def get_datetime_accessor(series):
     """
     return series.dt
 
+
 def get_string_accessor(series):
     """
     Get string accessor for pandas Series
-    
+
     Parameters
     ----------
     series : pd.Series
         The series to get the accessor for
-        
+
     Returns
     -------
     pd.Series.str
@@ -217,10 +225,11 @@ def get_string_accessor(series):
     """
     return series.str
 
+
 def safe_yfinance_download(tickers, proxy=None, **kwargs):
     """
     Safe yfinance download that handles proxy configuration properly
-    
+
     Parameters
     ----------
     tickers : str or list
@@ -229,7 +238,7 @@ def safe_yfinance_download(tickers, proxy=None, **kwargs):
         Proxy configuration (handled for compatibility)
     **kwargs
         Additional arguments passed to yfinance.download
-        
+
     Returns
     -------
     pd.DataFrame
@@ -238,15 +247,15 @@ def safe_yfinance_download(tickers, proxy=None, **kwargs):
     # Handle proxy configuration based on yfinance version
     if proxy is not None:
         # Check if the new configuration method exists
-        if hasattr(yf, 'set_config'):
+        if hasattr(yf, "set_config"):
             # New method: use set_config for proxy configuration
             yf.set_config(proxy=proxy)
             # Don't pass proxy to download function
-            kwargs.pop('proxy', None)
+            kwargs.pop("proxy", None)
         else:
             # Old method: pass proxy directly to download
-            kwargs['proxy'] = proxy
-    
+            kwargs["proxy"] = proxy
+
     # Suppress yfinance warnings about deprecation
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=FutureWarning, module="yfinance")

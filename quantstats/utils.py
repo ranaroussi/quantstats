@@ -4,7 +4,7 @@
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
 #
-# Copyright 2019-2024 Ran Aroussi
+# Copyright 2019-2025 Ran Aroussi
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,40 +32,45 @@ import hashlib
 # Custom exception classes for QuantStats
 class QuantStatsError(Exception):
     """Base exception class for QuantStats"""
+
     pass
 
 
 class DataValidationError(QuantStatsError):
     """Raised when input data validation fails"""
+
     pass
 
 
 class CalculationError(QuantStatsError):
     """Raised when a calculation fails"""
+
     pass
 
 
 class PlottingError(QuantStatsError):
     """Raised when plotting operations fail"""
+
     pass
 
 
 class BenchmarkError(QuantStatsError):
     """Raised when benchmark data issues occur"""
+
     pass
 
 
 def validate_input(data, allow_empty=False):
     """
     Validate input data for QuantStats functions
-    
+
     Parameters
     ----------
     data : pd.Series or pd.DataFrame
         Input data to validate
     allow_empty : bool, default False
         Whether to allow empty datasets
-        
+
     Raises
     ------
     DataValidationError
@@ -73,23 +78,25 @@ def validate_input(data, allow_empty=False):
     """
     if data is None:
         raise DataValidationError("Input data cannot be None")
-    
+
     if not isinstance(data, (_pd.Series, _pd.DataFrame)):
-        raise DataValidationError(f"Input data must be pandas Series or DataFrame, got {type(data)}")
-    
+        raise DataValidationError(
+            f"Input data must be pandas Series or DataFrame, got {type(data)}"
+        )
+
     if not allow_empty and len(data) == 0:
         raise DataValidationError("Input data cannot be empty")
-    
+
     if not allow_empty and data.dropna().empty:
         raise DataValidationError("Input data contains only NaN values")
-    
+
     # Check for valid date index
     if not isinstance(data.index, (_pd.DatetimeIndex, _pd.RangeIndex)):
         try:
             data.index = _pd.to_datetime(data.index)
         except Exception:
             raise DataValidationError("Input data must have a valid datetime index")
-    
+
     return True
 
 
@@ -108,7 +115,7 @@ def _generate_cache_key(data, rf, nperiods):
             data_hash = _pd.util.hash_pandas_object(data).sum()
         else:
             data_hash = hash(str(data))
-        
+
         # Include parameters in the key
         key = f"{data_hash}_{rf}_{nperiods}"
         return key
@@ -121,7 +128,7 @@ def _clear_cache_if_full():
     """Clear cache if it exceeds maximum size"""
     if len(_PREPARE_RETURNS_CACHE) >= _CACHE_MAX_SIZE:
         # Remove oldest entries (simple FIFO)
-        keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[:-(_CACHE_MAX_SIZE//2)]
+        keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[: -(_CACHE_MAX_SIZE // 2)]
         for key in keys_to_remove:
             del _PREPARE_RETURNS_CACHE[key]
 
@@ -162,13 +169,13 @@ def multi_shift(df, shift=3):
     # More memory-efficient approach using dictionary comprehension
     # and direct column assignment
     result = df.copy()
-    
+
     for i in range(1, shift):
         shifted = df.shift(i)
         # Rename columns to avoid conflicts
         shifted.columns = [f"{col}{i}" for col in shifted.columns]
         result = safe_concat([result, shifted], axis=1, sort=True)
-    
+
     return result
 
 
@@ -319,7 +326,7 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     cache_key = _generate_cache_key(data, rf, nperiods)
     if cache_key and cache_key in _PREPARE_RETURNS_CACHE:
         return _PREPARE_RETURNS_CACHE[cache_key].copy()
-    
+
     data = data.copy()
     function = inspect.stack()[1][3]
     if isinstance(data, _pd.DataFrame):
@@ -353,12 +360,12 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
             return result
 
     data = data.tz_localize(None)
-    
+
     # Cache the result
     if cache_key:
         _clear_cache_if_full()
         _PREPARE_RETURNS_CACHE[cache_key] = data.copy()
-    
+
     return data
 
 
@@ -373,7 +380,7 @@ def download_returns(ticker, period="max", proxy=None):
         params["start"] = period[0]
     else:
         params["period"] = period
-    
+
     df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change()
     df = df.tz_localize(None)
     return df
