@@ -10,11 +10,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from packaging import version
-try:
-    import yfinance as yf
-    YF_AVAILABLE = True
-except ImportError:
-    YF_AVAILABLE = False
+import yfinance as yf
 
 # Version detection
 PANDAS_VERSION = version.parse(pd.__version__)
@@ -239,9 +235,6 @@ def safe_yfinance_download(tickers, proxy=None, **kwargs):
     pd.DataFrame
         Downloaded data
     """
-    if not YF_AVAILABLE:
-        raise ImportError("yfinance is required for downloading data")
-    
     # Handle proxy configuration based on yfinance version
     if proxy is not None:
         # Check if the new configuration method exists
