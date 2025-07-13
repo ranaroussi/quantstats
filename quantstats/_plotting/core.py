@@ -484,9 +484,9 @@ def plot_histogram(
     alpha = 0.7
     if isinstance(returns, _pd.DataFrame):
         pallete = (
-            colors[1: len(returns.columns) + 1]
+            colors[1:(len(returns.columns) + 1)]
             if benchmark is None
-            else colors[: len(returns.columns) + 1]
+            else colors[:(len(returns.columns) + 1)]
         )
         if len(returns.columns) > 1:
             alpha = 0.5

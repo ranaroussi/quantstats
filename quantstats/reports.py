@@ -1561,13 +1561,13 @@ def _calc_dd(df, display=True, as_pct=False):
                 .sort_values(by="max drawdown", ascending=True)["max drawdown"]
                 .values[0]
                 / 100,
-                "Max Drawdown Date": ret_dd[col]
+                "Max DD Date": ret_dd[col]
                 .sort_values(by="max drawdown", ascending=True)["valley"]
                 .values[0],
-                "Max Drawdown Period Start": ret_dd[col]
+                "Max DD Period Start": ret_dd[col]
                 .sort_values(by="max drawdown", ascending=True)["start"]
                 .values[0],
-                "Max Drawdown Period End": ret_dd[col]
+                "Max DD Period End": ret_dd[col]
                 .sort_values(by="max drawdown", ascending=True)["end"]
                 .values[0],
                 "Longest DD Days": str(

@@ -831,7 +831,7 @@ def drawdown_details(drawdown):
         # build dataframe from results
         data = []
         for i, _ in enumerate(starts):
-            dd = drawdown[starts[i]: ends[i]]
+            dd = drawdown[starts[i]:ends[i]]
             clean_dd = -remove_outliers(-dd, 0.99)
             data.append(
                 (
