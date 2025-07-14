@@ -1,4 +1,4 @@
-Change Log
+Changelog
 ===========
 
 0.0.64
