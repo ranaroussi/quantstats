@@ -25,6 +25,7 @@ from ._compat import safe_yfinance_download
 from . import stats as _stats
 from ._compat import safe_concat, safe_resample
 import inspect
+import threading
 
 
 # Custom exception classes for QuantStats
@@ -98,9 +99,10 @@ def validate_input(data, allow_empty=False):
     return True
 
 
-# Cache for _prepare_returns function
+# Cache for _prepare_returns function with thread safety
 _PREPARE_RETURNS_CACHE = {}
 _CACHE_MAX_SIZE = 100
+_cache_lock = threading.Lock()
 
 
 def _generate_cache_key(data, rf, nperiods):
@@ -124,11 +126,12 @@ def _generate_cache_key(data, rf, nperiods):
 
 def _clear_cache_if_full():
     """Clear cache if it exceeds maximum size"""
-    if len(_PREPARE_RETURNS_CACHE) >= _CACHE_MAX_SIZE:
-        # Remove oldest entries (simple FIFO)
-        keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[: -(_CACHE_MAX_SIZE // 2)]
-        for key in keys_to_remove:
-            del _PREPARE_RETURNS_CACHE[key]
+    with _cache_lock:
+        if len(_PREPARE_RETURNS_CACHE) >= _CACHE_MAX_SIZE:
+            # Remove oldest entries (simple FIFO) - keep the most recent half
+            keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[:-(_CACHE_MAX_SIZE // 2)]
+            for key in keys_to_remove:
+                del _PREPARE_RETURNS_CACHE[key]
 
 
 def _mtd(df):
@@ -198,7 +201,7 @@ def to_log_returns(returns, rf=0.0, nperiods=None):
     """Converts returns series to log returns"""
     returns = _prepare_returns(returns, rf, nperiods)
     try:
-        return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))
+        return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))  # type: ignore
     except (ValueError, TypeError, AttributeError, OverflowError):
         return 0.0
 
@@ -285,7 +288,7 @@ def to_excess_returns(returns, rf, nperiods=None):
         rf = float(rf)
 
     if not isinstance(rf, float):
-        rf = rf[rf.index.isin(returns.index)]
+        rf = rf[rf.index.isin(returns.index)]  # type: ignore
 
     if nperiods is not None:
         # deannualize
@@ -322,8 +325,10 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     """Converts price data into returns + cleanup"""
     # Try to get from cache first
     cache_key = _generate_cache_key(data, rf, nperiods)
-    if cache_key and cache_key in _PREPARE_RETURNS_CACHE:
-        return _PREPARE_RETURNS_CACHE[cache_key].copy()
+    if cache_key:
+        with _cache_lock:
+            if cache_key in _PREPARE_RETURNS_CACHE:
+                return _PREPARE_RETURNS_CACHE[cache_key].copy()
 
     data = data.copy()
     function = inspect.stack()[1][3]
@@ -354,7 +359,8 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
             # Cache the result
             if cache_key:
                 _clear_cache_if_full()
-                _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
+                with _cache_lock:
+                    _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
             return result
 
     data = data.tz_localize(None)
@@ -362,7 +368,8 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     # Cache the result
     if cache_key:
         _clear_cache_if_full()
-        _PREPARE_RETURNS_CACHE[cache_key] = data.copy()
+        with _cache_lock:
+            _PREPARE_RETURNS_CACHE[cache_key] = data.copy()
 
     return data
 
@@ -379,7 +386,7 @@ def download_returns(ticker, period="max", proxy=None):
     else:
         params["period"] = period
 
-    df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change()
+    df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change()  # type: ignore
     df = df.tz_localize(None)
     return df
 
@@ -435,11 +442,11 @@ def _file_stream():
 def _in_notebook(matplotlib_inline=False):
     """Identify enviroment (notebook, terminal, etc)"""
     try:
-        shell = get_ipython().__class__.__name__
+        shell = get_ipython().__class__.__name__  # type: ignore
         if shell == "ZMQInteractiveShell":
             # Jupyter notebook or qtconsole
             if matplotlib_inline:
-                get_ipython().run_line_magic("matplotlib", "inline")
+                get_ipython().run_line_magic("matplotlib", "inline")  # type: ignore
             return True
         if shell == "TerminalInteractiveShell":
             # Terminal running IPython

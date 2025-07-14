@@ -714,7 +714,18 @@ def profit_factor(returns, prepare_returns=True):
     """Measures the profit ratio (wins/loss)"""
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-    return abs(returns[returns >= 0].sum() / returns[returns < 0].sum())
+    wins_sum = returns[returns >= 0].sum()
+    losses_sum = abs(returns[returns < 0].sum())
+    
+    # Handle both Series and scalar cases
+    if isinstance(losses_sum, _pd.Series):
+        result = wins_sum / losses_sum
+        result = result.replace([_np.inf, -_np.inf], 0)
+        return result
+    else:
+        if losses_sum == 0:
+            return 0.0 if wins_sum == 0 else float('inf')
+        return wins_sum / losses_sum
 
 
 def cpc_index(returns, prepare_returns=True):
@@ -783,7 +794,7 @@ def to_drawdown_series(returns):
     """Convert returns series to drawdown series"""
     prices = _utils._prepare_prices(returns)
     dd = prices / _np.maximum.accumulate(prices) - 1.0
-    return dd.replace([_np.inf, -_np.inf, -0], 0)
+    return dd.replace([_np.inf, -_np.inf, -0], 0)  # type: ignore[attr-defined]
 
 
 def drawdown_details(drawdown):

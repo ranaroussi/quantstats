@@ -855,7 +855,16 @@ def metrics(
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
         # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(
         #     df, rf, win_year, False, True) * pct
-    metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+    if isinstance(returns, _pd.Series):
+        metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+    elif isinstance(returns, _pd.DataFrame):
+        omega_values = [
+            _stats.omega(df[strategy_col], rf, 0.0, win_year)
+            for strategy_col in df_strategy_columns
+        ]
+        if "benchmark" in df:
+            omega_values.append(_stats.omega(df["benchmark"], rf, 0.0, win_year))
+        metrics["Omega"] = omega_values
 
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
