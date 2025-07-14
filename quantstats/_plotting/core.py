@@ -350,6 +350,7 @@ def plot_timeseries(
     subtitle=True,
     savefig=None,
     show=True,
+    raw_data=False,
 ):
     """
     Plot returns as a time series line chart
@@ -422,15 +423,16 @@ def plot_timeseries(
         returns = (returns / returns.std()) * bmark_vol
 
     # ---------------
-    # Transform data based on compound setting
-    if compound:
-        returns = _stats.compsum(returns)
-        if isinstance(benchmark, _pd.Series):
-            benchmark = _stats.compsum(benchmark)
-    else:
-        returns = returns.cumsum()
-        if isinstance(benchmark, _pd.Series):
-            benchmark = benchmark.cumsum()
+    # Transform data based on compound setting (skip for raw data like drawdowns)
+    if not raw_data:
+        if compound:
+            returns = _stats.compsum(returns)
+            if isinstance(benchmark, _pd.Series):
+                benchmark = _stats.compsum(benchmark)
+        else:
+            returns = returns.cumsum()
+            if isinstance(benchmark, _pd.Series):
+                benchmark = benchmark.cumsum()
 
     # Apply resampling if specified
     if resample:

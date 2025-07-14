@@ -1187,6 +1187,7 @@ def drawdown(
         subtitle=subtitle,
         savefig=savefig,
         show=show,
+        raw_data=True,  # Skip cumulative transformation for drawdown data
     )
     if not show:
         return fig
