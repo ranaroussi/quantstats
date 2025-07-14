@@ -1231,9 +1231,9 @@ def metrics(
     # Add separator and prepare for drawdown metrics
     metrics["~~~~~~~~"] = blank
     metrics["Max Drawdown %"] = blank
-    metrics["Max Drawdown Date"] = blank
-    metrics["Max Drawdown Period Start"] = blank
-    metrics["Max Drawdown Period End"] = blank
+    metrics["Max DD Date"] = blank
+    metrics["Max DD Period Start"] = blank
+    metrics["Max DD Period End"] = blank
     metrics["Longest DD Days"] = blank
 
     # Add detailed volatility and risk metrics for full mode
@@ -1454,8 +1454,9 @@ def metrics(
     # Add drawdown metrics to main metrics DataFrame
     # drawdown (dd) detail
     metrics["~~~~"] = blank
-    # Vectorized approach instead of iterrows
-    metrics.update(dd.to_dict())
+    # Properly integrate drawdown data into metrics
+    for metric_name in dd.index:
+        metrics[metric_name] = dd.loc[metric_name].values
 
     # Additional drawdown-based metrics
     metrics["Recovery Factor"] = _stats.recovery_factor(df)
@@ -2111,21 +2112,13 @@ def _calc_dd(df, display=True, as_pct=False):
         }
     else:
         # Single strategy case
+        max_dd = ret_dd.sort_values(by="max drawdown", ascending=True)
         dd_stats = {
             "returns": {
-                "Max Drawdown %": ret_dd.sort_values(by="max drawdown", ascending=True)[
-                    "max drawdown"
-                ].values[0]
-                / 100,
-                "Max Drawdown Date": ret_dd.sort_values(
-                    by="max drawdown", ascending=True
-                )["valley"].values[0],
-                "Max Drawdown Period Start": ret_dd.sort_values(
-                    by="max drawdown", ascending=True
-                )["start"].values[0],
-                "Max Drawdown Period End": ret_dd.sort_values(
-                    by="max drawdown", ascending=True
-                )["end"].values[0],
+                "Max Drawdown %": max_dd["max drawdown"].values[0] / 100,
+                "Max DD Date": max_dd["valley"].values[0],
+                "Max DD Period Start": max_dd["start"].values[0],
+                "Max DD Period End": max_dd["end"].values[0],
                 "Longest DD Days": str(
                     _np.round(
                         ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
@@ -2144,13 +2137,13 @@ def _calc_dd(df, display=True, as_pct=False):
                 "max drawdown"
             ].values[0]
             / 100,
-            "Max Drawdown Date": bench_dd.sort_values(
+            "Max DD Date": bench_dd.sort_values(
                 by="max drawdown", ascending=True
             )["valley"].values[0],
-            "Max Drawdown Period Start": bench_dd.sort_values(
+            "Max DD Period Start": bench_dd.sort_values(
                 by="max drawdown", ascending=True
             )["start"].values[0],
-            "Max Drawdown Period End": bench_dd.sort_values(
+            "Max DD Period End": bench_dd.sort_values(
                 by="max drawdown", ascending=True
             )["end"].values[0],
             "Longest DD Days": str(
