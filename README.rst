@@ -68,7 +68,7 @@ Output:
 
 .. code:: text
 
-    0.8135304438803402
+    0.7604779884378278
 
 
 Visualize stock performance
@@ -83,7 +83,7 @@ Visualize stock performance
 
 Output:
 
-.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.jpg?raw=true
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.webp?raw=true
     :alt: Snapshot plot
 
 
@@ -107,7 +107,7 @@ Let' create an html tearsheet
 
 Output will generate something like this:
 
-.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.jpg?raw=true
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.webp?raw=true
     :alt: HTML tearsheet
 
 (`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/main/docs/tearsheet.html>`_)
