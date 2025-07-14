@@ -14,10 +14,6 @@
     :target: https://pypi.python.org/pypi/quantstats
     :alt: PyPi downloads
 
-.. image:: https://www.codefactor.io/repository/github/ranaroussi/quantstats/badge
-    :target: https://www.codefactor.io/repository/github/ranaroussi/quantstats
-    :alt: CodeFactor
-
 .. image:: https://img.shields.io/github/stars/ranaroussi/quantstats.svg?style=social&label=Star&maxAge=60
     :target: https://github.com/ranaroussi/quantstats
     :alt: Star this repo
