@@ -737,7 +737,7 @@ def full(
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    active = kwargs.get("active_returns", "False")
+    active = kwargs.get("active_returns", False)
 
     # Handle multiple strategy columns
     if isinstance(returns, _pd.DataFrame):
@@ -947,7 +947,7 @@ def basic(
     if benchmark is not None:
         benchmark_title = kwargs.get("benchmark_title", "Benchmark")
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    active = kwargs.get("active_returns", "False")
+    active = kwargs.get("active_returns", False)
 
     # Handle multiple strategy columns
     if isinstance(returns, _pd.DataFrame):
