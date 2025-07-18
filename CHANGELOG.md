@@ -1,6 +1,15 @@
 Changelog
 ===========
 
+0.0.66
+------
+
+- Fixed bug with calculating drawdowns when first return is < 0
+
+0.0.65
+------
+- Misc bug fixes
+
 0.0.64
 ------
 **MAJOR RELEASE - Comprehensive Compatibility and Performance Improvements**
