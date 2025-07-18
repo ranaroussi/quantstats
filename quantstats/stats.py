@@ -790,7 +790,7 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
     # Validate parameters for risk-free rate handling
     if rf != 0 and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
-                        "This is needed to properly annualize the risk-free rate.")
+                         "This is needed to properly annualize the risk-free rate.")
 
     # Prepare returns (subtract risk-free rate if applicable)
     returns = _utils._prepare_returns(returns, rf, periods)
@@ -924,7 +924,7 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     # Validate parameters for risk-free rate handling
     if rf != 0 and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
-                        "This is needed to properly annualize the risk-free rate.")
+                         "This is needed to properly annualize the risk-free rate.")
 
     # Prepare returns (subtract risk-free rate if applicable)
     returns = _utils._prepare_returns(returns, rf, periods)
@@ -2131,21 +2131,21 @@ def risk_return_ratio(returns, prepare_returns=True):
 def _get_baseline_value(prices):
     """
     Determine the appropriate baseline value for drawdown calculations.
-    
+
     This function analyzes the price series to determine the correct baseline
     value that should represent "no drawdown" (i.e., the starting equity).
-    
+
     Args:
         prices (pd.Series): Price series
-        
+
     Returns:
         float: Baseline value for drawdown calculations
     """
     if len(prices) == 0:
         return 1.0
-    
+
     first_price = prices.iloc[0]
-    
+
     # If the first price is much larger than 1, it's likely from to_prices conversion
     # The to_prices function uses base * (1 + compsum), so we determine the appropriate baseline
     if first_price > 1000:
@@ -2184,7 +2184,7 @@ def max_drawdown(prices):
 
     # Prepare prices (convert from returns if needed)
     prices = _utils._prepare_prices(prices)
-    
+
     if len(prices) == 0:
         return 0.0
 
@@ -2194,17 +2194,17 @@ def max_drawdown(prices):
         time_delta = prices.index.freq or _pd.Timedelta(days=1)
     except Exception:
         time_delta = _pd.Timedelta(days=1)
-    
+
     phantom_date = prices.index[0] - time_delta
-    
+
     # Determine appropriate baseline value
     baseline_value = _get_baseline_value(prices)
-    
+
     # Create extended series with phantom baseline
     extended_prices = prices.copy()
     extended_prices.loc[phantom_date] = baseline_value
     extended_prices = extended_prices.sort_index()
-    
+
     # Calculate drawdown with phantom baseline
     return (extended_prices / extended_prices.expanding(min_periods=0).max()).min() - 1
 
@@ -2232,7 +2232,7 @@ def to_drawdown_series(returns):
 
     # Convert returns to prices
     prices = _utils._prepare_prices(returns)
-    
+
     if len(prices) == 0:
         return _pd.Series([], dtype=float, index=returns.index)
 
@@ -2242,23 +2242,23 @@ def to_drawdown_series(returns):
         time_delta = prices.index.freq or _pd.Timedelta(days=1)
     except Exception:
         time_delta = _pd.Timedelta(days=1)
-    
+
     phantom_date = prices.index[0] - time_delta
-    
+
     # Determine appropriate baseline value
     baseline_value = _get_baseline_value(prices)
-    
+
     # Create extended series with phantom baseline
     extended_prices = prices.copy()
     extended_prices.loc[phantom_date] = baseline_value
     extended_prices = extended_prices.sort_index()
-    
+
     # Calculate drawdown series with phantom baseline
     dd = extended_prices / _np.maximum.accumulate(extended_prices) - 1.0
-    
+
     # Remove phantom point and return original time series
     dd = dd.drop(phantom_date)
-    
+
     # Clean up infinite and zero values
     return dd.replace([_np.inf, -_np.inf, -0], 0)  # type: ignore[attr-defined]
 
