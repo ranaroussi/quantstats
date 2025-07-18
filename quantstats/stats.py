@@ -2128,13 +2128,46 @@ def risk_return_ratio(returns, prepare_returns=True):
     return returns.mean() / returns.std()
 
 
+def _get_baseline_value(prices):
+    """
+    Determine the appropriate baseline value for drawdown calculations.
+    
+    This function analyzes the price series to determine the correct baseline
+    value that should represent "no drawdown" (i.e., the starting equity).
+    
+    Args:
+        prices (pd.Series): Price series
+        
+    Returns:
+        float: Baseline value for drawdown calculations
+    """
+    if len(prices) == 0:
+        return 1.0
+    
+    first_price = prices.iloc[0]
+    
+    # If the first price is much larger than 1, it's likely from to_prices conversion
+    # The to_prices function uses base * (1 + compsum), so we determine the appropriate baseline
+    if first_price > 1000:
+        # This suggests it came from to_prices with a large base (default 1e5)
+        # However, we should use a more reasonable baseline for drawdown calculations
+        # We'll use the same scale as the prices but represent the "no loss" baseline
+        return 1e5
+    elif first_price > 10:
+        # Smaller base value scale
+        return 100.0
+    else:
+        # Normal price scale, use 1.0 as baseline
+        return 1.0
+
+
 def max_drawdown(prices):
     """
     Calculate the maximum drawdown from peak to trough.
 
     This function calculates the maximum observed loss from a peak to a
-    subsequent trough, expressed as a percentage. It's a key risk measure
-    showing the worst-case scenario for the strategy.
+    subsequent trough, expressed as a percentage. It handles the edge case
+    where the first return is negative by establishing a proper baseline.
 
     Args:
         prices (pd.Series): Price series or cumulative returns
@@ -2151,9 +2184,29 @@ def max_drawdown(prices):
 
     # Prepare prices (convert from returns if needed)
     prices = _utils._prepare_prices(prices)
+    
+    if len(prices) == 0:
+        return 0.0
 
-    # Calculate drawdown as current price / running maximum - 1
-    return (prices / prices.expanding(min_periods=0).max()).min() - 1
+    # Handle edge case: if first value represents a loss from baseline
+    # Add a phantom baseline value to ensure proper drawdown calculation
+    try:
+        time_delta = prices.index.freq or _pd.Timedelta(days=1)
+    except Exception:
+        time_delta = _pd.Timedelta(days=1)
+    
+    phantom_date = prices.index[0] - time_delta
+    
+    # Determine appropriate baseline value
+    baseline_value = _get_baseline_value(prices)
+    
+    # Create extended series with phantom baseline
+    extended_prices = prices.copy()
+    extended_prices.loc[phantom_date] = baseline_value
+    extended_prices = extended_prices.sort_index()
+    
+    # Calculate drawdown with phantom baseline
+    return (extended_prices / extended_prices.expanding(min_periods=0).max()).min() - 1
 
 
 def to_drawdown_series(returns):
@@ -2161,8 +2214,8 @@ def to_drawdown_series(returns):
     Convert returns series to drawdown series.
 
     This function converts a return series to a drawdown series showing
-    the decline from peak equity at each point in time. Useful for
-    visualizing and analyzing drawdown patterns.
+    the decline from peak equity at each point in time. It handles the
+    edge case where the first return is negative by establishing a proper baseline.
 
     Args:
         returns (pd.Series): Return series to convert
@@ -2179,10 +2232,33 @@ def to_drawdown_series(returns):
 
     # Convert returns to prices
     prices = _utils._prepare_prices(returns)
+    
+    if len(prices) == 0:
+        return _pd.Series([], dtype=float, index=returns.index)
 
-    # Calculate drawdown series
-    dd = prices / _np.maximum.accumulate(prices) - 1.0
-
+    # Handle edge case: if first value represents a loss from baseline
+    # Add a phantom baseline value to ensure proper drawdown calculation
+    try:
+        time_delta = prices.index.freq or _pd.Timedelta(days=1)
+    except Exception:
+        time_delta = _pd.Timedelta(days=1)
+    
+    phantom_date = prices.index[0] - time_delta
+    
+    # Determine appropriate baseline value
+    baseline_value = _get_baseline_value(prices)
+    
+    # Create extended series with phantom baseline
+    extended_prices = prices.copy()
+    extended_prices.loc[phantom_date] = baseline_value
+    extended_prices = extended_prices.sort_index()
+    
+    # Calculate drawdown series with phantom baseline
+    dd = extended_prices / _np.maximum.accumulate(extended_prices) - 1.0
+    
+    # Remove phantom point and return original time series
+    dd = dd.drop(phantom_date)
+    
     # Clean up infinite and zero values
     return dd.replace([_np.inf, -_np.inf, -0], 0)  # type: ignore[attr-defined]
 
