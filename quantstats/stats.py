@@ -1364,7 +1364,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     return returns.sum() / downside
 
 
-def cagr(returns, rf=0.0, compounded=True, periods=252):
+def cagr(returns, rf=0.0, compounded=True):
     """
     Calculate the Compound Annual Growth Rate (CAGR) of excess returns.
 
@@ -1375,7 +1375,6 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         compounded (bool): Whether to compound returns (default: True)
-        periods (int): Periods per year for annualization (default: 252)
 
     Returns:
         float or pd.Series: CAGR percentage
@@ -1398,7 +1397,7 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
         total = _np.sum(total, axis=0)
 
     # Calculate time period in years
-    years = (returns.index[-1] - returns.index[0]).days / periods
+    years = ((returns.index[-1] - returns.index[0]).days + 1) / 365
 
     # Calculate CAGR using geometric mean formula
     res = abs(total + 1.0) ** (1.0 / years) - 1
