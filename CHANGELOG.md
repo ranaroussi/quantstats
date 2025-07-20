@@ -1,6 +1,11 @@
 Changelog
 ===========
 
+0.0.67
+------
+
+- Added support for NumPy 2.0.0+ (fixes issue #445)
+
 0.0.66
 ------
 
