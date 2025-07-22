@@ -2147,7 +2147,7 @@ def _get_baseline_value(prices):
     # Handle both Series and DataFrame cases
     if isinstance(prices, _pd.DataFrame):
         # If prices is a DataFrame, get the first value of the first column
-        first_price = prices.iloc[0].iloc[0]
+        first_price = prices.iat[0, 0]
     else:
         # If prices is a Series, get the first value directly
         first_price = prices.iloc[0]
