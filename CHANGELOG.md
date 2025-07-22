@@ -1,6 +1,12 @@
 Changelog
 ===========
 
+0.0.68
+------
+
+- Fixed ValueError when comparing Series with scalar in _get_baseline_value() function (fixes issue #448)
+- Properly handle both DataFrame and Series inputs in drawdown calculations
+
 0.0.67
 ------
 

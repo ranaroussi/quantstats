@@ -2144,7 +2144,16 @@ def _get_baseline_value(prices):
     if len(prices) == 0:
         return 1.0
 
-    first_price = prices.iloc[0]
+    # Handle both Series and DataFrame cases
+    if isinstance(prices, _pd.DataFrame):
+        # If prices is a DataFrame, ensure it has at least one column
+        if prices.shape[1] == 0:
+            return 1.0  # Default baseline for empty DataFrame with no columns
+        # Get the first value of the first column
+        first_price = prices.iat[0, 0]
+    else:
+        # If prices is a Series, get the first value directly
+        first_price = prices.iloc[0]
 
     # If the first price is much larger than 1, it's likely from to_prices conversion
     # The to_prices function uses base * (1 + compsum), so we determine the appropriate baseline
