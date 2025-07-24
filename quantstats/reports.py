@@ -1761,6 +1761,7 @@ def plots(
             mode=("comp" if compounded else "sum"),
             benchmark_title=benchmark_colname,
             strategy_title=strategy_colname,
+            periods=periods_per_year,
         )
 
         # Monthly returns heatmap
@@ -1908,6 +1909,7 @@ def plots(
         show=True,
         ylabel="",
         period=win_half_year,
+        periods_per_year=win_year,
     )
 
     # Rolling Sharpe ratio analysis
@@ -1918,6 +1920,7 @@ def plots(
         show=True,
         ylabel="",
         period=win_half_year,
+        periods_per_year=win_year,
     )
 
     # Rolling Sortino ratio analysis
@@ -1928,6 +1931,7 @@ def plots(
         show=True,
         ylabel="",
         period=win_half_year,
+        periods_per_year=win_year,
     )
 
     # Drawdown periods analysis
