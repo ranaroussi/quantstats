@@ -20,6 +20,7 @@
 
 import warnings
 import matplotlib.pyplot as _plt
+from matplotlib import font_manager
 from matplotlib.ticker import (
     StrMethodFormatter as _StrMethodFormatter,
     FuncFormatter as _FuncFormatter,
@@ -167,6 +168,11 @@ def snapshot(
     if figsize is None:
         size = list(_plt.gcf().get_size_inches())
         figsize = (size[0], size[0] * 0.75)
+
+    # Check if the requested font is available to prevent matplotlib warnings
+    if fontname not in [f.name for f in font_manager.fontManager.ttflist]:
+        print(f"Warning: Font '{fontname}' not found. Switching to 'DejaVu Sans'.")
+        fontname = 'DejaVu Sans'
 
     # Create figure with three subplots: cumulative returns, drawdown, daily returns
     fig, axes = _plt.subplots(
