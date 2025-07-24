@@ -96,6 +96,7 @@ def snapshot(
     savefig=None,
     show=True,
     log_scale=False,
+    periods=252,
     **kwargs,
 ):
     """
@@ -125,6 +126,8 @@ def snapshot(
         Whether to display the plot (default: True).
     log_scale : bool, optional
         Whether to use logarithmic scale for y-axes (default: False).
+    periods : int, optional
+        Number of periods per year for Sharpe ratio calculation (default: 252).
     **kwargs : dict
         Additional keyword arguments, including strategy_col for column selection.
 
@@ -216,7 +219,7 @@ def snapshot(
                 % (
                     returns.index.date[:1][0].strftime("%e %b '%y"),  # type: ignore
                     returns.index.date[-1:][0].strftime("%e %b '%y"),  # type: ignore
-                    _stats.sharpe(returns),
+                    _stats.sharpe(returns, periods=periods),
                 ),
                 fontsize=12,
                 color="gray",
