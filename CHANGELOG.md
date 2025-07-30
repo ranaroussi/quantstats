@@ -1,6 +1,12 @@
 Changelog
 ===========
 
+0.0.69
+------
+
+- Added `periods` parameter to `calmar()` function to support custom annualization periods (fixes issue #455)
+- Updated reports.py to pass periods parameter to Calmar ratio calculation for consistency with other metrics
+
 0.0.68
 ------
 
