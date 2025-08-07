@@ -1,6 +1,13 @@
 Changelog
 ===========
 
+0.0.70
+------
+
+- Fixed chart naming inconsistency: renamed "Daily Active Returns" to "Daily Active Returns (Cumulative Sum)" and "Daily Returns" to "Daily Returns (Cumulative Sum)" to accurately reflect that charts show cumulative values (fixes issue #454)
+- Fixed CAGR calculation bug where years were incorrectly calculated using calendar days instead of trading periods, causing drastically reduced CAGR values (fixes issue #458)
+- Fixed inconsistent EOY returns for benchmarks by preserving original benchmark data for aggregation while aligning to strategy index for other calculations (fixes issue #457)
+
 0.0.69
 ------
 
