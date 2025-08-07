@@ -812,6 +812,7 @@ def daily_returns(
 
     # Set plot title based on active returns setting
     plot_title = "Daily Active Returns" if active else "Daily Returns"
+    plot_title += " (Cumulative Sum)"
 
     # Use core plotting function for daily time series
     fig = _core.plot_timeseries(
