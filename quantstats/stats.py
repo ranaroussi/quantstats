@@ -1397,8 +1397,10 @@ def cagr(returns, rf=0.0, compounded=True, periods=252):
     else:
         total = _np.sum(total, axis=0)
 
-    # Calculate time period in years
-    years = (returns.index[-1] - returns.index[0]).days / periods
+    # Calculate time period in years using trading periods
+    # This is consistent with how Sharpe, Sortino, and other metrics
+    # handle annualization in quantstats
+    years = len(returns) / periods
 
     # Calculate CAGR using geometric mean formula
     res = abs(total + 1.0) ** (1.0 / years) - 1
