@@ -27,7 +27,7 @@ jobs:
             numpy-version: '1.26.0'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -105,7 +105,7 @@ jobs:
   test-latest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Python 3.12 with latest packages
       uses: actions/setup-python@v5
@@ -141,7 +141,7 @@ jobs:
   test-python-313:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
