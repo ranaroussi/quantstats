@@ -938,10 +938,14 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
         downside = downside * autocorr_penalty(returns)
 
     # Calculate base Sortino ratio
-    if downside == 0:
-        res = _np.nan
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(downside, _pd.Series):
+        res = returns.mean() / downside.replace(0, _np.nan)
     else:
-        res = returns.mean() / downside
+        if downside == 0:
+            res = _np.nan
+        else:
+            res = returns.mean() / downside
 
     # Annualize if requested
     if annualize:
