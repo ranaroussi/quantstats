@@ -1360,6 +1360,10 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     # Calculate absolute sum of negative returns (pain)
     downside = abs(returns[returns < 0].sum())
 
+    # Handle edge case: no downside (no losses)
+    if downside == 0:
+        return _np.nan
+
     # Return ratio of total gains to total pain
     return returns.sum() / downside
 
@@ -2118,6 +2122,10 @@ def recovery_factor(returns, rf=0.0, prepare_returns=True):
 
     # Calculate maximum drawdown
     max_dd = max_drawdown(returns)
+
+    # Handle edge case: no drawdown
+    if max_dd == 0:
+        return _np.nan
 
     # Return ratio of total returns to absolute maximum drawdown
     return abs(total_returns) / abs(max_dd)
