@@ -1,6 +1,14 @@
 Changelog
 ===========
 
+0.0.71
+------
+
+- Fixed RuntimeWarnings in tail_ratio function by properly handling edge cases:
+  - Handle divide by zero when lower quantile is 0
+  - Handle invalid values when quantiles return NaN
+  - Return NaN gracefully instead of triggering warnings
+
 0.0.70
 ------
 
