@@ -1,6 +1,19 @@
 Changelog
 ===========
 
+0.0.72
+------
+
+- Fixed ValueError "truth value of Series is ambiguous" for DataFrame inputs in multiple stats functions:
+  - sortino: Properly handles Series downside deviation from DataFrame inputs
+  - outlier_win_ratio: Handles Series positive_mean calculations correctly
+  - outlier_loss_ratio: Handles Series negative_mean calculations correctly  
+  - risk_return_ratio: Handles Series standard deviation properly
+  - ulcer_performance_index: Handles Series ulcer index values
+  - serenity_index: Handles Series std and denominator calculations
+  - gain_to_pain_ratio: Handles Series downside calculations
+  - All functions now properly return Series for DataFrame inputs and scalars for Series inputs
+
 0.0.71
 ------
 
