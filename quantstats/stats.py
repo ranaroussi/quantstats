@@ -1827,7 +1827,14 @@ def tail_ratio(returns, cutoff=0.95, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     # Calculate ratio of right tail to left tail
-    return abs(returns.quantile(cutoff) / returns.quantile(1 - cutoff))
+    upper_quantile = returns.quantile(cutoff)
+    lower_quantile = returns.quantile(1 - cutoff)
+    
+    # Handle edge cases: NaN values or zero denominator
+    if _np.isnan(upper_quantile) or _np.isnan(lower_quantile) or lower_quantile == 0:
+        return _np.nan
+    
+    return abs(upper_quantile / lower_quantile)
 
 
 def payoff_ratio(returns, prepare_returns=True):
