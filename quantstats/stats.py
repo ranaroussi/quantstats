@@ -938,7 +938,10 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
         downside = downside * autocorr_penalty(returns)
 
     # Calculate base Sortino ratio
-    res = returns.mean() / downside
+    if downside == 0:
+        res = _np.nan
+    else:
+        res = returns.mean() / downside
 
     # Annualize if requested
     if annualize:
@@ -1579,7 +1582,10 @@ def ulcer_performance_index(returns, rf=0):
         >>> print(f"Ulcer Performance Index: {upi_value:.4f}")
     """
     # Calculate excess return divided by Ulcer Index
-    return (comp(returns) - rf) / ulcer_index(returns)
+    ulcer = ulcer_index(returns)
+    if ulcer == 0:
+        return _np.nan
+    return (comp(returns) - rf) / ulcer
 
 
 def upi(returns, rf=0):
@@ -1627,10 +1633,17 @@ def serenity_index(returns, rf=0):
     dd = to_drawdown_series(returns)
 
     # Calculate pitfall measure using conditional value at risk of drawdowns
-    pitfall = -cvar(dd) / returns.std()
-
+    std_returns = returns.std()
+    if std_returns == 0:
+        return _np.nan
+    
+    pitfall = -cvar(dd) / std_returns
+    denominator = ulcer_index(returns) * pitfall
+    
     # Calculate serenity index incorporating both ulcer index and pitfall
-    return (returns.sum() - rf) / (ulcer_index(returns) * pitfall)
+    if denominator == 0:
+        return _np.nan
+    return (returns.sum() - rf) / denominator
 
 
 def risk_of_ruin(returns, prepare_returns=True):
@@ -1876,7 +1889,10 @@ def payoff_ratio(returns, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     # Calculate ratio of average win to absolute average loss
-    return avg_win(returns) / abs(avg_loss(returns))
+    avg_loss_val = avg_loss(returns)
+    if avg_loss_val == 0:
+        return _np.nan
+    return avg_win(returns) / abs(avg_loss_val)
 
 
 def win_loss_ratio(returns, prepare_returns=True):
@@ -1931,8 +1947,8 @@ def profit_ratio(returns, prepare_returns=True):
         return float('inf')
 
     # Calculate win and loss ratios
-    win_ratio = abs(wins.mean() / wins.count())
-    loss_ratio = abs(loss.mean() / loss.count())
+    win_ratio = abs(wins.mean() / wins.count()) if wins.count() > 0 else 0
+    loss_ratio = abs(loss.mean() / loss.count()) if loss.count() > 0 else 0
 
     try:
         if loss_ratio == 0:
@@ -2062,7 +2078,10 @@ def outlier_win_ratio(returns, quantile=0.99, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     # Calculate ratio of high quantile to mean positive return
-    return returns.quantile(quantile).mean() / returns[returns >= 0].mean()
+    positive_mean = returns[returns >= 0].mean()
+    if _pd.isna(positive_mean) or positive_mean == 0:
+        return _np.nan
+    return returns.quantile(quantile).mean() / positive_mean
 
 
 def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
@@ -2090,7 +2109,10 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     # Calculate ratio of low quantile to mean negative return
-    return returns.quantile(quantile).mean() / returns[returns < 0].mean()
+    negative_mean = returns[returns < 0].mean()
+    if _pd.isna(negative_mean) or negative_mean == 0:
+        return _np.nan
+    return returns.quantile(quantile).mean() / negative_mean
 
 
 def recovery_factor(returns, rf=0.0, prepare_returns=True):
@@ -2154,7 +2176,10 @@ def risk_return_ratio(returns, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
 
     # Calculate mean return divided by standard deviation
-    return returns.mean() / returns.std()
+    std = returns.std()
+    if std == 0:
+        return _np.nan
+    return returns.mean() / std
 
 
 def _get_baseline_value(prices):
@@ -2313,6 +2338,8 @@ def kelly_criterion(returns, prepare_returns=True):
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
 
+    if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
+        return _np.nan
     return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
 
 
@@ -2448,7 +2475,10 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
     matrix = _np.cov(returns, benchmark)
 
     # Calculate beta (sensitivity to benchmark movements)
-    beta = matrix[0, 1] / matrix[1, 1]
+    if matrix[1, 1] == 0:
+        beta = _np.nan
+    else:
+        beta = matrix[0, 1] / matrix[1, 1]
 
     # Calculate alpha (excess return after adjusting for beta)
     alpha = returns.mean() - beta * benchmark.mean()
@@ -2507,8 +2537,8 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     corr = df.rolling(int(periods)).corr().unstack()["returns"]["benchmark"]
     std = df.rolling(int(periods)).std()
 
-    # Calculate rolling beta
-    beta = corr * std["returns"] / std["benchmark"]
+    # Calculate rolling beta (protect against division by zero)
+    beta = corr * std["returns"] / std["benchmark"].replace(0, _np.nan)
 
     # Calculate rolling alpha (not annualized for rolling version)
     alpha = df["returns"].mean() - beta * df["benchmark"].mean()
@@ -2587,7 +2617,8 @@ def compare(
         )
 
         # Calculate performance multiplier and win/loss indicator
-        data["Multiplier"] = data["Returns"] / data["Benchmark"]
+        # Protect against division by zero in benchmark
+        data["Multiplier"] = data["Returns"] / data["Benchmark"].replace(0, _np.nan)
         data["Won"] = _np.where(data["Returns"] >= data["Benchmark"], "+", "-")
 
     # Handle DataFrame input (multiple strategies)
