@@ -1831,10 +1831,21 @@ def tail_ratio(returns, cutoff=0.95, prepare_returns=True):
     lower_quantile = returns.quantile(1 - cutoff)
     
     # Handle edge cases: NaN values or zero denominator
-    if _np.isnan(upper_quantile) or _np.isnan(lower_quantile) or lower_quantile == 0:
-        return _np.nan
-    
-    return abs(upper_quantile / lower_quantile)
+    # Check if result is a Series (DataFrame input) or scalar (Series input)
+    if isinstance(upper_quantile, _pd.Series):
+        # Handle DataFrame input - apply element-wise
+        result = _pd.Series(index=upper_quantile.index, dtype=float)
+        for col in upper_quantile.index:
+            if _pd.isna(upper_quantile[col]) or _pd.isna(lower_quantile[col]) or lower_quantile[col] == 0:
+                result[col] = _np.nan
+            else:
+                result[col] = abs(upper_quantile[col] / lower_quantile[col])
+        return result
+    else:
+        # Handle Series input - scalar values
+        if _pd.isna(upper_quantile) or _pd.isna(lower_quantile) or lower_quantile == 0:
+            return _np.nan
+        return abs(upper_quantile / lower_quantile)
 
 
 def payoff_ratio(returns, prepare_returns=True):
