@@ -1367,12 +1367,15 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     # Calculate absolute sum of negative returns (pain)
     downside = abs(returns[returns < 0].sum())
 
-    # Handle edge case: no downside (no losses)
-    if downside == 0:
-        return _np.nan
-
-    # Return ratio of total gains to total pain
-    return returns.sum() / downside
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(downside, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return returns.sum() / downside.replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if downside == 0:
+            return _np.nan
+        return returns.sum() / downside
 
 
 def cagr(returns, rf=0.0, compounded=True, periods=252):
@@ -1587,9 +1590,16 @@ def ulcer_performance_index(returns, rf=0):
     """
     # Calculate excess return divided by Ulcer Index
     ulcer = ulcer_index(returns)
-    if ulcer == 0:
-        return _np.nan
-    return (comp(returns) - rf) / ulcer
+    
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(ulcer, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return (comp(returns) - rf) / ulcer.replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if ulcer == 0:
+            return _np.nan
+        return (comp(returns) - rf) / ulcer
 
 
 def upi(returns, rf=0):
@@ -1638,16 +1648,24 @@ def serenity_index(returns, rf=0):
 
     # Calculate pitfall measure using conditional value at risk of drawdowns
     std_returns = returns.std()
-    if std_returns == 0:
-        return _np.nan
     
-    pitfall = -cvar(dd) / std_returns
-    denominator = ulcer_index(returns) * pitfall
-    
-    # Calculate serenity index incorporating both ulcer index and pitfall
-    if denominator == 0:
-        return _np.nan
-    return (returns.sum() - rf) / denominator
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(std_returns, _pd.Series):
+        # DataFrame input - element-wise operations
+        pitfall = -cvar(dd) / std_returns.replace(0, _np.nan)
+        denominator = ulcer_index(returns) * pitfall
+        return (returns.sum() - rf) / denominator.replace(0, _np.nan)
+    else:
+        # Series input - scalar operations
+        if std_returns == 0:
+            return _np.nan
+        
+        pitfall = -cvar(dd) / std_returns
+        denominator = ulcer_index(returns) * pitfall
+        
+        if denominator == 0:
+            return _np.nan
+        return (returns.sum() - rf) / denominator
 
 
 def risk_of_ruin(returns, prepare_returns=True):
@@ -2083,9 +2101,17 @@ def outlier_win_ratio(returns, quantile=0.99, prepare_returns=True):
 
     # Calculate ratio of high quantile to mean positive return
     positive_mean = returns[returns >= 0].mean()
-    if _pd.isna(positive_mean) or positive_mean == 0:
-        return _np.nan
-    return returns.quantile(quantile).mean() / positive_mean
+    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
+    
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(positive_mean, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return quantile_mean / positive_mean.replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if _pd.isna(positive_mean) or positive_mean == 0:
+            return _np.nan
+        return quantile_mean / positive_mean
 
 
 def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
@@ -2114,9 +2140,17 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
 
     # Calculate ratio of low quantile to mean negative return
     negative_mean = returns[returns < 0].mean()
-    if _pd.isna(negative_mean) or negative_mean == 0:
-        return _np.nan
-    return returns.quantile(quantile).mean() / negative_mean
+    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
+    
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(negative_mean, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return quantile_mean / negative_mean.replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if _pd.isna(negative_mean) or negative_mean == 0:
+            return _np.nan
+        return quantile_mean / negative_mean
 
 
 def recovery_factor(returns, rf=0.0, prepare_returns=True):
@@ -2181,9 +2215,16 @@ def risk_return_ratio(returns, prepare_returns=True):
 
     # Calculate mean return divided by standard deviation
     std = returns.std()
-    if std == 0:
-        return _np.nan
-    return returns.mean() / std
+    
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(std, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return returns.mean() / std.replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if std == 0:
+            return _np.nan
+        return returns.mean() / std
 
 
 def _get_baseline_value(prices):
