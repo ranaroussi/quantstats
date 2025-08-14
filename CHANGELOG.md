@@ -7,7 +7,24 @@ Changelog
 - Fixed RuntimeWarnings in tail_ratio function by properly handling edge cases:
   - Handle divide by zero when lower quantile is 0
   - Handle invalid values when quantiles return NaN
+  - Handle DataFrame inputs that return Series from quantile operations
   - Return NaN gracefully instead of triggering warnings
+
+- Added comprehensive divide by zero protection across multiple stats functions:
+  - gain_to_pain_ratio: Returns NaN when no negative returns (downside = 0)
+  - recovery_factor: Returns NaN when no drawdown (max_dd = 0)
+  - sortino: Returns NaN when downside deviation is 0
+  - calmar: Returns NaN when max drawdown is 0
+  - ulcer_performance_index: Returns NaN when ulcer index is 0
+  - serenity_index: Returns NaN when std or denominator is 0
+  - payoff_ratio: Returns NaN when average loss is 0
+  - outlier_win_ratio: Returns NaN when no positive returns
+  - outlier_loss_ratio: Returns NaN when no negative returns
+  - risk_return_ratio: Returns NaN when standard deviation is 0
+  - kelly_criterion: Returns NaN when win/loss ratio is 0 or NaN
+  - greeks: Returns NaN for beta when benchmark variance is 0
+  - rolling_greeks: Handles zero benchmark std gracefully
+  - All functions now return NaN instead of triggering RuntimeWarnings
 
 0.0.70
 ------
