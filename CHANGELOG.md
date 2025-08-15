@@ -1,6 +1,15 @@
 Changelog
 ===========
 
+0.0.73
+------
+
+- Fixed payoff_ratio to handle DataFrame inputs properly (fixes issue #463)
+  - When using qs.reports.html with a benchmark, payoff_ratio receives a DataFrame
+  - Previously caused "ValueError: truth value of Series is ambiguous" 
+  - Now properly handles both Series and scalar avg_loss values
+  - Returns Series for DataFrame inputs, scalar for Series inputs
+
 0.0.72
 ------
 
