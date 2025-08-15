@@ -1912,9 +1912,18 @@ def payoff_ratio(returns, prepare_returns=True):
 
     # Calculate ratio of average win to absolute average loss
     avg_loss_val = avg_loss(returns)
-    if avg_loss_val == 0:
-        return _np.nan
-    return avg_win(returns) / abs(avg_loss_val)
+    avg_win_val = avg_win(returns)
+    
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(avg_loss_val, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        # Use abs() before replace to handle negative values properly
+        return avg_win_val / abs(avg_loss_val).replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if avg_loss_val == 0:
+            return _np.nan
+        return avg_win_val / abs(avg_loss_val)
 
 
 def win_loss_ratio(returns, prepare_returns=True):
