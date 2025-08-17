@@ -1,6 +1,19 @@
 Changelog
 ===========
 
+0.0.74
+------
+
+- Completed fix for issue #463 - DataFrame handling in qs.reports functions:
+  - kelly_criterion: Fixed improper use of 'or' operator with Series values
+    - Now properly detects Series vs scalar inputs
+    - Handles zero and NaN values correctly for DataFrames
+  - recovery_factor: Added proper DataFrame input handling
+    - Detects when max_dd is a Series and handles accordingly
+    - Prevents "truth value of Series is ambiguous" errors
+  - All functions now tested with qs.reports.html() and qs.reports.metrics() with benchmarks
+  - Verified working with exact code examples from issue reporters
+
 0.0.73
 ------
 
