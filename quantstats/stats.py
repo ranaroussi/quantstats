@@ -2192,12 +2192,15 @@ def recovery_factor(returns, rf=0.0, prepare_returns=True):
     # Calculate maximum drawdown
     max_dd = max_drawdown(returns)
 
-    # Handle edge case: no drawdown
-    if max_dd == 0:
-        return _np.nan
-
-    # Return ratio of total returns to absolute maximum drawdown
-    return abs(total_returns) / abs(max_dd)
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(max_dd, _pd.Series):
+        # DataFrame input - element-wise division with zero protection
+        return abs(total_returns) / abs(max_dd).replace(0, _np.nan)
+    else:
+        # Series input - scalar division
+        if max_dd == 0:
+            return _np.nan
+        return abs(total_returns) / abs(max_dd)
 
 
 def risk_return_ratio(returns, prepare_returns=True):
@@ -2392,9 +2395,17 @@ def kelly_criterion(returns, prepare_returns=True):
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
 
-    if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
-        return _np.nan
-    return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
+    # Handle both Series (DataFrame input) and scalar (Series input) cases
+    if isinstance(win_loss_ratio, _pd.Series):
+        # DataFrame input - element-wise operations with zero/nan protection
+        # Replace 0 and NaN values with NaN to avoid division issues
+        win_loss_ratio_safe = win_loss_ratio.replace(0, _np.nan)
+        return ((win_loss_ratio_safe * win_prob) - lose_prob) / win_loss_ratio_safe
+    else:
+        # Series input - scalar operations
+        if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
+            return _np.nan
+        return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
 
 
 # ==== VS. BENCHMARK ====
