@@ -839,7 +839,7 @@ def _score_str(val):
 
 
 def make_index(
-    ticker_weights, rebalance="1M", period="max", returns=None, match_dates=False
+    ticker_weights, rebalance="1ME", period="max", returns=None, match_dates=False
 ):
     """
     Makes an index out of the given tickers and weights.
@@ -906,7 +906,7 @@ def make_index(
         )
 
     # Clean up temporary columns
-    index = index.drop(columns=["first_day"])
+    index = index.drop(columns=["first_day", "break"])
 
     # Remove rows where all values are NaN
     index = index.dropna(how="all")

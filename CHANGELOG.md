@@ -1,6 +1,14 @@
 Changelog
 ===========
 
+0.0.75
+------
+
+- Fixed FutureWarning for deprecated pandas frequency aliases:
+  - Updated make_index default rebalance parameter from "1M" to "1ME"
+  - Ensures compatibility with pandas 2.2.0+ without warnings
+  - The _compat module already handles conversion for older pandas versions
+
 0.0.74
 ------
 
