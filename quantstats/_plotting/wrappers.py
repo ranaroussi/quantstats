@@ -161,7 +161,7 @@ def snapshot(
     # Select color scheme based on grayscale preference
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     # Convert to portfolio format and calculate percentage changes
-    returns = _utils.make_portfolio(returns.dropna(), 1, mode).pct_change().fillna(0)
+    returns = _utils.make_portfolio(returns.dropna(), 1, mode).pct_change(fill_method=None).fillna(0)
 
     # Use current figure size if not specified
     if figsize is None:

@@ -16,6 +16,11 @@ Changelog
   - Data is converted to UTC then made timezone-naive for consistent comparisons
   - Fixes "Cannot compare dtypes datetime64[ns] and datetime64[ns, UTC]" errors
 
+- Fixed FutureWarning for pandas pct_change():
+  - Updated all pct_change() calls to use fill_method=None parameter
+  - Prevents "fill_method='pad' is deprecated" warnings in pandas 2.x
+  - Ensures compatibility with future pandas versions
+
 0.0.75
 ------
 
