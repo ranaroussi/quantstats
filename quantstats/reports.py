@@ -238,6 +238,17 @@ def html(
         tpl = tpl.replace(
             "{{benchmark_title}}", f"Benchmark is {benchmark_title.upper()} | "
         )
+        # Store original benchmark before any alignment for accurate EOY calculations
+        # This preserves the full benchmark data including non-trading days
+        if isinstance(benchmark, str):
+            # Download the full benchmark data
+            benchmark_original = _utils.download_returns(benchmark)
+            if rf != 0:
+                benchmark_original = _utils.to_excess_returns(benchmark_original, rf)
+        elif isinstance(benchmark, _pd.Series):
+            benchmark_original = benchmark.copy()
+        else:
+            benchmark_original = benchmark
         # Prepare benchmark data to match returns index and risk-free rate
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         # Align dates between returns and benchmark if requested
@@ -245,6 +256,7 @@ def html(
             returns, benchmark = _match_dates(returns, benchmark)
     else:
         benchmark_title = None
+        benchmark_original = None
 
     # Format date range for display in template
     date_range = returns.index.strftime("%e %b, %Y")
@@ -300,9 +312,11 @@ def html(
 
     # Generate end-of-year (EOY) returns comparison table
     if benchmark is not None:
-        # Compare returns vs benchmark on yearly basis
+        # Use original benchmark for EOY comparison to preserve accurate yearly returns
+        # This prevents loss of benchmark returns on non-trading days
+        benchmark_for_eoy = benchmark_original if benchmark_original is not None else benchmark
         yoy = _stats.compare(
-            returns, benchmark, "YE", compounded=compounded, prepare_returns=False
+            returns, benchmark_for_eoy, "YE", compounded=compounded, prepare_returns=False
         )
         # Set appropriate column names based on data type
         if isinstance(returns, _pd.Series):

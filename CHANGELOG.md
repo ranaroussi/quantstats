@@ -1,6 +1,15 @@
 Changelog
 ===========
 
+0.0.76
+------
+
+- Fixed issue #457 - Inconsistent benchmark EOY returns in reports:
+  - Benchmark yearly returns now remain consistent regardless of strategy's trading calendar
+  - HTML reports preserve original benchmark data for accurate EOY calculations
+  - Previously, benchmark returns would change when aligned to different strategies' trading days
+  - Added comprehensive tests to verify benchmark consistency across different comparisons
+
 0.0.75
 ------
 
