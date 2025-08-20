@@ -58,6 +58,36 @@ def get_frequency_alias(freq: str) -> str:
     return FREQUENCY_ALIASES.get(freq, freq)
 
 
+def normalize_timezone(data: Union[pd.Series, pd.DataFrame]) -> Union[pd.Series, pd.DataFrame]:
+    """
+    Normalize timezone information for consistent comparisons.
+    
+    If data has timezone info, converts to UTC then removes timezone info.
+    This ensures all data can be compared regardless of original timezone.
+    
+    Parameters
+    ----------
+    data : pd.Series or pd.DataFrame
+        Time series data with DatetimeIndex
+        
+    Returns
+    -------
+    pd.Series or pd.DataFrame
+        Data with timezone-naive DatetimeIndex
+    """
+    if not isinstance(data.index, pd.DatetimeIndex):
+        return data
+    
+    # If timezone aware, convert to UTC then make naive
+    if data.index.tz is not None:
+        result = data.copy()
+        result.index = result.index.tz_convert('UTC').tz_localize(None)
+        return result
+    
+    # Already timezone naive, return as is
+    return data
+
+
 def safe_resample(data: Union[pd.Series, pd.DataFrame],
                   freq: str,
                   func_name: Optional[Union[str, Callable]] = None,
@@ -67,7 +97,8 @@ def safe_resample(data: Union[pd.Series, pd.DataFrame],
 
     This function handles the resampling of time series data using the correct
     frequency aliases and aggregation methods that are compatible across
-    different pandas versions.
+    different pandas versions. It also normalizes timezones to ensure
+    consistent comparisons.
 
     Parameters
     ----------
@@ -84,7 +115,8 @@ def safe_resample(data: Union[pd.Series, pd.DataFrame],
     Returns
     -------
     pd.Series or pd.DataFrame
-        The resampled data with the specified frequency and aggregation
+        The resampled data with the specified frequency and aggregation,
+        with timezone normalized to UTC if present, or naive if not
 
     Examples
     --------
@@ -103,34 +135,38 @@ def safe_resample(data: Union[pd.Series, pd.DataFrame],
 
     # Handle string function names with explicit method calls
     # This approach avoids deprecation warnings and ensures compatibility
+    result = None
     if isinstance(func_name, str):
         # Map common aggregation functions to their pandas methods
         if func_name == "sum":
-            return resampler.sum(**kwargs)
+            result = resampler.sum(**kwargs)
         elif func_name == "mean":
-            return resampler.mean(**kwargs)
+            result = resampler.mean(**kwargs)
         elif func_name == "std":
-            return resampler.std(**kwargs)
+            result = resampler.std(**kwargs)
         elif func_name == "count":
-            return resampler.count(**kwargs)
+            result = resampler.count(**kwargs)
         elif func_name == "min":
-            return resampler.min(**kwargs)
+            result = resampler.min(**kwargs)
         elif func_name == "max":
-            return resampler.max(**kwargs)
+            result = resampler.max(**kwargs)
         elif func_name == "first":
-            return resampler.first(**kwargs)
+            result = resampler.first(**kwargs)
         elif func_name == "last":
-            return resampler.last(**kwargs)
+            result = resampler.last(**kwargs)
         else:
             # Try to find the method on the resampler object
             if hasattr(resampler, func_name):
-                return getattr(resampler, func_name)(**kwargs)
+                result = getattr(resampler, func_name)(**kwargs)
             else:
                 # Fallback to apply for custom string functions
-                return resampler.apply(func_name, **kwargs)
+                result = resampler.apply(func_name, **kwargs)
     else:
         # For callable functions, use apply method
-        return resampler.apply(func_name, **kwargs)
+        result = resampler.apply(func_name, **kwargs)
+    
+    # Normalize timezone to ensure consistent comparisons
+    return normalize_timezone(result)
 
 
 def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],

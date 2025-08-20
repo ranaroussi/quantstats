@@ -2648,9 +2648,24 @@ def compare(
         >>> comparison = compare(returns, benchmark)
         >>> print(comparison)
     """
+    # Normalize timezone for returns to ensure consistent comparisons
+    # Convert to UTC if timezone-aware, then make naive
+    # This must happen before prepare_returns to avoid issues
+    if hasattr(returns.index, 'tz') and returns.index.tz is not None:
+        returns = returns.tz_convert('UTC').tz_localize(None)
+    
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
+    # Normalize benchmark timezone first if it's not a string
+    if benchmark is not None and not isinstance(benchmark, str):
+        if hasattr(benchmark.index if isinstance(benchmark, _pd.Series) else benchmark[benchmark.columns[0]].index, 'tz'):
+            if isinstance(benchmark, _pd.Series) and benchmark.index.tz is not None:
+                benchmark = benchmark.tz_convert('UTC').tz_localize(None)
+            elif isinstance(benchmark, _pd.DataFrame) and benchmark[benchmark.columns[0]].index.tz is not None:
+                for col in benchmark.columns:
+                    benchmark[col] = benchmark[col].tz_convert('UTC').tz_localize(None)
+    
     # Store original benchmark for proper aggregation
     # This preserves returns that may fall on non-trading days
     if isinstance(benchmark, str):
@@ -2659,6 +2674,10 @@ def compare(
         benchmark_original = benchmark[benchmark.columns[0]].copy()
     else:
         benchmark_original = benchmark.copy() if benchmark is not None else None
+    
+    # Normalize timezone for benchmark_original as well (in case it was downloaded)
+    if benchmark_original is not None and hasattr(benchmark_original.index, 'tz') and benchmark_original.index.tz is not None:
+        benchmark_original = benchmark_original.tz_convert('UTC').tz_localize(None)
     
     # Prepare benchmark to match returns index for other calculations
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)

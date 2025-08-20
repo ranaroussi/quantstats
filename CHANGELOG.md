@@ -10,6 +10,12 @@ Changelog
   - Previously, benchmark returns would change when aligned to different strategies' trading days
   - Added comprehensive tests to verify benchmark consistency across different comparisons
 
+- Improved timezone handling for cross-market comparisons:
+  - All resampling operations now normalize timezones to prevent comparison errors
+  - Mixed timezone-aware and timezone-naive data can now be compared without errors
+  - Data is converted to UTC then made timezone-naive for consistent comparisons
+  - Fixes "Cannot compare dtypes datetime64[ns] and datetime64[ns, UTC]" errors
+
 0.0.75
 ------
 
