@@ -121,6 +121,7 @@ def html(
     figfmt="svg",
     template_path=None,
     match_dates=True,
+    parameters: dict = None,
     **kwargs,
 ):
     """
@@ -158,6 +159,8 @@ def html(
         Path to custom HTML template file. Uses default if None
     match_dates : bool, default True
         Whether to align returns and benchmark start dates
+    parameters : dict, optional
+        Strategy parameters   
     **kwargs
         Additional keyword arguments for customization:
         - strategy_title: Custom name for the strategy
@@ -375,6 +378,10 @@ def html(
                 dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
             )
         tpl = tpl.replace("{{dd_info}}", dd_html_table)
+
+    if parameters:
+        parameters_info = _pd.DataFrame(list(parameters.items()), columns=['Parameter', 'Value'])
+        tpl = tpl.replace("{{parameters_info}}", _html_table(parameters_info, False))
 
     # Get active returns setting for plots
     active = kwargs.get("active_returns", False)
