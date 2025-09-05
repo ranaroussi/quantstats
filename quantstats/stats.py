@@ -1798,7 +1798,14 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns
     var = value_at_risk(returns, sigma, confidence)
 
     # Calculate mean of returns below VaR threshold
-    c_var = returns[returns < var].values.mean()
+    # Handle both Series and DataFrame inputs
+    if isinstance(returns, _pd.DataFrame):
+        # For DataFrame, use dropna() to remove NaN values after filtering
+        below_var = returns[returns < var].dropna()
+        c_var = below_var.values.mean() if len(below_var) > 0 else _np.nan
+    else:
+        # For Series, the original approach works fine
+        c_var = returns[returns < var].values.mean()
 
     # Return CVaR if valid, otherwise return VaR
     return c_var if ~_np.isnan(c_var) else var
