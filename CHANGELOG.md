@@ -1,6 +1,19 @@
 Changelog
 ===========
 
+0.0.77
+------
+
+- Fixed issue #467 - CVaR calculation returning NaN for DataFrame inputs:
+  - The conditional_value_at_risk() function now properly handles DataFrame inputs
+  - When filtering DataFrames, NaN values are now correctly removed before calculating the mean
+  - CVaR calculations are now consistent between Series and DataFrame inputs
+  - This fix ensures accurate risk metrics in HTML reports when using benchmarks
+
+- Confirmed issue #468 is already resolved:
+  - The "mode.use_inf_as_null" pandas option error reported in v0.0.64 no longer occurs
+  - This issue was resolved in a previous version through updates to pandas compatibility
+
 0.0.76
 ------
 
