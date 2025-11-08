@@ -14,10 +14,6 @@
     :target: https://pypi.python.org/pypi/quantstats
     :alt: PyPi downloads
 
-.. image:: https://www.codefactor.io/repository/github/ranaroussi/quantstats/badge
-    :target: https://www.codefactor.io/repository/github/ranaroussi/quantstats
-    :alt: CodeFactor
-
 .. image:: https://img.shields.io/github/stars/ranaroussi/quantstats.svg?style=social&label=Star&maxAge=60
     :target: https://github.com/ranaroussi/quantstats
     :alt: Star this repo
@@ -33,7 +29,7 @@ QuantStats: Portfolio analytics for quants
 
 **QuantStats** Python library that performs portfolio profiling, allowing quants and portfolio managers to understand their performance better by providing them with in-depth analytics and risk metrics.
 
-`Changelog » <./CHANGELOG.rst>`__
+`Changelog » <./CHANGELOG.md>`__
 
 QuantStats is comprised of 3 main modules:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,7 +64,7 @@ Output:
 
 .. code:: text
 
-    0.8135304438803402
+    0.7604779884378278
 
 
 Visualize stock performance
@@ -83,7 +79,7 @@ Visualize stock performance
 
 Output:
 
-.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.jpg?raw=true
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/snapshot.webp?raw=true
     :alt: Snapshot plot
 
 
@@ -107,7 +103,7 @@ Let' create an html tearsheet
 
 Output will generate something like this:
 
-.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.jpg?raw=true
+.. image:: https://github.com/ranaroussi/quantstats/blob/main/docs/report.webp?raw=true
     :alt: HTML tearsheet
 
 (`view original html file <https://rawcdn.githack.com/ranaroussi/quantstats/main/docs/tearsheet.html>`_)

@@ -14,3 +14,8 @@ Icon
 /tests
 .vscode
 Icon
+CLAUDE.md
+.gitignore
+quantstats/stats.py
+.DS_Store
+.claude/settings.local.json
