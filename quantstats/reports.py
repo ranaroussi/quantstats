@@ -376,6 +376,22 @@ def html(
             )
         tpl = tpl.replace("{{dd_info}}", dd_html_table)
 
+    # Process benchmark drawdown if benchmark is provided
+    if benchmark is not None:
+        bench_dd = _stats.to_drawdown_series(benchmark)
+        bench_dd_info = _stats.drawdown_details(bench_dd).sort_values(
+            by="max drawdown", ascending=True
+        )[:10]
+        bench_dd_info = bench_dd_info[["start", "end", "max drawdown", "days"]]
+        bench_dd_info.columns = ["Started", "Recovered", "Drawdown", "Days"]
+        bench_dd_html = (
+            f"<h3>Benchmark Worst 10 Drawdowns</h3>"
+            + _html_table(bench_dd_info, False)
+        )
+        tpl = tpl.replace("{{benchmark_dd_info}}", bench_dd_html)
+    else:
+        tpl = tpl.replace("{{benchmark_dd_info}}", "")
+
     # Get active returns setting for plots
     active = kwargs.get("active_returns", False)
 
