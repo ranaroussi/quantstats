@@ -1284,12 +1284,12 @@ def metrics(
 
             # Calculate benchmark-relative metrics
             if isinstance(returns, _pd.Series):
-                metrics["R^2"] = _stats.r_squared(
+                metrics["R^2"] = [_stats.r_squared(
                     df["returns"], df["benchmark"], prepare_returns=False
-                )
-                metrics["Information Ratio"] = _stats.information_ratio(
+                )] + ["-"]
+                metrics["Information Ratio"] = [_stats.information_ratio(
                     df["returns"], df["benchmark"], prepare_returns=False
-                )
+                )] + ["-"]
             elif isinstance(returns, _pd.DataFrame):
                 metrics["R^2"] = (
                     [
