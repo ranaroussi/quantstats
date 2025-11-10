@@ -581,7 +581,7 @@ def avg_win(returns, aggregate=None, compounded=True, prepare_returns=True):
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
     # Calculate mean of positive returns only
-    return returns[returns > 0].dropna().mean()
+    return returns[returns > 0].mean()
 
 
 def avg_loss(returns, aggregate=None, compounded=True, prepare_returns=True):
@@ -613,7 +613,7 @@ def avg_loss(returns, aggregate=None, compounded=True, prepare_returns=True):
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
     # Calculate mean of negative returns only
-    return returns[returns < 0].dropna().mean()
+    return returns[returns < 0].mean()
 
 
 def volatility(returns, periods=252, annualize=True, prepare_returns=True):
@@ -1798,17 +1798,18 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns
     var = value_at_risk(returns, sigma, confidence)
 
     # Calculate mean of returns below VaR threshold
+    below_var = returns[returns < var]
     # Handle both Series and DataFrame inputs
     if isinstance(returns, _pd.DataFrame):
-        # For DataFrame, use dropna() to remove NaN values after filtering
-        below_var = returns[returns < var].dropna()
-        c_var = below_var.values.mean() if len(below_var) > 0 else _np.nan
+        # For DataFrame
+        c_var = below_var.mean().values
+        # Return CVaR if valid, otherwise return VaR
+        return _np.where(_np.isnan(c_var), var, c_var)
     else:
-        # For Series, the original approach works fine
-        c_var = returns[returns < var].values.mean()
-
-    # Return CVaR if valid, otherwise return VaR
-    return c_var if ~_np.isnan(c_var) else var
+        # For Series
+        c_var = below_var.values.mean()
+        # Return CVaR if valid, otherwise return VaR
+        return c_var if ~_np.isnan(c_var) else var
 
 
 def cvar(returns, sigma=1, confidence=0.95, prepare_returns=True):
@@ -2117,7 +2118,7 @@ def outlier_win_ratio(returns, quantile=0.99, prepare_returns=True):
 
     # Calculate ratio of high quantile to mean positive return
     positive_mean = returns[returns >= 0].mean()
-    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
+    quantile_mean = returns.quantile(quantile)
     
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(positive_mean, _pd.Series):
@@ -2156,7 +2157,7 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
 
     # Calculate ratio of low quantile to mean negative return
     negative_mean = returns[returns < 0].mean()
-    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
+    quantile_mean = returns.quantile(quantile)
     
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(negative_mean, _pd.Series):
