@@ -1814,9 +1814,6 @@ def plots(
 
         return
 
-    # Ensure returns is DataFrame for full mode processing
-    returns = _pd.DataFrame(returns)
-
     # prepare timeseries
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
@@ -1889,7 +1886,7 @@ def plots(
 
     # Calculate figure size for smaller plots
     small_fig_size = (figsize[0], figsize[0] * 0.35)
-    if len(returns.columns) > 1:
+    if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         small_fig_size = (
             figsize[0],
             figsize[0] * (0.33 * (len(returns.columns) * 0.66)),
