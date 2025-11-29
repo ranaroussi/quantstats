@@ -160,7 +160,7 @@ def html(
     match_dates : bool, default True
         Whether to align returns and benchmark start dates
     parameters : dict, optional
-        Strategy parameters   
+        Strategy parameters
     **kwargs
         Additional keyword arguments for customization:
         - strategy_title: Custom name for the strategy
