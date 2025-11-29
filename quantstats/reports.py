@@ -1232,15 +1232,15 @@ def metrics(
 
     # Calculate Omega ratio (probability-weighted ratio)
     if isinstance(returns, _pd.Series):
-        metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+        omega_values = [_stats.omega(df["returns"], rf, 0.0, win_year)]
     elif isinstance(returns, _pd.DataFrame):
         omega_values = [
             _stats.omega(df[strategy_col], rf, 0.0, win_year)
             for strategy_col in df_strategy_columns
         ]
-        if "benchmark" in df:
-            omega_values.append(_stats.omega(df["benchmark"], rf, 0.0, win_year))
-        metrics["Omega"] = omega_values
+    if "benchmark" in df:
+        omega_values.append(_stats.omega(df["benchmark"], rf, 0.0, win_year))
+    metrics["Omega"] = omega_values
 
     # Add separator and prepare for drawdown metrics
     metrics["~~~~~~~~"] = blank
