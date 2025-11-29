@@ -1154,6 +1154,7 @@ def metrics(
             blank = [""] * len(returns.columns) + [""]
             for i, strategy_col in enumerate(returns.columns):
                 df["returns_" + str(i + 1)] = returns[strategy_col]
+        df.dropna(inplace=True)
 
     # Calculate start and end dates for each series
     if isinstance(returns, _pd.Series):
