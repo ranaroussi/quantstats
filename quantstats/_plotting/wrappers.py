@@ -33,10 +33,26 @@ import pandas as _pd
 from .._compat import safe_resample
 import seaborn as _sns
 
-from .. import (
-    stats as _stats,
-    utils as _utils,
-)
+# Lazy imports to avoid circular dependency during package initialization
+# These modules are imported when first accessed via _get_stats() and _get_utils()
+_stats = None
+_utils = None
+
+
+def _get_stats():
+    global _stats
+    if _stats is None:
+        from .. import stats
+        _stats = stats
+    return _stats
+
+
+def _get_utils():
+    global _utils
+    if _utils is None:
+        from .. import utils
+        _utils = utils
+    return _utils
 
 from . import core as _core
 
@@ -169,7 +185,7 @@ def snapshot(
     # Select color scheme based on grayscale preference
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     # Convert to portfolio format and calculate percentage changes
-    returns = _utils.make_portfolio(returns.dropna(), 1, mode).pct_change(fill_method=None).fillna(0)
+    returns = _get_utils().make_portfolio(returns.dropna(), 1, mode).pct_change(fill_method=None).fillna(0)
 
     # Use current figure size if not specified
     if figsize is None:
@@ -218,7 +234,7 @@ def snapshot(
                 % (
                     returns.index.date[:1][0].strftime("%e %b '%y"),  # type: ignore
                     returns.index.date[-1:][0].strftime("%e %b '%y"),  # type: ignore
-                    _stats.sharpe(returns),
+                    _get_stats().sharpe(returns),
                 ),
                 fontsize=12,
                 color="gray",
@@ -245,7 +261,7 @@ def snapshot(
         if mode.lower() in ["cumsum", "sum"]:
             cum_ret = returns.cumsum() * 100
         else:
-            cum_ret = _stats.compsum(returns) * 100
+            cum_ret = _get_stats().compsum(returns) * 100
         # Plot cumulative returns line
         axes[0].plot(
             cum_ret,
@@ -259,7 +275,7 @@ def snapshot(
             if mode.lower() in ["cumsum", "sum"]:
                 cum_ret = returns[col].cumsum() * 100
             else:
-                cum_ret = _stats.compsum(returns[col]) * 100
+                cum_ret = _get_stats().compsum(returns[col]) * 100
             axes[0].plot(
                 cum_ret,
                 label=col,
@@ -274,17 +290,17 @@ def snapshot(
     # axes[0].legend(fontsize=12)
 
     # Configure second subplot: Drawdown
-    dd = _stats.to_drawdown_series(returns) * 100
+    dd = _get_stats().to_drawdown_series(returns) * 100
     # Calculate appropriate tick spacing for drawdown
-    ddmin = _utils._round_to_closest(abs(dd.min()), 5)
+    ddmin = _get_utils()._round_to_closest(abs(dd.min()), 5)
     ddmin_ticks = 5
     if ddmin > 50:
         ddmin_ticks = ddmin / 4
     elif ddmin > 20:
         ddmin_ticks = ddmin / 3
-    ddmin_ticks = int(_utils._round_to_closest(ddmin_ticks, 5))
+    ddmin_ticks = int(_get_utils()._round_to_closest(ddmin_ticks, 5))
 
-    # ddmin_ticks = int(_utils._round_to_closest(ddmin, 5))
+    # ddmin_ticks = int(_get_utils()._round_to_closest(ddmin, 5))
     axes[1].set_ylabel("Drawdown", fontname=fontname, fontweight="bold", fontsize=12)
     axes[1].set_yticks(_np.arange(-ddmin, 0, step=ddmin_ticks))
 
@@ -332,15 +348,15 @@ def snapshot(
     # axes[2].legend(fontsize=12)
 
     # Calculate appropriate tick spacing for daily returns
-    retmax = _utils._round_to_closest(returns.max() * 100, 5)
-    retmin = _utils._round_to_closest(returns.min() * 100, 5)
+    retmax = _get_utils()._round_to_closest(returns.max() * 100, 5)
+    retmin = _get_utils()._round_to_closest(returns.min() * 100, 5)
     retdiff = retmax - retmin
     steps = 5
     if retdiff > 50:
         steps = retdiff / 5
     elif retdiff > 30:
         steps = retdiff / 4
-    steps = _utils._round_to_closest(steps, 5)
+    steps = _get_utils()._round_to_closest(steps, 5)
     axes[2].set_yticks(_np.arange(retmin, retmax, step=steps))
 
     # Apply common formatting to all axes
@@ -438,7 +454,7 @@ def earnings(
     alpha = 0.5 if grayscale else 0.8
 
     # Convert returns to portfolio dollar values
-    returns = _utils.make_portfolio(returns, start_balance, mode)
+    returns = _get_utils().make_portfolio(returns, start_balance, mode)
 
     # Use current figure size if not specified
     if figsize is None:
@@ -471,10 +487,10 @@ def earnings(
             % (
                 returns.index.date[1:2][0].strftime("%e %b '%y"),  # type: ignore
                 returns.index.date[-1:][0].strftime("%e %b '%y"),  # type: ignore
-                _utils._score_str(
+                _get_utils()._score_str(
                     "${:,}".format(round(returns.values[-1] - returns.values[0], 2))
                 ),
-                _utils._score_str(
+                _get_utils()._score_str(
                     "{:,}%".format(
                         round((returns.values[-1] / returns.values[0] - 1) * 100, 2)
                     )
@@ -623,11 +639,11 @@ def returns(
             title += " (Volatility Matched)"
 
         # Prepare benchmark data to match returns index
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)
 
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Use core plotting function for time series
     fig = _core.plot_timeseries(
@@ -726,10 +742,10 @@ def log_returns(
 
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Prepare benchmark data to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)  # type: ignore
+    benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)  # type: ignore
 
     # Use core plotting function with log scale enabled
     fig = _core.plot_timeseries(
@@ -812,10 +828,10 @@ def daily_returns(
     """
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
         # Calculate active returns if requested
         if active and benchmark is not None:
-            benchmark = _utils._prepare_returns(benchmark)
+            benchmark = _get_utils()._prepare_returns(benchmark)
             returns = returns - benchmark
 
     # Set plot title based on active returns setting
@@ -914,17 +930,17 @@ def yearly_returns(
     if benchmark is not None:
         title += "  vs Benchmark"
         # Prepare and resample benchmark data
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        benchmark = safe_resample(benchmark, "YE", _stats.comp)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)
+        benchmark = safe_resample(benchmark, "YE", _get_stats().comp)
         benchmark = safe_resample(benchmark, "YE", "last")
 
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Resample returns to year-end based on compounding preference
     if compounded:
-        returns = safe_resample(returns, "YE", _stats.comp)
+        returns = safe_resample(returns, "YE", _get_stats().comp)
     else:
         returns = safe_resample(returns, "YE", "sum")
     returns = safe_resample(returns, "YE", "last")
@@ -1006,7 +1022,7 @@ def distribution(
     """
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Use core plotting function for distribution
     fig = _core.plot_distribution(
@@ -1082,9 +1098,9 @@ def histogram(
     """
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
         if benchmark is not None:
-            benchmark = _utils._prepare_returns(benchmark)
+            benchmark = _get_utils()._prepare_returns(benchmark)
 
     # Determine title based on resampling frequency
     if resample == "W":
@@ -1173,7 +1189,7 @@ def drawdown(
     line as reference. Useful for understanding portfolio risk and recovery periods.
     """
     # Convert returns to drawdown series
-    dd = _stats.to_drawdown_series(returns)
+    dd = _get_stats().to_drawdown_series(returns)
 
     # Use core plotting function for drawdown time series
     fig = _core.plot_timeseries(
@@ -1264,7 +1280,7 @@ def drawdowns_periods(
     """
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Use core plotting function for longest drawdown periods
     fig = _core.plot_longest_drawdowns(
@@ -1351,10 +1367,10 @@ def rolling_beta(
     """
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Prepare benchmark data to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)  # type: ignore
+    benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)  # type: ignore
 
     # Use core plotting function for rolling beta
     fig = _core.plot_rolling_beta(
@@ -1436,12 +1452,12 @@ def rolling_volatility(
     as horizontal reference line. Useful for understanding risk patterns over time.
     """
     # Calculate rolling volatility for returns
-    returns = _stats.rolling_volatility(returns, period, periods_per_year)
+    returns = _get_stats().rolling_volatility(returns, period, periods_per_year)
 
     # Calculate rolling volatility for benchmark if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-        benchmark = _stats.rolling_volatility(
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)
+        benchmark = _get_stats().rolling_volatility(
             benchmark, period, periods_per_year, prepare_returns=False
         )
 
@@ -1526,7 +1542,7 @@ def rolling_sharpe(
     indicate better risk-adjusted performance. Includes mean Sharpe as reference.
     """
     # Calculate rolling Sharpe ratio for returns
-    returns = _stats.rolling_sharpe(
+    returns = _get_stats().rolling_sharpe(
         returns,
         rf,
         period,
@@ -1536,8 +1552,8 @@ def rolling_sharpe(
 
     # Calculate rolling Sharpe ratio for benchmark if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
-        benchmark = _stats.rolling_sharpe(
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_stats().rolling_sharpe(
             benchmark, rf, period, True, periods_per_year, prepare_returns=False
         )
 
@@ -1623,12 +1639,12 @@ def rolling_sortino(
     better downside-adjusted performance.
     """
     # Calculate rolling Sortino ratio for returns
-    returns = _stats.rolling_sortino(returns, rf, period, True, periods_per_year)
+    returns = _get_stats().rolling_sortino(returns, rf, period, True, periods_per_year)
 
     # Calculate rolling Sortino ratio for benchmark if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
-        benchmark = _stats.rolling_sortino(
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_stats().rolling_sortino(
             benchmark, rf, period, True, periods_per_year, prepare_returns=False
         )
 
@@ -1721,7 +1737,7 @@ def monthly_heatmap(
     cmap = "gray" if grayscale else "RdYlGn"
 
     # Convert to monthly returns and convert to percentage
-    returns = _stats.monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
+    returns = _get_stats().monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
 
     # Calculate figure height based on number of years
     fig_height = len(returns) / 2.5
@@ -1763,7 +1779,7 @@ def monthly_heatmap(
         )
         # Calculate benchmark monthly returns
         benchmark = (
-            _stats.monthly_returns(benchmark, eoy=eoy, compounded=compounded) * 100
+            _get_stats().monthly_returns(benchmark, eoy=eoy, compounded=compounded) * 100
         )
         # Calculate active returns (strategy - benchmark)
         active_returns = returns - benchmark
@@ -2001,7 +2017,7 @@ def montecarlo(
         mc_result = mc_result_or_returns
     else:
         # Run Monte Carlo simulation
-        mc_result = _stats.montecarlo(
+        mc_result = _get_stats().montecarlo(
             mc_result_or_returns,
             sims=sims,
             bust=bust,
@@ -2082,7 +2098,7 @@ def montecarlo_distribution(
         mc_result = mc_result_or_returns
     else:
         # Run Monte Carlo simulation
-        mc_result = _stats.montecarlo(mc_result_or_returns, sims=sims, seed=seed)
+        mc_result = _get_stats().montecarlo(mc_result_or_returns, sims=sims, seed=seed)
 
     return _core.plot_montecarlo_distribution(
         mc_result,

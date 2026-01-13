@@ -24,7 +24,36 @@ from datetime import datetime as _dt
 from base64 import b64encode as _b64encode
 import re as _regex
 from tabulate import tabulate as _tabulate
-from . import __version__, stats as _stats, utils as _utils, plots as _plots
+from . import __version__
+
+# Lazy imports to avoid circular dependency during package initialization
+_stats = None
+_utils = None
+_plots = None
+
+
+def _get_stats():
+    global _stats
+    if _stats is None:
+        from . import stats
+        _stats = stats
+    return _stats
+
+
+def _get_utils():
+    global _utils
+    if _utils is None:
+        from . import utils
+        _utils = utils
+    return _utils
+
+
+def _get_plots():
+    global _plots
+    if _plots is None:
+        from . import plots
+        _plots = plots
+    return _plots
 from dateutil.relativedelta import relativedelta
 from io import StringIO
 from pathlib import Path
@@ -180,7 +209,7 @@ def html(
         If custom template_path doesn't exist
     """
     # Check if output parameter is required (not in notebook environment)
-    if output is None and not _utils._in_notebook():
+    if output is None and not _get_utils()._in_notebook():
         raise ValueError("`output` must be specified")
 
     # Clean returns data by removing NaN values if date matching is enabled
@@ -212,7 +241,7 @@ def html(
     if match_dates:
         returns = returns.dropna()
     # Clean and prepare returns data for analysis
-    returns = _utils._prepare_returns(returns)
+    returns = _get_utils()._prepare_returns(returns)
 
     # Handle strategy title - can be single string or list for multiple columns
     strategy_title = kwargs.get("strategy_title", "Strategy")
@@ -240,9 +269,9 @@ def html(
         # This preserves the full benchmark data including non-trading days
         if isinstance(benchmark, str):
             # Download the full benchmark data
-            benchmark_original = _utils.download_returns(benchmark)
+            benchmark_original = _get_utils().download_returns(benchmark)
             if rf != 0:
-                benchmark_original = _utils.to_excess_returns(
+                benchmark_original = _get_utils().to_excess_returns(
                     benchmark_original, rf, nperiods=periods_per_year
                 )
         elif isinstance(benchmark, _pd.Series):
@@ -250,7 +279,7 @@ def html(
         else:
             benchmark_original = benchmark
         # Prepare benchmark data to match returns index and risk-free rate
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
         # Align dates between returns and benchmark if requested
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
@@ -342,7 +371,7 @@ def html(
         # Use original benchmark for EOY comparison to preserve accurate yearly returns
         # This prevents loss of benchmark returns on non-trading days
         benchmark_for_eoy = benchmark_original if benchmark_original is not None else benchmark
-        yoy = _stats.compare(
+        yoy = _get_stats().compare(
             returns, benchmark_for_eoy, "YE", compounded=compounded, prepare_returns=False
         )
         # Set appropriate column names based on data type
@@ -358,10 +387,10 @@ def html(
     else:
         # Generate EOY returns table without benchmark comparison
         # pct multiplier
-        yoy = _pd.DataFrame(_utils.group_returns(returns, returns.index.year) * 100)
+        yoy = _pd.DataFrame(_get_utils().group_returns(returns, returns.index.year) * 100)
         if isinstance(returns, _pd.Series):
             yoy.columns = ["Return"]
-            yoy["Cumulative"] = _utils.group_returns(returns, returns.index.year, True) * 100
+            yoy["Cumulative"] = _get_utils().group_returns(returns, returns.index.year, True) * 100
             # Don't add "%" here - the CSS in report.html handles it via :after pseudo-element
             # Adding "%" in Python causes double "%" display (bug #475)
         elif isinstance(returns, _pd.DataFrame):
@@ -376,8 +405,8 @@ def html(
     # Generate drawdown analysis table
     if isinstance(returns, _pd.Series):
         # Calculate drawdown series and get worst drawdown periods
-        dd = _stats.to_drawdown_series(returns)
-        dd_info = _stats.drawdown_details(dd).sort_values(
+        dd = _get_stats().to_drawdown_series(returns)
+        dd_info = _get_stats().drawdown_details(dd).sort_values(
             by="max drawdown", ascending=True
         )[:10]
         dd_info = dd_info[["start", "end", "max drawdown", "days"]]
@@ -387,8 +416,8 @@ def html(
         # Handle multiple strategy columns
         dd_info_list = []
         for col in returns.columns:
-            dd = _stats.to_drawdown_series(returns[col])
-            dd_info = _stats.drawdown_details(dd).sort_values(
+            dd = _get_stats().to_drawdown_series(returns[col])
+            dd_info = _get_stats().drawdown_details(dd).sort_values(
                 by="max drawdown", ascending=True
             )[:10]
             dd_info = dd_info[["start", "end", "max drawdown", "days"]]
@@ -408,8 +437,8 @@ def html(
 
     # Generate all the performance plots and embed them in the HTML
     # plots
-    figfile = _utils._file_stream()
-    _plots.returns(
+    figfile = _get_utils()._file_stream()
+    _get_plots().returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -424,8 +453,8 @@ def html(
     tpl = tpl.replace("{{returns}}", _embed_figure(figfile, figfmt))
 
     # Log returns plot for better visualization of performance
-    figfile = _utils._file_stream()
-    _plots.log_returns(
+    figfile = _get_utils()._file_stream()
+    _get_plots().log_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -441,8 +470,8 @@ def html(
 
     # Volatility-matched returns plot (only if benchmark exists)
     if benchmark is not None:
-        figfile = _utils._file_stream()
-        _plots.returns(
+        figfile = _get_utils()._file_stream()
+        _get_plots().returns(
             returns,
             benchmark,
             match_volatility=True,
@@ -458,8 +487,8 @@ def html(
         tpl = tpl.replace("{{vol_returns}}", _embed_figure(figfile, figfmt))
 
     # Yearly returns comparison chart
-    figfile = _utils._file_stream()
-    _plots.yearly_returns(
+    figfile = _get_utils()._file_stream()
+    _get_plots().yearly_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -474,8 +503,8 @@ def html(
     tpl = tpl.replace("{{eoy_returns}}", _embed_figure(figfile, figfmt))
 
     # Returns distribution histogram
-    figfile = _utils._file_stream()
-    _plots.histogram(
+    figfile = _get_utils()._file_stream()
+    _get_plots().histogram(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -490,8 +519,8 @@ def html(
     tpl = tpl.replace("{{monthly_dist}}", _embed_figure(figfile, figfmt))
 
     # Daily returns scatter plot
-    figfile = _utils._file_stream()
-    _plots.daily_returns(
+    figfile = _get_utils()._file_stream()
+    _get_plots().daily_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -507,8 +536,8 @@ def html(
 
     # Rolling beta analysis (only if benchmark exists)
     if benchmark is not None:
-        figfile = _utils._file_stream()
-        _plots.rolling_beta(
+        figfile = _get_utils()._file_stream()
+        _get_plots().rolling_beta(
             returns,
             benchmark,
             grayscale=grayscale,
@@ -524,8 +553,8 @@ def html(
         tpl = tpl.replace("{{rolling_beta}}", _embed_figure(figfile, figfmt))
 
     # Rolling volatility analysis
-    figfile = _utils._file_stream()
-    _plots.rolling_volatility(
+    figfile = _get_utils()._file_stream()
+    _get_plots().rolling_volatility(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -540,8 +569,8 @@ def html(
     tpl = tpl.replace("{{rolling_vol}}", _embed_figure(figfile, figfmt))
 
     # Rolling Sharpe ratio analysis
-    figfile = _utils._file_stream()
-    _plots.rolling_sharpe(
+    figfile = _get_utils()._file_stream()
+    _get_plots().rolling_sharpe(
         returns,
         grayscale=grayscale,
         figsize=(8, 3),
@@ -555,8 +584,8 @@ def html(
     tpl = tpl.replace("{{rolling_sharpe}}", _embed_figure(figfile, figfmt))
 
     # Rolling Sortino ratio analysis
-    figfile = _utils._file_stream()
-    _plots.rolling_sortino(
+    figfile = _get_utils()._file_stream()
+    _get_plots().rolling_sortino(
         returns,
         grayscale=grayscale,
         figsize=(8, 3),
@@ -570,9 +599,9 @@ def html(
     tpl = tpl.replace("{{rolling_sortino}}", _embed_figure(figfile, figfmt))
 
     # Drawdown periods analysis
-    figfile = _utils._file_stream()
+    figfile = _get_utils()._file_stream()
     if isinstance(returns, _pd.Series):
-        _plots.drawdowns_periods(
+        _get_plots().drawdowns_periods(
             returns,
             grayscale=grayscale,
             figsize=(8, 4),
@@ -589,7 +618,7 @@ def html(
         # Handle multiple strategy columns
         embed = []
         for col in returns.columns:
-            _plots.drawdowns_periods(
+            _get_plots().drawdowns_periods(
                 returns[col],
                 grayscale=grayscale,
                 figsize=(8, 4),
@@ -605,8 +634,8 @@ def html(
         tpl = tpl.replace("{{dd_periods}}", _embed_figure(embed, figfmt))
 
     # Underwater (drawdown) plot
-    figfile = _utils._file_stream()
-    _plots.drawdown(
+    figfile = _get_utils()._file_stream()
+    _get_plots().drawdown(
         returns,
         grayscale=grayscale,
         figsize=(8, 3),
@@ -618,9 +647,9 @@ def html(
     tpl = tpl.replace("{{dd_plot}}", _embed_figure(figfile, figfmt))
 
     # Monthly returns heatmap
-    figfile = _utils._file_stream()
+    figfile = _get_utils()._file_stream()
     if isinstance(returns, _pd.Series):
-        _plots.monthly_heatmap(
+        _get_plots().monthly_heatmap(
             returns,
             benchmark,
             grayscale=grayscale,
@@ -638,7 +667,7 @@ def html(
         # Handle multiple strategy columns
         embed = []
         for col in returns.columns:
-            _plots.monthly_heatmap(
+            _get_plots().monthly_heatmap(
                 returns[col],
                 benchmark,
                 grayscale=grayscale,
@@ -655,10 +684,10 @@ def html(
         tpl = tpl.replace("{{monthly_heatmap}}", _embed_figure(embed, figfmt))
 
     # Returns distribution analysis
-    figfile = _utils._file_stream()
+    figfile = _get_utils()._file_stream()
 
     if isinstance(returns, _pd.Series):
-        _plots.distribution(
+        _get_plots().distribution(
             returns,
             grayscale=grayscale,
             figsize=(8, 4),
@@ -675,7 +704,7 @@ def html(
         # Handle multiple strategy columns
         embed = []
         for col in returns.columns:
-            _plots.distribution(
+            _get_plots().distribution(
                 returns[col],
                 grayscale=grayscale,
                 figsize=(8, 4),
@@ -765,11 +794,11 @@ def full(
     if match_dates:
         returns = returns.dropna()
     # Clean and prepare returns data
-    returns = _utils._prepare_returns(returns)
+    returns = _get_utils()._prepare_returns(returns)
 
     # Process benchmark if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
@@ -794,21 +823,21 @@ def full(
         returns.columns = strategy_title
 
     # Calculate drawdown analysis for worst periods display
-    dd = _stats.to_drawdown_series(returns)
+    dd = _get_stats().to_drawdown_series(returns)
 
     # Process drawdown details based on data type
     if isinstance(dd, _pd.Series):
-        col = _stats.drawdown_details(dd).columns[4]
-        dd_info = _stats.drawdown_details(dd).sort_values(by=col, ascending=True)[:5]
+        col = _get_stats().drawdown_details(dd).columns[4]
+        dd_info = _get_stats().drawdown_details(dd).sort_values(by=col, ascending=True)[:5]
         if not dd_info.empty:
             dd_info.index = range(1, min(6, len(dd_info) + 1))
             dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
     elif isinstance(dd, _pd.DataFrame):
         # Handle multiple strategy columns
-        col = _stats.drawdown_details(dd).columns.get_level_values(1)[4]
+        col = _get_stats().drawdown_details(dd).columns.get_level_values(1)[4]
         dd_info_dict = {}
         for ptf in dd.columns:
-            dd_info = _stats.drawdown_details(dd[ptf]).sort_values(
+            dd_info = _get_stats().drawdown_details(dd[ptf]).sort_values(
                 by=col, ascending=True
             )[:5]
             if not dd_info.empty:
@@ -817,7 +846,7 @@ def full(
             dd_info_dict[ptf] = dd_info
 
     # Display results based on environment (notebook vs console)
-    if _utils._in_notebook():
+    if _get_utils()._in_notebook():
         # Display in Jupyter notebook with HTML formatting
         iDisplay(iHTML("<h4>Performance Metrics</h4>"))
         iDisplay(
@@ -975,11 +1004,11 @@ def basic(
     if match_dates:
         returns = returns.dropna()
     # Clean and prepare returns data
-    returns = _utils._prepare_returns(returns)
+    returns = _get_utils()._prepare_returns(returns)
 
     # Process benchmark if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
@@ -996,7 +1025,7 @@ def basic(
             strategy_title = list(returns.columns)
 
     # Display results based on environment (notebook vs console)
-    if _utils._in_notebook():
+    if _get_utils()._in_notebook():
         # Display in Jupyter notebook with HTML formatting
         iDisplay(iHTML("<h4>Performance Metrics</h4>"))
         metrics(
@@ -1147,7 +1176,7 @@ def metrics(
 
     # Prepare returns data if requested
     if prepare_returns:
-        df = _utils._prepare_returns(returns)
+        df = _get_utils()._prepare_returns(returns)
 
     # Create main DataFrame for calculations
     if isinstance(returns, _pd.Series):
@@ -1162,7 +1191,7 @@ def metrics(
 
     # Process benchmark data if provided
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
             # Truncate df to the aligned date range to exclude leading zeros
@@ -1214,67 +1243,67 @@ def metrics(
     metrics["Start Period"] = _pd.Series(s_start)
     metrics["End Period"] = _pd.Series(s_end)
     metrics["Risk-Free Rate %"] = _pd.Series(s_rf) * 100
-    metrics["Time in Market %"] = _stats.exposure(df, prepare_returns=False) * pct
+    metrics["Time in Market %"] = _get_stats().exposure(df, prepare_returns=False) * pct
 
     # Add separator row
     metrics["~"] = blank
 
     # Calculate return metrics based on compounding preference
     if compounded:
-        metrics["Cumulative Return %"] = (_stats.comp(df) * pct).map("{:,.2f}".format)
+        metrics["Cumulative Return %"] = (_get_stats().comp(df) * pct).map("{:,.2f}".format)
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
     # Calculate annualized return (CAGR)
-    metrics["CAGR﹪%"] = _stats.cagr(df, rf, compounded, win_year) * pct
+    metrics["CAGR﹪%"] = _get_stats().cagr(df, rf, compounded, win_year) * pct
 
     # Add separator row
     metrics["~~~~~~~~~~~~~~"] = blank
 
     # Calculate risk-adjusted return ratios
-    metrics["Sharpe"] = _stats.sharpe(df, rf, win_year, True)
+    metrics["Sharpe"] = _get_stats().sharpe(df, rf, win_year, True)
     metrics["Prob. Sharpe Ratio %"] = (
-        _stats.probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
+        _get_stats().probabilistic_sharpe_ratio(df, rf, win_year, False) * pct
     )
 
     # Add advanced Sharpe metrics for full mode
     if mode.lower() == "full":
-        metrics["Smart Sharpe"] = _stats.smart_sharpe(df, rf, win_year, True)
-        # metrics['Prob. Smart Sharpe Ratio %'] = _stats.probabilistic_sharpe_ratio(df, rf, win_year, False, True) * pct
+        metrics["Smart Sharpe"] = _get_stats().smart_sharpe(df, rf, win_year, True)
+        # metrics['Prob. Smart Sharpe Ratio %'] = _get_stats().probabilistic_sharpe_ratio(df, rf, win_year, False, True) * pct
 
     # Calculate Sortino ratio (downside deviation-based)
-    metrics["Sortino"] = _stats.sortino(df, rf, win_year, True)
+    metrics["Sortino"] = _get_stats().sortino(df, rf, win_year, True)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(df, rf, win_year, False) * pct
-        metrics["Smart Sortino"] = _stats.smart_sortino(df, rf, win_year, True)
-        # metrics['Prob. Smart Sortino Ratio %'] = _stats.probabilistic_sortino_ratio(
+        # metrics['Prob. Sortino Ratio %'] = _get_stats().probabilistic_sortino_ratio(df, rf, win_year, False) * pct
+        metrics["Smart Sortino"] = _get_stats().smart_sortino(df, rf, win_year, True)
+        # metrics['Prob. Smart Sortino Ratio %'] = _get_stats().probabilistic_sortino_ratio(
         #     df, rf, win_year, False, True) * pct
 
     # Calculate adjusted Sortino ratio
     metrics["Sortino/√2"] = metrics["Sortino"] / _sqrt(2)
     if mode.lower() == "full":
-        # metrics['Prob. Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(
+        # metrics['Prob. Sortino/√2 Ratio %'] = _get_stats().probabilistic_adjusted_sortino_ratio(
         #     df, rf, win_year, False) * pct
         metrics["Smart Sortino/√2"] = metrics["Smart Sortino"] / _sqrt(2)
-        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _stats.probabilistic_adjusted_sortino_ratio(
+        # metrics['Prob. Smart Sortino/√2 Ratio %'] = _get_stats().probabilistic_adjusted_sortino_ratio(
         #     df, rf, win_year, False, True) * pct
 
     # Calculate Omega ratio (probability-weighted ratio)
     if isinstance(returns, _pd.Series):
         if "benchmark" in df:
             metrics["Omega"] = [
-                _stats.omega(df["returns"], rf, 0.0, win_year),
-                _stats.omega(df["benchmark"], rf, 0.0, win_year),
+                _get_stats().omega(df["returns"], rf, 0.0, win_year),
+                _get_stats().omega(df["benchmark"], rf, 0.0, win_year),
             ]
         else:
-            metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+            metrics["Omega"] = _get_stats().omega(df["returns"], rf, 0.0, win_year)
     elif isinstance(returns, _pd.DataFrame):
         omega_values = [
-            _stats.omega(df[strategy_col], rf, 0.0, win_year)
+            _get_stats().omega(df[strategy_col], rf, 0.0, win_year)
             for strategy_col in df_strategy_columns
         ]
         if "benchmark" in df:
-            omega_values.append(_stats.omega(df["benchmark"], rf, 0.0, win_year))
+            omega_values.append(_get_stats().omega(df["benchmark"], rf, 0.0, win_year))
         metrics["Omega"] = omega_values
 
     # Add separator and prepare for drawdown metrics
@@ -1290,12 +1319,12 @@ def metrics(
         # Calculate annualized volatility
         if isinstance(returns, _pd.Series):
             ret_vol = (
-                _stats.volatility(df["returns"], win_year, True, prepare_returns=False)
+                _get_stats().volatility(df["returns"], win_year, True, prepare_returns=False)
                 * pct
             )
         elif isinstance(returns, _pd.DataFrame):
             ret_vol = [
-                _stats.volatility(
+                _get_stats().volatility(
                     df[strategy_col], win_year, True, prepare_returns=False
                 )
                 * pct
@@ -1305,7 +1334,7 @@ def metrics(
         # Add benchmark volatility if present
         if "benchmark" in df:
             bench_vol = (
-                _stats.volatility(
+                _get_stats().volatility(
                     df["benchmark"], win_year, True, prepare_returns=False
                 )
                 * pct
@@ -1319,16 +1348,16 @@ def metrics(
 
             # Calculate benchmark-relative metrics
             if isinstance(returns, _pd.Series):
-                metrics["R^2"] = _stats.r_squared(
+                metrics["R^2"] = _get_stats().r_squared(
                     df["returns"], df["benchmark"], prepare_returns=False
                 )
-                metrics["Information Ratio"] = _stats.information_ratio(
+                metrics["Information Ratio"] = _get_stats().information_ratio(
                     df["returns"], df["benchmark"], prepare_returns=False
                 )
             elif isinstance(returns, _pd.DataFrame):
                 metrics["R^2"] = (
                     [
-                        _stats.r_squared(
+                        _get_stats().r_squared(
                             df[strategy_col], df["benchmark"], prepare_returns=False
                         ).round(2)
                         for strategy_col in df_strategy_columns
@@ -1336,7 +1365,7 @@ def metrics(
                 ) + ["-"]
                 metrics["Information Ratio"] = (
                     [
-                        _stats.information_ratio(
+                        _get_stats().information_ratio(
                             df[strategy_col], df["benchmark"], prepare_returns=False
                         ).round(2)
                         for strategy_col in df_strategy_columns
@@ -1350,26 +1379,26 @@ def metrics(
                 metrics["Volatility (ann.) %"] = ret_vol
 
         # Additional risk and return metrics
-        metrics["Calmar"] = _stats.calmar(df, prepare_returns=False, periods=win_year)
-        metrics["Skew"] = _stats.skew(df, prepare_returns=False)
-        metrics["Kurtosis"] = _stats.kurtosis(df, prepare_returns=False)
+        metrics["Calmar"] = _get_stats().calmar(df, prepare_returns=False, periods=win_year)
+        metrics["Skew"] = _get_stats().skew(df, prepare_returns=False)
+        metrics["Kurtosis"] = _get_stats().kurtosis(df, prepare_returns=False)
 
         # Add separator
         metrics["~~~~~~~~~~"] = blank
 
         # Expected returns at different frequencies
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False)
+            _get_stats().expected_return(df, compounded=compounded, prepare_returns=False)
             * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(
+            _get_stats().expected_return(
                 df, compounded=compounded, aggregate="ME", prepare_returns=False
             )
             * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(
+            _get_stats().expected_return(
                 df, compounded=compounded, aggregate="YE", prepare_returns=False
             )
             * pct
@@ -1377,16 +1406,16 @@ def metrics(
 
         # Risk management metrics
         metrics["Kelly Criterion %"] = (
-            _stats.kelly_criterion(df, prepare_returns=False) * pct
+            _get_stats().kelly_criterion(df, prepare_returns=False) * pct
         )
-        metrics["Risk of Ruin %"] = _stats.risk_of_ruin(df, prepare_returns=False)
+        metrics["Risk of Ruin %"] = _get_stats().risk_of_ruin(df, prepare_returns=False)
 
         # Value at Risk metrics
         metrics["Daily Value-at-Risk %"] = -abs(
-            _stats.var(df, prepare_returns=False) * pct
+            _get_stats().var(df, prepare_returns=False) * pct
         )
         metrics["Expected Shortfall (cVaR) %"] = -abs(
-            _stats.cvar(df, prepare_returns=False) * pct
+            _get_stats().cvar(df, prepare_returns=False) * pct
         )
 
     # Add separator
@@ -1394,28 +1423,28 @@ def metrics(
 
     # Consecutive wins/losses analysis (full mode only)
     if mode.lower() == "full":
-        metrics["Max Consecutive Wins *int"] = _stats.consecutive_wins(df)
-        metrics["Max Consecutive Losses *int"] = _stats.consecutive_losses(df)
+        metrics["Max Consecutive Wins *int"] = _get_stats().consecutive_wins(df)
+        metrics["Max Consecutive Losses *int"] = _get_stats().consecutive_losses(df)
 
     # Pain-based metrics (Gain/Pain ratio)
-    metrics["Gain/Pain Ratio"] = _stats.gain_to_pain_ratio(df, rf)
-    metrics["Gain/Pain (1M)"] = _stats.gain_to_pain_ratio(df, rf, "ME")
+    metrics["Gain/Pain Ratio"] = _get_stats().gain_to_pain_ratio(df, rf)
+    metrics["Gain/Pain (1M)"] = _get_stats().gain_to_pain_ratio(df, rf, "ME")
     # if mode.lower() == 'full':
-    #     metrics['GPR (3M)'] = _stats.gain_to_pain_ratio(df, rf, "QE")
-    #     metrics['GPR (6M)'] = _stats.gain_to_pain_ratio(df, rf, "2Q")
-    #     metrics['GPR (1Y)'] = _stats.gain_to_pain_ratio(df, rf, "YE")
+    #     metrics['GPR (3M)'] = _get_stats().gain_to_pain_ratio(df, rf, "QE")
+    #     metrics['GPR (6M)'] = _get_stats().gain_to_pain_ratio(df, rf, "2Q")
+    #     metrics['GPR (1Y)'] = _get_stats().gain_to_pain_ratio(df, rf, "YE")
 
     # Add separator
     metrics["~~~~~~~"] = blank
 
     # Trading-based performance metrics
-    metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
-    metrics["Profit Factor"] = _stats.profit_factor(df, prepare_returns=False)
-    metrics["Common Sense Ratio"] = _stats.common_sense_ratio(df, prepare_returns=False)
-    metrics["CPC Index"] = _stats.cpc_index(df, prepare_returns=False)
-    metrics["Tail Ratio"] = _stats.tail_ratio(df, prepare_returns=False)
-    metrics["Outlier Win Ratio"] = _stats.outlier_win_ratio(df, prepare_returns=False)
-    metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(df, prepare_returns=False)
+    metrics["Payoff Ratio"] = _get_stats().payoff_ratio(df, prepare_returns=False)
+    metrics["Profit Factor"] = _get_stats().profit_factor(df, prepare_returns=False)
+    metrics["Common Sense Ratio"] = _get_stats().common_sense_ratio(df, prepare_returns=False)
+    metrics["CPC Index"] = _get_stats().cpc_index(df, prepare_returns=False)
+    metrics["Tail Ratio"] = _get_stats().tail_ratio(df, prepare_returns=False)
+    metrics["Outlier Win Ratio"] = _get_stats().outlier_win_ratio(df, prepare_returns=False)
+    metrics["Outlier Loss Ratio"] = _get_stats().outlier_loss_ratio(df, prepare_returns=False)
 
     # # returns
     metrics["~~"] = blank
@@ -1429,12 +1458,12 @@ def metrics(
     # Calculate period returns based on compounding preference
     if compounded:
         metrics["MTD %"] = (
-            _stats.comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+            _get_stats().comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
         )
-        metrics["3M %"] = _stats.comp(df[df.index >= m3]) * pct
-        metrics["6M %"] = _stats.comp(df[df.index >= m6]) * pct
-        metrics["YTD %"] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
-        metrics["1Y %"] = _stats.comp(df[df.index >= y1]) * pct
+        metrics["3M %"] = _get_stats().comp(df[df.index >= m3]) * pct
+        metrics["6M %"] = _get_stats().comp(df[df.index >= m6]) * pct
+        metrics["YTD %"] = _get_stats().comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+        metrics["1Y %"] = _get_stats().comp(df[df.index >= y1]) * pct
     else:
         metrics["MTD %"] = (
             _np.sum(df[df.index >= _dt(today.year, today.month, 1)], axis=0) * pct
@@ -1447,46 +1476,46 @@ def metrics(
     # Multi-year annualized returns
     d = today - relativedelta(months=35)
     metrics["3Y (ann.) %"] = (
-        _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+        _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
     d = today - relativedelta(months=59)
     metrics["5Y (ann.) %"] = (
-        _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+        _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
     d = today - relativedelta(years=10)
     metrics["10Y (ann.) %"] = (
-        _stats.cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
+        _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
-    metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded, win_year) * pct
+    metrics["All-time (ann.) %"] = _get_stats().cagr(df, 0.0, compounded, win_year) * pct
 
     # Best/worst period analysis (full mode only)
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
         metrics["Best Day %"] = (
-            _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+            _get_stats().best(df, compounded=compounded, prepare_returns=False) * pct
         )
-        metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
+        metrics["Worst Day %"] = _get_stats().worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(
+            _get_stats().best(
                 df, compounded=compounded, aggregate="ME", prepare_returns=False
             )
             * pct
         )
         metrics["Worst Month %"] = (
-            _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
+            _get_stats().worst(df, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(
+            _get_stats().best(
                 df, compounded=compounded, aggregate="YE", prepare_returns=False
             )
             * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(
+            _get_stats().worst(
                 df, compounded=compounded, aggregate="YE", prepare_returns=False
             )
             * pct
@@ -1508,41 +1537,41 @@ def metrics(
         metrics[metric_name] = dd.loc[metric_name].values
 
     # Additional drawdown-based metrics
-    metrics["Recovery Factor"] = _stats.recovery_factor(df)
-    metrics["Ulcer Index"] = _stats.ulcer_index(df)
-    metrics["Serenity Index"] = _stats.serenity_index(df, rf)
+    metrics["Recovery Factor"] = _get_stats().recovery_factor(df)
+    metrics["Ulcer Index"] = _get_stats().ulcer_index(df)
+    metrics["Serenity Index"] = _get_stats().serenity_index(df, rf)
 
     # Win rate analysis (full mode only)
     # win rate
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(
+            _get_stats().avg_win(
                 df, compounded=compounded, aggregate="ME", prepare_returns=False
             )
             * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(
+            _get_stats().avg_loss(
                 df, compounded=compounded, aggregate="ME", prepare_returns=False
             )
             * pct
         )
-        metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
+        metrics["Win Days %%"] = _get_stats().win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(
+            _get_stats().win_rate(
                 df, compounded=compounded, aggregate="ME", prepare_returns=False
             )
             * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(
+            _get_stats().win_rate(
                 df, compounded=compounded, aggregate="QE", prepare_returns=False
             )
             * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(
+            _get_stats().win_rate(
                 df, compounded=compounded, aggregate="YE", prepare_returns=False
             )
             * pct
@@ -1553,7 +1582,7 @@ def metrics(
             metrics["~~~~~~~~~~~~"] = blank
             if isinstance(returns, _pd.Series):
                 # Calculate Greek letters (Beta, Alpha) for single strategy
-                greeks = _stats.greeks(
+                greeks = _get_stats().greeks(
                     df["returns"], df["benchmark"], win_year, prepare_returns=False
                 )
                 metrics["Beta"] = [str(round(greeks["beta"], 2)), "-"]
@@ -1565,7 +1594,7 @@ def metrics(
                 metrics["Treynor Ratio"] = [
                     str(
                         round(
-                            _stats.treynor_ratio(
+                            _get_stats().treynor_ratio(
                                 df["returns"], df["benchmark"], win_year, rf
                             )
                             * pct,
@@ -1578,7 +1607,7 @@ def metrics(
             elif isinstance(returns, _pd.DataFrame):
                 # Calculate Greek letters for multiple strategies
                 greeks = [
-                    _stats.greeks(
+                    _get_stats().greeks(
                         df[strategy_col],
                         df["benchmark"],
                         win_year,
@@ -1599,7 +1628,7 @@ def metrics(
                     [
                         str(
                             round(
-                                _stats.treynor_ratio(
+                                _get_stats().treynor_ratio(
                                     df[strategy_col], df["benchmark"], win_year, rf
                                 )
                                 * pct,
@@ -1807,7 +1836,7 @@ def plots(
 
     # Prepare returns data if requested
     if prepare_returns:
-        returns = _utils._prepare_returns(returns)
+        returns = _get_utils()._prepare_returns(returns)
 
     # Set names for display in plots
     if isinstance(returns, _pd.Series):
@@ -1818,7 +1847,7 @@ def plots(
     # Generate basic plots (snapshot and heatmap)
     if mode.lower() != "full":
         # Performance snapshot plot
-        _plots.snapshot(
+        _get_plots().snapshot(
             returns,
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0]),
@@ -1830,7 +1859,7 @@ def plots(
 
         # Monthly returns heatmap
         if isinstance(returns, _pd.Series):
-            _plots.monthly_heatmap(
+            _get_plots().monthly_heatmap(
                 returns,
                 benchmark,
                 grayscale=grayscale,
@@ -1843,7 +1872,7 @@ def plots(
         elif isinstance(returns, _pd.DataFrame):
             # Generate heatmap for each strategy column
             for col in returns.columns:
-                _plots.monthly_heatmap(
+                _get_plots().monthly_heatmap(
                     returns[col].dropna(),
                     benchmark,
                     grayscale=grayscale,
@@ -1859,14 +1888,14 @@ def plots(
 
     # prepare timeseries
     if benchmark is not None:
-        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+        benchmark = _get_utils()._prepare_benchmark(benchmark, returns.index)
         benchmark.name = benchmark_colname
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
 
     # Generate comprehensive plot suite
     # Cumulative returns plot
-    _plots.returns(
+    _get_plots().returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1878,7 +1907,7 @@ def plots(
     )
 
     # Log returns plot for better visualization
-    _plots.log_returns(
+    _get_plots().log_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1891,7 +1920,7 @@ def plots(
 
     # Volatility-matched returns (if benchmark exists)
     if benchmark is not None:
-        _plots.returns(
+        _get_plots().returns(
             returns,
             benchmark,
             match_volatility=True,
@@ -1904,7 +1933,7 @@ def plots(
         )
 
     # Yearly returns comparison
-    _plots.yearly_returns(
+    _get_plots().yearly_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1916,7 +1945,7 @@ def plots(
     )
 
     # Returns distribution histogram
-    _plots.histogram(
+    _get_plots().histogram(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1936,7 +1965,7 @@ def plots(
         )
 
     # Daily returns scatter plot
-    _plots.daily_returns(
+    _get_plots().daily_returns(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1949,7 +1978,7 @@ def plots(
 
     # Rolling beta analysis (if benchmark exists)
     if benchmark is not None:
-        _plots.rolling_beta(
+        _get_plots().rolling_beta(
             returns,
             benchmark,
             grayscale=grayscale,
@@ -1962,7 +1991,7 @@ def plots(
         )
 
     # Rolling volatility analysis
-    _plots.rolling_volatility(
+    _get_plots().rolling_volatility(
         returns,
         benchmark,
         grayscale=grayscale,
@@ -1973,7 +2002,7 @@ def plots(
     )
 
     # Rolling Sharpe ratio analysis
-    _plots.rolling_sharpe(
+    _get_plots().rolling_sharpe(
         returns,
         grayscale=grayscale,
         figsize=small_fig_size,
@@ -1983,7 +2012,7 @@ def plots(
     )
 
     # Rolling Sortino ratio analysis
-    _plots.rolling_sortino(
+    _get_plots().rolling_sortino(
         returns,
         grayscale=grayscale,
         figsize=small_fig_size,
@@ -1994,7 +2023,7 @@ def plots(
 
     # Drawdown periods analysis
     if isinstance(returns, _pd.Series):
-        _plots.drawdowns_periods(
+        _get_plots().drawdowns_periods(
             returns,
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
@@ -2006,7 +2035,7 @@ def plots(
     elif isinstance(returns, _pd.DataFrame):
         # Handle multiple strategy columns
         for col in returns.columns:
-            _plots.drawdowns_periods(
+            _get_plots().drawdowns_periods(
                 returns[col],
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
@@ -2018,7 +2047,7 @@ def plots(
             )
 
     # Underwater (drawdown) plot
-    _plots.drawdown(
+    _get_plots().drawdown(
         returns,
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
@@ -2029,7 +2058,7 @@ def plots(
 
     # Monthly returns heatmap
     if isinstance(returns, _pd.Series):
-        _plots.monthly_heatmap(
+        _get_plots().monthly_heatmap(
             returns,
             benchmark,
             grayscale=grayscale,
@@ -2043,7 +2072,7 @@ def plots(
     elif isinstance(returns, _pd.DataFrame):
         # Handle multiple strategy columns
         for col in returns.columns:
-            _plots.monthly_heatmap(
+            _get_plots().monthly_heatmap(
                 returns[col],
                 benchmark,
                 grayscale=grayscale,
@@ -2057,7 +2086,7 @@ def plots(
 
     # Returns distribution analysis
     if isinstance(returns, _pd.Series):
-        _plots.distribution(
+        _get_plots().distribution(
             returns,
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
@@ -2070,7 +2099,7 @@ def plots(
     elif isinstance(returns, _pd.DataFrame):
         # Handle multiple strategy columns
         for col in returns.columns:
-            _plots.distribution(
+            _get_plots().distribution(
                 returns[col],
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
@@ -2118,8 +2147,8 @@ def _calc_dd(df, display=True, as_pct=False):
     >>> dd_stats = _calc_dd(returns_df, as_pct=True)
     """
     # Convert returns to drawdown series
-    dd = _stats.to_drawdown_series(df)
-    dd_info = _stats.drawdown_details(dd)
+    dd = _get_stats().to_drawdown_series(df)
+    dd_info = _get_stats().drawdown_details(dd)
 
     # Return empty DataFrame if no drawdowns found
     if dd_info.empty:
@@ -2226,7 +2255,7 @@ def _calc_dd(df, display=True, as_pct=False):
     dd_stats["Max Drawdown %"] = dd_stats["Max Drawdown %"].astype(float) * pct
     dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(float) * pct
 
-    return dd_stats.T
+    return dd_get_stats().T
 
 
 def _html_table(obj, showindex="default"):
@@ -2318,7 +2347,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
     jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
 
     # Execute JavaScript in notebook if in notebook environment
-    if _utils._in_notebook():
+    if _get_utils()._in_notebook():
         iDisplay(iHTML(jscode.replace("{{filename}}", filename)))
 
 
@@ -2359,7 +2388,7 @@ def _open_html(html):
     jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
 
     # Execute JavaScript in notebook if in notebook environment
-    if _utils._in_notebook():
+    if _get_utils()._in_notebook():
         iDisplay(iHTML(jscode))
 
 

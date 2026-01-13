@@ -38,7 +38,18 @@ from matplotlib.ticker import (
 import pandas as _pd
 import numpy as _np
 import seaborn as _sns
-from .. import stats as _stats
+# Lazy import to avoid circular dependency during package initialization
+_stats = None
+
+
+def _get_stats():
+    global _stats
+    if _stats is None:
+        from .. import stats
+        _stats = stats
+    return _stats
+
+
 from .._compat import safe_resample
 
 if TYPE_CHECKING:
@@ -210,7 +221,7 @@ def plot_returns_bars(
     # Clean data and apply resampling
     df = df.dropna()
     if resample is not None:
-        df = safe_resample(df, resample, _stats.comp)
+        df = safe_resample(df, resample, _get_stats().comp)
         df = safe_resample(df, resample, "last")
     # ---------------
 
@@ -435,9 +446,9 @@ def plot_timeseries(
     # Transform data based on compound setting (skip for raw data like drawdowns)
     if not raw_data:
         if compound:
-            returns = _stats.compsum(returns)
+            returns = _get_stats().compsum(returns)
             if isinstance(benchmark, _pd.Series):
-                benchmark = _stats.compsum(benchmark)
+                benchmark = _get_stats().compsum(benchmark)
         else:
             returns = returns.cumsum()
             if isinstance(benchmark, _pd.Series):
@@ -649,7 +660,7 @@ def plot_histogram(
     colors, _, _ = _get_colors(grayscale)
 
     # Choose aggregation function based on compounded setting
-    apply_fnc = _stats.comp if compounded else _np.sum
+    apply_fnc = _get_stats().comp if compounded else _np.sum
 
     # Process benchmark data
     if benchmark is not None:
@@ -1129,11 +1140,11 @@ def plot_rolling_beta(
     # Calculate and plot primary beta window
     i = 1
     if isinstance(returns, _pd.Series):
-        beta = _stats.rolling_greeks(returns, benchmark, window1)["beta"].fillna(0)
+        beta = _get_stats().rolling_greeks(returns, benchmark, window1)["beta"].fillna(0)
         ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
     elif isinstance(returns, _pd.DataFrame):
         beta = {
-            col: _stats.rolling_greeks(returns[col], benchmark, window1)["beta"].fillna(
+            col: _get_stats().rolling_greeks(returns[col], benchmark, window1)["beta"].fillna(
                 0
             )
             for col in returns.columns
@@ -1148,7 +1159,7 @@ def plot_rolling_beta(
         lw = lw - 0.5  # Thinner line for secondary window
         if isinstance(returns, _pd.Series):
             ax.plot(
-                _stats.rolling_greeks(returns, benchmark, window2)["beta"],
+                _get_stats().rolling_greeks(returns, benchmark, window2)["beta"],
                 lw=lw,
                 label=window2_label,
                 color="gray",
@@ -1156,7 +1167,7 @@ def plot_rolling_beta(
             )
         elif isinstance(returns, _pd.DataFrame):
             betas_w2 = {
-                col: _stats.rolling_greeks(returns[col], benchmark, window2)["beta"]
+                col: _get_stats().rolling_greeks(returns[col], benchmark, window2)["beta"]
                 for col in returns.columns
             }
             for name, beta_w2 in betas_w2.items():
@@ -1308,8 +1319,8 @@ def plot_longest_drawdowns(
         colors = ["#000000"] * 3
 
     # Calculate drawdown statistics
-    dd = _stats.to_drawdown_series(returns.fillna(0))
-    dddf = _stats.drawdown_details(dd)
+    dd = _get_stats().to_drawdown_series(returns.fillna(0))
+    dddf = _get_stats().drawdown_details(dd)
     longest_dd = dddf.sort_values(by="days", ascending=False, kind="mergesort")[
         :periods
     ]
@@ -1348,7 +1359,7 @@ def plot_longest_drawdowns(
     ax.set_facecolor("white")
 
     # Calculate cumulative returns
-    series = _stats.compsum(returns) if compounded else returns.cumsum()
+    series = _get_stats().compsum(returns) if compounded else returns.cumsum()
     ax.plot(series, lw=lw, label="Backtest", color=colors[0])
 
     # Highlight drawdown periods
@@ -1476,10 +1487,10 @@ def plot_distribution(
 
     # Calculate returns for different time periods
     if compounded:
-        port["Weekly"] = safe_resample(port["Daily"], "W-MON", _stats.comp)
-        port["Monthly"] = safe_resample(port["Daily"], "ME", _stats.comp)
-        port["Quarterly"] = safe_resample(port["Daily"], "QE", _stats.comp)
-        port["Yearly"] = safe_resample(port["Daily"], "YE", _stats.comp)
+        port["Weekly"] = safe_resample(port["Daily"], "W-MON", _get_stats().comp)
+        port["Monthly"] = safe_resample(port["Daily"], "ME", _get_stats().comp)
+        port["Quarterly"] = safe_resample(port["Daily"], "QE", _get_stats().comp)
+        port["Yearly"] = safe_resample(port["Daily"], "YE", _get_stats().comp)
     else:
         port["Weekly"] = safe_resample(port["Daily"], "W-MON", "sum")
         port["Monthly"] = safe_resample(port["Daily"], "ME", "sum")

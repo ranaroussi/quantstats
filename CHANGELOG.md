@@ -1,15 +1,23 @@
 Changelog
 ===========
 
-0.0.79
+0.0.80
 ------
 
 **Hotfix Release**
 
-- Fixed critical circular import error that broke `import quantstats` (#499):
-  - Root cause: `utils.py` imported `stats` at module level, creating circular dependency
-  - Fix: Deferred `stats` import inside `to_prices()` and `group_returns()` functions
+- Fixed circular import errors that broke `import quantstats` (#499, #501):
+  - Root cause: Multiple modules imported `stats` and `utils` at module level during package initialization
+  - Fix: Implemented lazy imports in `utils.py`, `reports.py`, `_plotting/core.py`, `_plotting/wrappers.py`
+  - Removed erroneous `quantstats/stats.py` entry from `.gitignore` that excluded it from wheel builds
   - Import now works correctly on fresh installations
+
+0.0.79
+------
+
+**Hotfix Release (Incomplete)**
+
+- Attempted fix for circular import (#499), but additional circular imports remained
 
 0.0.78
 ------
