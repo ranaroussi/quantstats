@@ -161,7 +161,11 @@ def safe_resample(data: Union[pd.Series, pd.DataFrame],
                 result = resampler.apply(func_name, **kwargs)
     else:
         # For callable functions, use apply method
-        result = resampler.apply(func_name, **kwargs)
+        # Suppress FutureWarning about callable usage - our use is intentional
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=FutureWarning, 
+                                    message=".*callable.*")
+            result = resampler.apply(func_name, **kwargs)
     
     # Normalize timezone to ensure consistent comparisons
     return normalize_timezone(result)

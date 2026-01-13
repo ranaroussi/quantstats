@@ -2115,11 +2115,11 @@ def profit_ratio(returns, prepare_returns=True):
     providing insight into the consistency of profitable periods.
 
     Args:
-        returns (pd.Series): Return series to analyze
+        returns (pd.Series or pd.DataFrame): Return series to analyze
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
-        float: Profit ratio
+        float or pd.Series: Profit ratio
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
@@ -2129,30 +2129,33 @@ def profit_ratio(returns, prepare_returns=True):
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    # Separate wins and losses
-    wins = returns[returns >= 0]
-    loss = returns[returns < 0]
+    def _profit_ratio(ret):
+        # Separate wins and losses
+        wins = ret[ret >= 0]
+        loss = ret[ret < 0]
 
-    # Handle edge cases
-    if wins.count() == 0:
-        warn("No winning returns found for profit ratio calculation")
-        return 0.0
-    if loss.count() == 0:
-        warn("No losing returns found for profit ratio calculation, returning infinity")
-        return float('inf')
+        # Handle edge cases
+        win_count = len(wins)
+        loss_count = len(loss)
 
-    # Calculate win and loss ratios
-    win_ratio = abs(wins.mean() / wins.count()) if wins.count() > 0 else 0
-    loss_ratio = abs(loss.mean() / loss.count()) if loss.count() > 0 else 0
+        if win_count == 0:
+            return 0.0
+        if loss_count == 0:
+            return _np.nan
 
-    try:
+        # Calculate win and loss ratios
+        win_ratio = abs(wins.mean() / win_count) if win_count > 0 else 0
+        loss_ratio = abs(loss.mean() / loss_count) if loss_count > 0 else 0
+
         if loss_ratio == 0:
-            warn("Loss ratio is zero, returning infinity for profit ratio")
-            return float('inf')
+            return _np.nan
         return win_ratio / loss_ratio
-    except (ValueError, TypeError) as e:
-        warn(f"Error calculating profit ratio: {e}, returning 0.0")
-        return 0.0
+
+    # Handle DataFrame by applying to each column
+    if isinstance(returns, _pd.DataFrame):
+        return returns.apply(_profit_ratio)
+
+    return _profit_ratio(returns)
 
 
 def profit_factor(returns, prepare_returns=True):

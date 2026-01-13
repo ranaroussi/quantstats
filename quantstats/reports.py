@@ -57,6 +57,8 @@ def _get_plots():
 from dateutil.relativedelta import relativedelta
 from io import StringIO
 from pathlib import Path
+import tempfile
+import webbrowser
 
 try:
     from IPython.display import display as iDisplay, HTML as iHTML
@@ -93,6 +95,44 @@ def _get_trading_periods(periods_per_year=252):
     # Calculate half year periods using ceiling to ensure we get at least half
     half_year = _ceil(periods_per_year / 2)
     return periods_per_year, half_year
+
+
+def _print_parameters_table(
+    benchmark_title=None,
+    periods_per_year=252,
+    rf=0.0,
+    compounded=True,
+    match_dates=True,
+):
+    """
+    Print a formatted parameters table for terminal/console output.
+
+    Parameters
+    ----------
+    benchmark_title : str or None
+        Benchmark name/ticker
+    periods_per_year : int
+        Number of trading periods per year
+    rf : float
+        Risk-free rate
+    compounded : bool
+        Whether returns are compounded
+    match_dates : bool
+        Whether dates are matched with benchmark
+    """
+    width = 40
+    print("=" * width)
+    print("                 Parameters")
+    print("-" * width)
+    if benchmark_title:
+        print(f"{'Benchmark':<25}{benchmark_title.upper():>15}")
+    print(f"{'Periods/Year':<25}{periods_per_year:>15}")
+    print(f"{'Risk-Free Rate':<25}{rf:>14.1%}")
+    print(f"{'Compounded':<25}{'Yes' if compounded else 'No':>15}")
+    if benchmark_title:
+        print(f"{'Match Dates':<25}{'Yes' if match_dates else 'No':>15}")
+    print("=" * width)
+    print()
 
 
 def _match_dates(returns, benchmark):
@@ -203,15 +243,9 @@ def html(
 
     Raises
     ------
-    ValueError
-        If output is None and not running in notebook environment
     FileNotFoundError
         If custom template_path doesn't exist
     """
-    # Check if output parameter is required (not in notebook environment)
-    if output is None and not _get_utils()._in_notebook():
-        raise ValueError("`output` must be specified")
-
     # Clean returns data by removing NaN values if date matching is enabled
     if match_dates:
         returns = returns.dropna()
@@ -290,10 +324,13 @@ def html(
     # Format date range for display in template
     date_range = returns.index.strftime("%e %b, %Y")
     tpl = tpl.replace("{{date_range}}", date_range[0] + " - " + date_range[-1])
-    tpl = tpl.replace("{{title}}", title)
+
+    # Build title with compounding indicator (only show if compounded)
+    full_title = f"{title} (Compounded)" if compounded else title
+    tpl = tpl.replace("{{title}}", full_title)
     tpl = tpl.replace("{{v}}", __version__)
 
-    # Build parameters string for subtitle (feature #472)
+    # Build parameters string for subtitle
     params_parts = []
 
     # Add user-provided parameters first if present
@@ -302,15 +339,12 @@ def html(
         for key, value in user_params.items():
             params_parts.append(f"{key}: {value}")
 
-    # Add auto-detected parameters
+    # Add auto-detected parameters (always show key params)
     if benchmark_title:
         params_parts.append(f"Benchmark: {benchmark_title.upper()}")
-    if rf != 0:
-        params_parts.append(f"RF: {rf:.1%}")
-    if periods_per_year != 252:
-        params_parts.append(f"Periods: {periods_per_year}")
-    if not compounded:
-        params_parts.append("Simple Returns")
+    params_parts.append(f"Periods/Year: {periods_per_year}")
+    params_parts.append(f"RF: {rf:.1%}")
+
     params_str = " &bull; ".join(params_parts)
     if params_str:
         params_str += " | "
@@ -725,8 +759,16 @@ def html(
 
     # Handle output - either download in browser or save to file
     if output is None:
-        # _open_html(tpl)
-        _download_html(tpl, download_filename)
+        if _get_utils()._in_notebook():
+            _download_html(tpl, download_filename)
+        else:
+            # Save to temp file and open in browser
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as f:
+                f.write(tpl)
+                temp_path = f.name
+            webbrowser.open("file://" + temp_path)
         return
 
     # Write HTML content to specified output file
@@ -888,6 +930,13 @@ def full(
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
     else:
         # Display in console/terminal environment
+        _print_parameters_table(
+            benchmark_title=benchmark_title,
+            periods_per_year=periods_per_year,
+            rf=rf,
+            compounded=compounded,
+            match_dates=match_dates,
+        )
         print("[Performance Metrics]\n")
         metrics(
             returns=returns,
@@ -1043,6 +1092,13 @@ def basic(
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
     else:
         # Display in console/terminal environment
+        _print_parameters_table(
+            benchmark_title=benchmark_title,
+            periods_per_year=periods_per_year,
+            rf=rf,
+            compounded=compounded,
+            match_dates=match_dates,
+        )
         print("[Performance Metrics]\n")
         metrics(
             returns=returns,
@@ -1383,8 +1439,23 @@ def metrics(
         metrics["Skew"] = _get_stats().skew(df, prepare_returns=False)
         metrics["Kurtosis"] = _get_stats().kurtosis(df, prepare_returns=False)
 
+        # Additional ratios
+        metrics["Ulcer Performance Index"] = _get_stats().ulcer_performance_index(df, rf)
+        metrics["Risk-Adjusted Return %"] = _get_stats().rar(df, rf) * pct
+        metrics["Risk-Return Ratio"] = _get_stats().risk_return_ratio(df, prepare_returns=False)
+
         # Add separator
         metrics["~~~~~~~~~~"] = blank
+
+        # Average return metrics
+        metrics["Avg. Return %"] = _get_stats().avg_return(df, prepare_returns=False) * pct
+        metrics["Avg. Win %"] = _get_stats().avg_win(df, prepare_returns=False) * pct
+        metrics["Avg. Loss %"] = _get_stats().avg_loss(df, prepare_returns=False) * pct
+        metrics["Win/Loss Ratio"] = _get_stats().win_loss_ratio(df, prepare_returns=False)
+        metrics["Profit Ratio"] = _get_stats().profit_ratio(df, prepare_returns=False)
+
+        # Add separator
+        metrics["~~~~~~~~~~~"] = blank
 
         # Expected returns at different frequencies
         metrics["Expected Daily %%"] = (

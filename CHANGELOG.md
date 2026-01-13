@@ -4,29 +4,28 @@ Changelog
 0.0.81
 ------
 
-**Hotfix Release**
+**Bugfixes for 0.0.78 release**
 
+- Fixed circular import errors that broke `import quantstats` (#499, #501)
 - Fixed `NameError: name 'dd_get_stats' is not defined` in `reports.full()` (#502)
-  - Root cause: Accidental find-and-replace during v0.0.80 lazy import refactoring changed `dd_stats` to `dd_get_stats()`
-  - Fix: Restored correct variable name `dd_stats` in `_calc_dd()` function
+- Fixed `reports.html()` to work without specifying output file (opens in browser)
+- Fixed `profit_ratio()` to handle DataFrame inputs properly
+- Removed dark mode CSS from HTML report template
+- Suppressed pandas FutureWarning for callable resampler.apply()
 
-0.0.80
-------
+- Improved HTML report header:
+  - Title shows "(Compounded)" only when compounded=True
+  - Date range shows "(matched dates)" only when match_dates=True with benchmark
+  - Parameters now always show Benchmark, Periods/Year, and RF rate
 
-**Hotfix Release**
+- Added new metrics to full HTML report:
+  - Ulcer Performance Index, Risk-Adjusted Return, Risk-Return Ratio
+  - Avg. Return, Avg. Win, Avg. Loss, Win/Loss Ratio, Profit Ratio
 
-- Fixed circular import errors that broke `import quantstats` (#499, #501):
-  - Root cause: Multiple modules imported `stats` and `utils` at module level during package initialization
-  - Fix: Implemented lazy imports in `utils.py`, `reports.py`, `_plotting/core.py`, `_plotting/wrappers.py`
-  - Removed erroneous `quantstats/stats.py` entry from `.gitignore` that excluded it from wheel builds
-  - Import now works correctly on fresh installations
+- Added terminal output parameters table for `reports.full()` and `reports.basic()`
 
-0.0.79
-------
-
-**Hotfix Release (Incomplete)**
-
-- Attempted fix for circular import (#499), but additional circular imports remained
+- Added comprehensive test suite (125 tests):
+  - Tests for stats, reports, utils, plots, compat, extend_pandas, and Monte Carlo
 
 0.0.78
 ------
