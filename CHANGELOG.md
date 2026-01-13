@@ -1,6 +1,16 @@
 Changelog
 ===========
 
+0.0.79
+------
+
+**Hotfix Release**
+
+- Fixed critical circular import error that broke `import quantstats` (#499):
+  - Root cause: `utils.py` imported `stats` at module level, creating circular dependency
+  - Fix: Deferred `stats` import inside `to_prices()` and `group_returns()` functions
+  - Import now works correctly on fresh installations
+
 0.0.78
 ------
 
