@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -31,8 +30,10 @@ return data, price data, or performance metrics.
 """
 
 from warnings import warn
+from typing import Literal
 import pandas as _pd
 import numpy as _np
+from numpy.typing import NDArray
 from math import ceil as _ceil, sqrt as _sqrt
 from scipy.stats import norm as _norm, linregress as _linregress
 
@@ -40,11 +41,14 @@ from . import utils as _utils
 from ._compat import safe_concat
 from .utils import validate_input
 
+# Type aliases for common types (Python 3.10+ syntax)
+Returns = _pd.Series | _pd.DataFrame
+"""Type alias for returns data: can be a pandas Series or DataFrame."""
 
 # ======== STATS ========
 
 
-def pct_rank(prices, window=60):
+def pct_rank(prices: _pd.Series, window: int = 60) -> _pd.Series:
     """
     Calculate the percentile rank of prices over a rolling window.
 
@@ -70,7 +74,7 @@ def pct_rank(prices, window=60):
     return rank.iloc[:, 0] * 100.0
 
 
-def compsum(returns):
+def compsum(returns: Returns) -> Returns:
     """
     Calculate rolling compounded returns (cumulative product).
 
@@ -78,10 +82,10 @@ def compsum(returns):
     to each return, taking the cumulative product, and subtracting 1.
 
     Args:
-        returns (pd.Series): Series of returns
+        returns: Series or DataFrame of returns
 
     Returns:
-        pd.Series: Cumulative compounded returns
+        Cumulative compounded returns (same type as input)
 
     Example:
         >>> returns = pd.Series([0.01, 0.02, -0.01, 0.03])
@@ -92,7 +96,7 @@ def compsum(returns):
     return returns.add(1).cumprod(axis=0) - 1
 
 
-def comp(returns):
+def comp(returns: Returns) -> _pd.Series | float:
     """
     Calculate total compounded returns (final cumulative return).
 
@@ -114,7 +118,11 @@ def comp(returns):
     return returns.add(1).prod(axis=0) - 1
 
 
-def distribution(returns, compounded=True, prepare_returns=True):
+def distribution(
+    returns: Returns,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> dict:
     """
     Analyze return distributions across different time periods.
 
@@ -187,7 +195,12 @@ def distribution(returns, compounded=True, prepare_returns=True):
     }
 
 
-def expected_return(returns, aggregate=None, compounded=True, prepare_returns=True):
+def expected_return(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Calculate the expected return (geometric mean) for a given period.
 
@@ -219,7 +232,11 @@ def expected_return(returns, aggregate=None, compounded=True, prepare_returns=Tr
     return _np.prod(1 + returns, axis=0) ** (1 / len(returns)) - 1
 
 
-def geometric_mean(returns, aggregate=None, compounded=True):
+def geometric_mean(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+) -> float:
     """
     Calculate geometric mean of returns.
 
@@ -236,7 +253,11 @@ def geometric_mean(returns, aggregate=None, compounded=True):
     return expected_return(returns, aggregate, compounded)
 
 
-def ghpr(returns, aggregate=None, compounded=True):
+def ghpr(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+) -> float:
     """
     Calculate Geometric Holding Period Return.
 
@@ -254,7 +275,7 @@ def ghpr(returns, aggregate=None, compounded=True):
     return expected_return(returns, aggregate, compounded)
 
 
-def outliers(returns, quantile=0.95):
+def outliers(returns: Returns, quantile: float = 0.95) -> Returns:
     """
     Identify and return outlier returns above a specified quantile.
 
@@ -277,7 +298,7 @@ def outliers(returns, quantile=0.95):
     return returns[returns > returns.quantile(quantile)].dropna(how="all")
 
 
-def remove_outliers(returns, quantile=0.95):
+def remove_outliers(returns: Returns, quantile: float = 0.95) -> Returns:
     """
     Remove outlier returns above a specified quantile.
 
@@ -300,7 +321,12 @@ def remove_outliers(returns, quantile=0.95):
     return returns[returns < returns.quantile(quantile)]
 
 
-def best(returns, aggregate=None, compounded=True, prepare_returns=True):
+def best(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Find the best (highest) return for a given period.
 
@@ -328,7 +354,12 @@ def best(returns, aggregate=None, compounded=True, prepare_returns=True):
     return _utils.aggregate_returns(returns, aggregate, compounded).max()
 
 
-def worst(returns, aggregate=None, compounded=True, prepare_returns=True):
+def worst(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Find the worst (lowest) return for a given period.
 
@@ -356,7 +387,12 @@ def worst(returns, aggregate=None, compounded=True, prepare_returns=True):
     return _utils.aggregate_returns(returns, aggregate, compounded).min()
 
 
-def consecutive_wins(returns, aggregate=None, compounded=True, prepare_returns=True):
+def consecutive_wins(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> int:
     """
     Calculate the maximum number of consecutive winning periods.
 
@@ -387,7 +423,12 @@ def consecutive_wins(returns, aggregate=None, compounded=True, prepare_returns=T
     return _utils._count_consecutive(returns).max()
 
 
-def consecutive_losses(returns, aggregate=None, compounded=True, prepare_returns=True):
+def consecutive_losses(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> int:
     """
     Calculate the maximum number of consecutive losing periods.
 
@@ -418,7 +459,10 @@ def consecutive_losses(returns, aggregate=None, compounded=True, prepare_returns
     return _utils._count_consecutive(returns).max()
 
 
-def exposure(returns, prepare_returns=True):
+def exposure(
+    returns: Returns,
+    prepare_returns: bool = True,
+) -> float | _pd.Series:
     """
     Calculate market exposure time as percentage of periods with non-zero returns.
 
@@ -462,7 +506,12 @@ def exposure(returns, prepare_returns=True):
     return _exposure(returns)
 
 
-def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
+def win_rate(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float | _pd.Series:
     """
     Calculate the win rate (percentage of profitable periods).
 
@@ -520,7 +569,12 @@ def win_rate(returns, aggregate=None, compounded=True, prepare_returns=True):
     return _win_rate(returns)
 
 
-def avg_return(returns, aggregate=None, compounded=True, prepare_returns=True):
+def avg_return(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Calculate the average return per period (excluding zero returns).
 
@@ -552,7 +606,12 @@ def avg_return(returns, aggregate=None, compounded=True, prepare_returns=True):
     return returns[returns != 0].dropna().mean()
 
 
-def avg_win(returns, aggregate=None, compounded=True, prepare_returns=True):
+def avg_win(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Calculate the average winning return (mean of positive returns).
 
@@ -584,7 +643,12 @@ def avg_win(returns, aggregate=None, compounded=True, prepare_returns=True):
     return returns[returns > 0].dropna().mean()
 
 
-def avg_loss(returns, aggregate=None, compounded=True, prepare_returns=True):
+def avg_loss(
+    returns: Returns,
+    aggregate: str | None = None,
+    compounded: bool = True,
+    prepare_returns: bool = True,
+) -> float:
     """
     Calculate the average losing return (mean of negative returns).
 
@@ -616,7 +680,12 @@ def avg_loss(returns, aggregate=None, compounded=True, prepare_returns=True):
     return returns[returns < 0].dropna().mean()
 
 
-def volatility(returns, periods=252, annualize=True, prepare_returns=True):
+def volatility(
+    returns: Returns,
+    periods: int = 252,
+    annualize: bool = True,
+    prepare_returns: bool = True,
+) -> float | _pd.Series:
     """
     Calculate volatility (standard deviation) of returns.
 
@@ -625,13 +694,13 @@ def volatility(returns, periods=252, annualize=True, prepare_returns=True):
     more uncertainty and risk.
 
     Args:
-        returns (pd.Series): Return series to analyze
-        periods (int): Number of periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the volatility (default: True)
-        prepare_returns (bool): Whether to prepare returns first (default: True)
+        returns: Return series or DataFrame to analyze
+        periods: Number of periods per year for annualization (default: 252)
+        annualize: Whether to annualize the volatility (default: True)
+        prepare_returns: Whether to prepare returns first (default: True)
 
     Returns:
-        float: Volatility (annualized if annualize=True)
+        Volatility (annualized if annualize=True)
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
@@ -654,8 +723,11 @@ def volatility(returns, periods=252, annualize=True, prepare_returns=True):
 
 
 def rolling_volatility(
-    returns, rolling_period=126, periods_per_year=252, prepare_returns=True
-):
+    returns: Returns,
+    rolling_period: int = 126,
+    periods_per_year: int = 252,
+    prepare_returns: bool = True,
+) -> _pd.Series:
     """
     Calculate rolling volatility over a specified window.
 
@@ -683,7 +755,11 @@ def rolling_volatility(
     return returns.rolling(rolling_period).std() * _np.sqrt(periods_per_year)
 
 
-def implied_volatility(returns, periods=252, annualize=True):
+def implied_volatility(
+    returns: Returns,
+    periods: int = 252,
+    annualize: bool = True,
+) -> float | _pd.Series:
     """
     Calculate implied volatility using log returns.
 
@@ -714,7 +790,10 @@ def implied_volatility(returns, periods=252, annualize=True):
     return logret.std()
 
 
-def autocorr_penalty(returns, prepare_returns=False):
+def autocorr_penalty(
+    returns: Returns,
+    prepare_returns: bool = False,
+) -> float:
     """
     Calculate autocorrelation penalty for risk-adjusted metrics.
 
@@ -759,7 +838,13 @@ def autocorr_penalty(returns, prepare_returns=False):
 # ======= METRICS =======
 
 
-def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
+def sharpe(
+    returns: Returns,
+    rf: float = 0.0,
+    periods: int = 252,
+    annualize: bool = True,
+    smart: bool = False,
+) -> float | _pd.Series:
     """
     Calculate the Sharpe ratio of excess returns.
 
@@ -768,14 +853,14 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
     Higher values indicate better risk-adjusted performance.
 
     Args:
-        returns (pd.Series): Return series to analyze
-        rf (float): Risk-free rate (annualized if periods specified, default: 0.0)
-        periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the ratio (default: True)
-        smart (bool): Whether to apply autocorrelation penalty (default: False)
+        returns: Return series or DataFrame to analyze
+        rf: Risk-free rate (annualized if periods specified, default: 0.0)
+        periods: Periods per year for annualization (default: 252)
+        annualize: Whether to annualize the ratio (default: True)
+        smart: Whether to apply autocorrelation penalty (default: False)
 
     Returns:
-        float: Sharpe ratio
+        Sharpe ratio (float for Series input, Series for DataFrame input)
 
     Raises:
         ValueError: If rf is non-zero but periods is None
@@ -813,7 +898,12 @@ def sharpe(returns, rf=0.0, periods=252, annualize=True, smart=False):
     return res
 
 
-def smart_sharpe(returns, rf=0.0, periods=252, annualize=True):
+def smart_sharpe(
+    returns: Returns,
+    rf: float = 0.0,
+    periods: int = 252,
+    annualize: bool = True,
+) -> float | _pd.Series:
     """
     Calculate the Smart Sharpe ratio (Sharpe with autocorrelation penalty).
 
@@ -839,13 +929,13 @@ def smart_sharpe(returns, rf=0.0, periods=252, annualize=True):
 
 
 def rolling_sharpe(
-    returns,
-    rf=0.0,
-    rolling_period=126,
-    annualize=True,
-    periods_per_year=252,
-    prepare_returns=True,
-):
+    returns: Returns,
+    rf: float = 0.0,
+    rolling_period: int = 126,
+    annualize: bool = True,
+    periods_per_year: int = 252,
+    prepare_returns: bool = True,
+) -> _pd.Series:
     """
     Calculate rolling Sharpe ratio over a specified window.
 
@@ -889,7 +979,13 @@ def rolling_sharpe(
     return res
 
 
-def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
+def sortino(
+    returns: Returns,
+    rf: float = 0,
+    periods: int = 252,
+    annualize: bool = True,
+    smart: bool = False,
+) -> float | _pd.Series:
     """
     Calculate the Sortino ratio of excess returns.
 
@@ -954,7 +1050,12 @@ def sortino(returns, rf=0, periods=252, annualize=True, smart=False):
     return res
 
 
-def smart_sortino(returns, rf=0, periods=252, annualize=True):
+def smart_sortino(
+    returns: Returns,
+    rf: float = 0,
+    periods: int = 252,
+    annualize: bool = True,
+) -> float | _pd.Series:
     """
     Calculate the Smart Sortino ratio (Sortino with autocorrelation penalty).
 
@@ -980,8 +1081,13 @@ def smart_sortino(returns, rf=0, periods=252, annualize=True):
 
 
 def rolling_sortino(
-    returns, rf=0, rolling_period=126, annualize=True, periods_per_year=252, **kwargs
-):
+    returns: Returns,
+    rf: float = 0,
+    rolling_period: int = 126,
+    annualize: bool = True,
+    periods_per_year: int = 252,
+    **kwargs,
+) -> _pd.Series:
     """
     Calculate rolling Sortino ratio over a specified window.
 
@@ -1040,7 +1146,13 @@ def rolling_sortino(
     return res
 
 
-def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
+def adjusted_sortino(
+    returns: Returns,
+    rf: float = 0,
+    periods: int = 252,
+    annualize: bool = True,
+    smart: bool = False,
+) -> float | _pd.Series:
     """
     Calculate Jack Schwager's adjusted Sortino ratio.
 
@@ -1074,8 +1186,13 @@ def adjusted_sortino(returns, rf=0, periods=252, annualize=True, smart=False):
 
 
 def probabilistic_ratio(
-    series, rf=0.0, base="sharpe", periods=252, annualize=False, smart=False
-):
+    series: Returns,
+    rf: float = 0.0,
+    base: str = "sharpe",
+    periods: int = 252,
+    annualize: bool = False,
+    smart: bool = False,
+) -> float:
     """
     Calculate the probabilistic ratio for a given base metric.
 
@@ -1139,8 +1256,12 @@ def probabilistic_ratio(
 
 
 def probabilistic_sharpe_ratio(
-    series, rf=0.0, periods=252, annualize=False, smart=False
-):
+    series: Returns,
+    rf: float = 0.0,
+    periods: int = 252,
+    annualize: bool = False,
+    smart: bool = False,
+) -> float:
     """
     Calculate the Probabilistic Sharpe Ratio (PSR).
 
@@ -1270,7 +1391,12 @@ def treynor_ratio(returns, benchmark, periods=252.0, rf=0.0):
     return (comp(returns) - rf) / beta
 
 
-def omega(returns, rf=0.0, required_return=0.0, periods=252):
+def omega(
+    returns: Returns,
+    rf: float = 0.0,
+    required_return: float = 0.0,
+    periods: int = 252,
+) -> float:
     """
     Calculate the Omega ratio of a strategy.
 
@@ -1378,7 +1504,12 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
         return returns.sum() / downside
 
 
-def cagr(returns, rf=0.0, compounded=True, periods=252):
+def cagr(
+    returns: Returns,
+    rf: float = 0.0,
+    compounded: bool = True,
+    periods: int = 252,
+) -> float | _pd.Series:
     """
     Calculate the Compound Annual Growth Rate (CAGR) of excess returns.
 
@@ -1508,7 +1639,11 @@ def kurtosis(returns, prepare_returns=True):
     return returns.kurtosis()
 
 
-def calmar(returns, prepare_returns=True, periods=252):
+def calmar(
+    returns: Returns,
+    prepare_returns: bool = True,
+    periods: int = 252,
+) -> float:
     """
     Calculate the Calmar ratio (CAGR / Maximum Drawdown).
 
@@ -1659,10 +1794,19 @@ def serenity_index(returns, rf=0):
         # Series input - scalar operations
         if std_returns == 0:
             return _np.nan
-        
-        pitfall = -cvar(dd) / std_returns
-        denominator = ulcer_index(returns) * pitfall
-        
+
+        cvar_val = cvar(dd)
+        ulcer_val = ulcer_index(returns)
+
+        # Handle cases where these might return Series/array
+        if hasattr(cvar_val, '__len__') and len(cvar_val) == 1:
+            cvar_val = float(cvar_val.iloc[0] if hasattr(cvar_val, 'iloc') else cvar_val[0])
+        if hasattr(ulcer_val, '__len__') and len(ulcer_val) == 1:
+            ulcer_val = float(ulcer_val.iloc[0] if hasattr(ulcer_val, 'iloc') else ulcer_val[0])
+
+        pitfall = -cvar_val / std_returns
+        denominator = ulcer_val * pitfall
+
         if denominator == 0:
             return _np.nan
         return (returns.sum() - rf) / denominator
@@ -1714,7 +1858,12 @@ def ror(returns):
     return risk_of_ruin(returns)
 
 
-def value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns=True):
+def value_at_risk(
+    returns: Returns,
+    sigma: float = 1,
+    confidence: float = 0.95,
+    prepare_returns: bool = True,
+) -> float | _pd.Series:
     """
     Calculate the daily Value at Risk (VaR).
 
@@ -1769,7 +1918,12 @@ def var(returns, sigma=1, confidence=0.95, prepare_returns=True):
     return value_at_risk(returns, sigma, confidence, prepare_returns)
 
 
-def conditional_value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns=True):
+def conditional_value_at_risk(
+    returns: Returns,
+    sigma: float = 1,
+    confidence: float = 0.95,
+    prepare_returns: bool = True,
+) -> float | _pd.Series:
     """
     Calculate the Conditional Value at Risk (CVaR), also known as Expected Shortfall.
 
@@ -1794,21 +1948,24 @@ def conditional_value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    # Calculate VaR threshold
-    var = value_at_risk(returns, sigma, confidence)
-
-    # Calculate mean of returns below VaR threshold
     # Handle both Series and DataFrame inputs
     if isinstance(returns, _pd.DataFrame):
-        # For DataFrame, use dropna() to remove NaN values after filtering
-        below_var = returns[returns < var].dropna()
-        c_var = below_var.values.mean() if len(below_var) > 0 else _np.nan
+        # For DataFrame, calculate CVaR for each column separately
+        result = {}
+        for col in returns.columns:
+            col_returns = returns[col]
+            # Calculate VaR for this specific column
+            col_var = value_at_risk(col_returns, sigma, confidence, prepare_returns=False)
+            below_var = col_returns[col_returns < col_var]
+            c_var_col = below_var.mean() if len(below_var) > 0 else _np.nan
+            result[col] = c_var_col if not _np.isnan(c_var_col) else col_var
+        return _pd.Series(result)
     else:
-        # For Series, the original approach works fine
+        # For Series, calculate VaR threshold
+        var = value_at_risk(returns, sigma, confidence)
         c_var = returns[returns < var].values.mean()
-
-    # Return CVaR if valid, otherwise return VaR
-    return c_var if ~_np.isnan(c_var) else var
+        # Return CVaR if valid, otherwise return VaR
+        return c_var if ~_np.isnan(c_var) else var
 
 
 def cvar(returns, sigma=1, confidence=0.95, prepare_returns=True):
@@ -2117,17 +2274,17 @@ def outlier_win_ratio(returns, quantile=0.99, prepare_returns=True):
 
     # Calculate ratio of high quantile to mean positive return
     positive_mean = returns[returns >= 0].mean()
-    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
-    
+    quantile_val = returns.quantile(quantile)  # Series for DataFrame, scalar for Series
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(positive_mean, _pd.Series):
         # DataFrame input - element-wise division with zero protection
-        return quantile_mean / positive_mean.replace(0, _np.nan)
+        return quantile_val / positive_mean.replace(0, _np.nan)
     else:
         # Series input - scalar division
         if _pd.isna(positive_mean) or positive_mean == 0:
             return _np.nan
-        return quantile_mean / positive_mean
+        return quantile_val / positive_mean
 
 
 def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
@@ -2156,17 +2313,17 @@ def outlier_loss_ratio(returns, quantile=0.01, prepare_returns=True):
 
     # Calculate ratio of low quantile to mean negative return
     negative_mean = returns[returns < 0].mean()
-    quantile_mean = returns.quantile(quantile).mean() if isinstance(returns, _pd.DataFrame) else returns.quantile(quantile)
-    
+    quantile_val = returns.quantile(quantile)  # Series for DataFrame, scalar for Series
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(negative_mean, _pd.Series):
         # DataFrame input - element-wise division with zero protection
-        return quantile_mean / negative_mean.replace(0, _np.nan)
+        return quantile_val / negative_mean.replace(0, _np.nan)
     else:
         # Series input - scalar division
         if _pd.isna(negative_mean) or negative_mean == 0:
             return _np.nan
-        return quantile_mean / negative_mean
+        return quantile_val / negative_mean
 
 
 def recovery_factor(returns, rf=0.0, prepare_returns=True):
@@ -2288,7 +2445,7 @@ def _get_baseline_value(prices):
         return 1.0
 
 
-def max_drawdown(prices):
+def max_drawdown(prices: Returns) -> float:
     """
     Calculate the maximum drawdown from peak to trough.
 
@@ -2951,3 +3108,197 @@ def drawdown_details(drawdown):
         return safe_concat(_dfs, axis=1)
 
     return _drawdown_details(drawdown)
+
+
+# ======== MONTE CARLO ========
+
+
+def montecarlo(returns, sims=1000, bust=None, goal=None, seed=None):
+    """
+    Run Monte Carlo simulation by shuffling returns.
+
+    This function creates multiple simulated return paths by randomly
+    shuffling the historical returns. This preserves the return distribution
+    while breaking any time-series dependencies, allowing probability-based
+    risk assessment.
+
+    Args:
+        returns (pd.Series or pd.DataFrame): Daily returns (not prices)
+        sims (int): Number of simulations to run (default: 1000)
+        bust (float, optional): Drawdown threshold for "bust" probability
+            (e.g., -0.1 for -10% drawdown)
+        goal (float, optional): Return threshold for "goal" probability
+            (e.g., 1.0 for +100% return)
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:
+        MonteCarloResult: Object containing simulation results with:
+            - .data: DataFrame of all simulation paths
+            - .stats: Terminal value statistics (min, max, mean, median, std)
+            - .maxdd: Max drawdown statistics across simulations
+            - .bust_probability: Probability of exceeding bust threshold
+            - .goal_probability: Probability of reaching goal threshold
+            - .plot(): Visualize simulation paths
+
+    Example:
+        >>> import quantstats as qs
+        >>> returns = qs.utils.download_returns("SPY")
+        >>> mc = qs.stats.montecarlo(returns, sims=1000, bust=-0.2, goal=0.5)
+        >>> print(mc.stats)
+        >>> print(f"Bust probability: {mc.bust_probability:.1%}")
+        >>> print(f"Goal probability: {mc.goal_probability:.1%}")
+        >>> mc.plot()
+    """
+    from ._montecarlo import run_montecarlo
+
+    # Validate and prepare returns
+    validate_input(returns)
+    returns = _utils._prepare_returns(returns)
+
+    # Handle DataFrame by processing first column (or extend for multi-column)
+    if isinstance(returns, _pd.DataFrame):
+        if returns.shape[1] == 1:
+            returns = returns.iloc[:, 0]
+        else:
+            # For multi-column DataFrame, run on first column
+            # Future: could return dict of MonteCarloResults
+            returns = returns.iloc[:, 0]
+
+    return run_montecarlo(returns, sims=sims, bust=bust, goal=goal, seed=seed)
+
+
+def montecarlo_sharpe(returns, sims=1000, rf=0, periods=252, seed=None):
+    """
+    Distribution of Sharpe ratios across Monte Carlo simulations.
+
+    This function runs Monte Carlo simulations and calculates the Sharpe
+    ratio for each simulated path, providing a distribution of possible
+    Sharpe ratio outcomes.
+
+    Args:
+        returns (pd.Series): Daily returns
+        sims (int): Number of simulations (default: 1000)
+        rf (float): Risk-free rate (default: 0)
+        periods (int): Periods per year for annualization (default: 252)
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:
+        dict: Statistics of Sharpe ratio distribution including
+            min, max, mean, median, std, percentile_5, percentile_95
+
+    Example:
+        >>> sharpe_dist = qs.stats.montecarlo_sharpe(returns, sims=1000)
+        >>> print(f"Expected Sharpe: {sharpe_dist['mean']:.2f}")
+        >>> print(f"Sharpe range: {sharpe_dist['percentile_5']:.2f} to "
+        ...       f"{sharpe_dist['percentile_95']:.2f}")
+    """
+    from ._montecarlo import run_montecarlo
+
+    validate_input(returns)
+    returns = _utils._prepare_returns(returns)
+
+    if isinstance(returns, _pd.DataFrame):
+        returns = returns.iloc[:, 0]
+
+    mc = run_montecarlo(returns, sims=sims, seed=seed)
+
+    # Calculate Sharpe for each simulation path
+    sharpe_values = []
+    for col in mc.data.columns:
+        # Convert cumulative returns back to simple returns
+        cumret = mc.data[col] + 1
+        sim_returns = cumret.pct_change().dropna()
+        if len(sim_returns) > 0 and sim_returns.std() > 0:
+            excess = sim_returns.mean() - rf / periods
+            sharpe_val = excess / sim_returns.std() * _np.sqrt(periods)
+            sharpe_values.append(sharpe_val)
+
+    sharpe_series = _pd.Series(sharpe_values)
+    return {
+        "min": sharpe_series.min(),
+        "max": sharpe_series.max(),
+        "mean": sharpe_series.mean(),
+        "median": sharpe_series.median(),
+        "std": sharpe_series.std(),
+        "percentile_5": sharpe_series.quantile(0.05),
+        "percentile_95": sharpe_series.quantile(0.95),
+    }
+
+
+def montecarlo_drawdown(returns, sims=1000, seed=None):
+    """
+    Distribution of maximum drawdowns across Monte Carlo simulations.
+
+    This function runs Monte Carlo simulations and returns statistics
+    about the distribution of maximum drawdowns across all paths.
+
+    Args:
+        returns (pd.Series): Daily returns
+        sims (int): Number of simulations (default: 1000)
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:
+        dict: Statistics of max drawdown distribution including
+            min, max, mean, median, std, percentile_5, percentile_95
+
+    Example:
+        >>> dd_dist = qs.stats.montecarlo_drawdown(returns, sims=1000)
+        >>> print(f"Expected max drawdown: {dd_dist['mean']:.1%}")
+        >>> print(f"Worst case (5th pct): {dd_dist['percentile_5']:.1%}")
+    """
+    mc = montecarlo(returns, sims=sims, seed=seed)
+    return mc.maxdd
+
+
+def montecarlo_cagr(returns, sims=1000, seed=None):
+    """
+    Distribution of CAGR across Monte Carlo simulations.
+
+    This function runs Monte Carlo simulations and calculates the
+    Compound Annual Growth Rate for each simulated path.
+
+    Args:
+        returns (pd.Series): Daily returns
+        sims (int): Number of simulations (default: 1000)
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:
+        dict: Statistics of CAGR distribution including
+            min, max, mean, median, std, percentile_5, percentile_95
+
+    Example:
+        >>> cagr_dist = qs.stats.montecarlo_cagr(returns, sims=1000)
+        >>> print(f"Expected CAGR: {cagr_dist['mean']:.1%}")
+    """
+    from ._montecarlo import run_montecarlo
+
+    validate_input(returns)
+    returns = _utils._prepare_returns(returns)
+
+    if isinstance(returns, _pd.DataFrame):
+        returns = returns.iloc[:, 0]
+
+    mc = run_montecarlo(returns, sims=sims, seed=seed)
+
+    # Calculate CAGR for each simulation path
+    n_periods = len(mc.data)
+    years = n_periods / 252  # Assume daily data
+
+    cagr_values = []
+    for col in mc.data.columns:
+        terminal = mc.data[col].iloc[-1]
+        # CAGR = (1 + total_return)^(1/years) - 1
+        if terminal > -1:  # Avoid invalid values
+            cagr_val = (1 + terminal) ** (1 / years) - 1
+            cagr_values.append(cagr_val)
+
+    cagr_series = _pd.Series(cagr_values)
+    return {
+        "min": cagr_series.min(),
+        "max": cagr_series.max(),
+        "mean": cagr_series.mean(),
+        "median": cagr_series.median(),
+        "std": cagr_series.std(),
+        "percentile_5": cagr_series.quantile(0.05),
+        "percentile_95": cagr_series.quantile(0.95),
+    }

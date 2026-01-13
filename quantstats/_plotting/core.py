@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Quantreturns: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantreturns
@@ -17,6 +16,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as _plt
 
@@ -37,6 +40,12 @@ import numpy as _np
 import seaborn as _sns
 from .. import stats as _stats
 from .._compat import safe_resample
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure as _Figure
+
+# Type alias for return data
+Returns = _pd.Series | _pd.DataFrame
 
 # Configure seaborn theme with custom styling
 _sns.set_theme(
@@ -735,7 +744,7 @@ def plot_histogram(
         if isinstance(returns, _pd.Series):
             combined_returns = returns.copy()
             if kde:
-                _sns.kdeplot(data=combined_returns, color="black", ax=ax)
+                _sns.kdeplot(data=combined_returns, color="black", ax=ax, warn_singular=False)
 
             _sns.histplot(
                 data=combined_returns,
@@ -1783,3 +1792,335 @@ def format_pct_axis(x, _):
     # Format small percentage values without suffix
     res = "%1.0f%%" % x
     return res.replace(".0%", "%")
+
+
+# ======== MONTE CARLO PLOTS ========
+
+
+def plot_montecarlo(
+    mc_result,
+    title="Monte Carlo Simulation",
+    figsize=(10, 6),
+    grayscale=False,
+    fontname="Arial",
+    ylabel=True,
+    subtitle=True,
+    savefig=None,
+    show=True,
+    confidence_level=0.95,
+):
+    """
+    Plot Monte Carlo simulation results showing all paths with original highlighted.
+
+    Parameters
+    ----------
+    mc_result : MonteCarloResult
+        Monte Carlo simulation result object
+    title : str, default "Monte Carlo Simulation"
+        Chart title
+    figsize : tuple, default (10, 6)
+        Figure size
+    grayscale : bool, default False
+        Whether to use grayscale colors
+    fontname : str, default "Arial"
+        Font name for labels
+    ylabel : bool, default True
+        Whether to show y-axis label
+    subtitle : bool, default True
+        Whether to show subtitle with statistics
+    savefig : str or dict, optional
+        Save figure parameters
+    show : bool, default True
+        Whether to display the plot
+    confidence_level : float, default 0.95
+        Confidence level for shaded band (e.g., 0.95 for 95%)
+
+    Returns
+    -------
+    matplotlib.figure.Figure or None
+        Figure object if show=False, otherwise None
+    """
+    colors, _, _ = _get_colors(grayscale)
+
+    fig, ax = _plt.subplots(figsize=figsize)
+
+    # Get simulation data
+    data = mc_result.data
+
+    # Plot all simulation paths with low alpha
+    sim_color = colors[1] if not grayscale else "#888888"
+    for col in data.columns[1:]:  # Skip first (original) path
+        ax.plot(
+            data.index,
+            data[col] * 100,  # Convert to percentage
+            color=sim_color,
+            alpha=0.03,
+            linewidth=0.5,
+        )
+
+    # Plot confidence bands
+    lower, upper = mc_result.confidence_band(confidence_level)
+    ax.fill_between(
+        data.index,
+        lower * 100,
+        upper * 100,
+        alpha=0.2,
+        color=colors[1] if not grayscale else "#666666",
+        label=f"{int(confidence_level * 100)}% Confidence Band",
+    )
+
+    # Plot median path
+    median_path = mc_result.percentile(50)
+    ax.plot(
+        data.index,
+        median_path * 100,
+        color=colors[0] if not grayscale else "#444444",
+        linewidth=1.5,
+        linestyle="--",
+        label="Median",
+    )
+
+    # Plot original path (highlighted)
+    ax.plot(
+        data.index,
+        mc_result.original * 100,
+        color="red" if not grayscale else "#000000",
+        linewidth=2,
+        label="Original",
+    )
+
+    # Add bust/goal threshold lines if set
+    if mc_result.bust_threshold is not None:
+        ax.axhline(
+            mc_result.bust_threshold * 100,
+            color="darkred",
+            linestyle="--",
+            linewidth=1,
+            label=f"Bust ({mc_result.bust_threshold:.0%})",
+        )
+
+    if mc_result.goal_threshold is not None:
+        ax.axhline(
+            mc_result.goal_threshold * 100,
+            color="darkgreen",
+            linestyle="--",
+            linewidth=1,
+            label=f"Goal ({mc_result.goal_threshold:.0%})",
+        )
+
+    # Configure axes
+    ax.set_xlabel("Trading Days", fontname=fontname)
+    if ylabel:
+        ax.set_ylabel(
+            "Cumulative Return (%)",
+            fontname=fontname,
+            fontweight="bold",
+            fontsize=12,
+        )
+
+    # Add title
+    ax.set_title(
+        title,
+        fontname=fontname,
+        fontweight="bold",
+        fontsize=14,
+        color="black",
+    )
+
+    # Add subtitle with stats
+    if subtitle:
+        stats = mc_result.stats
+        subtitle_text = (
+            f"Sims: {len(data.columns)} | "
+            f"Mean: {stats['mean']:.1%} | "
+            f"Median: {stats['median']:.1%} | "
+            f"5th-95th: {stats['percentile_5']:.1%} to {stats['percentile_95']:.1%}"
+        )
+        if mc_result.bust_probability is not None:
+            subtitle_text += f" | Bust: {mc_result.bust_probability:.1%}"
+        if mc_result.goal_probability is not None:
+            subtitle_text += f" | Goal: {mc_result.goal_probability:.1%}"
+
+        ax.set_title(
+            f"{title}\n{subtitle_text}",
+            fontname=fontname,
+            fontweight="bold",
+            fontsize=12,
+        )
+
+    # Add legend
+    ax.legend(loc="upper left", fontsize=9)
+
+    # Add horizontal line at 0
+    ax.axhline(0, color="black", linewidth=0.5, linestyle="-")
+
+    # Configure grid
+    ax.grid(True, alpha=0.3)
+
+    # Tight layout
+    fig.tight_layout()
+
+    # Save figure if requested
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show()
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
+
+
+def plot_montecarlo_distribution(
+    mc_result,
+    title="Terminal Value Distribution",
+    figsize=(10, 6),
+    grayscale=False,
+    fontname="Arial",
+    ylabel=True,
+    subtitle=True,
+    savefig=None,
+    show=True,
+    bins=50,
+):
+    """
+    Plot histogram of terminal values from Monte Carlo simulation.
+
+    Parameters
+    ----------
+    mc_result : MonteCarloResult
+        Monte Carlo simulation result object
+    title : str, default "Terminal Value Distribution"
+        Chart title
+    figsize : tuple, default (10, 6)
+        Figure size
+    grayscale : bool, default False
+        Whether to use grayscale colors
+    fontname : str, default "Arial"
+        Font name for labels
+    ylabel : bool, default True
+        Whether to show y-axis label
+    subtitle : bool, default True
+        Whether to show subtitle with statistics
+    savefig : str or dict, optional
+        Save figure parameters
+    show : bool, default True
+        Whether to display the plot
+    bins : int, default 50
+        Number of histogram bins
+
+    Returns
+    -------
+    matplotlib.figure.Figure or None
+        Figure object if show=False, otherwise None
+    """
+    colors, _, _ = _get_colors(grayscale)
+
+    fig, ax = _plt.subplots(figsize=figsize)
+
+    # Get terminal values
+    terminal = mc_result.data.iloc[-1] * 100  # Convert to percentage
+
+    # Plot histogram
+    hist_color = colors[1] if not grayscale else "#666666"
+    ax.hist(terminal, bins=bins, alpha=0.7, color=hist_color, edgecolor="white")
+
+    # Add vertical lines for key percentiles
+    stats = mc_result.stats
+    ax.axvline(
+        stats["mean"] * 100,
+        color="red",
+        linewidth=2,
+        linestyle="-",
+        label=f"Mean: {stats['mean']:.1%}",
+    )
+    ax.axvline(
+        stats["median"] * 100,
+        color="blue",
+        linewidth=2,
+        linestyle="--",
+        label=f"Median: {stats['median']:.1%}",
+    )
+    ax.axvline(
+        stats["percentile_5"] * 100,
+        color="darkred",
+        linewidth=1.5,
+        linestyle=":",
+        label=f"5th pct: {stats['percentile_5']:.1%}",
+    )
+    ax.axvline(
+        stats["percentile_95"] * 100,
+        color="darkgreen",
+        linewidth=1.5,
+        linestyle=":",
+        label=f"95th pct: {stats['percentile_95']:.1%}",
+    )
+
+    # Mark original terminal value
+    original_terminal = mc_result.original.iloc[-1] * 100
+    ax.axvline(
+        original_terminal,
+        color="black",
+        linewidth=2,
+        linestyle="-",
+        label=f"Original: {original_terminal:.1f}%",
+    )
+
+    # Configure axes
+    ax.set_xlabel("Terminal Return (%)", fontname=fontname)
+    if ylabel:
+        ax.set_ylabel(
+            "Frequency",
+            fontname=fontname,
+            fontweight="bold",
+            fontsize=12,
+        )
+
+    # Add title
+    title_text = title
+    if subtitle:
+        title_text = (
+            f"{title}\n"
+            f"Min: {stats['min']:.1%} | Max: {stats['max']:.1%} | "
+            f"Std: {stats['std']:.1%}"
+        )
+
+    ax.set_title(
+        title_text,
+        fontname=fontname,
+        fontweight="bold",
+        fontsize=12,
+    )
+
+    # Add legend
+    ax.legend(loc="upper right", fontsize=9)
+
+    # Configure grid
+    ax.grid(True, alpha=0.3, axis="y")
+
+    # Tight layout
+    fig.tight_layout()
+
+    # Save figure if requested
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show()
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None

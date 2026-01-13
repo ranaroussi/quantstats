@@ -1,0 +1,124 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quantstats"
+dynamic = ["version"]
+description = "Portfolio analytics for quants"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "Ran Aroussi", email = "ran@aroussi.com" },
+]
+keywords = [
+    "quant",
+    "algotrading",
+    "algorithmic-trading",
+    "quantitative-trading",
+    "quantitative-analysis",
+    "algo-trading",
+    "visualization",
+    "plotting",
+    "portfolio",
+    "finance",
+]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 5 - Production/Stable",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "pandas>=1.5.0",
+    "numpy>=1.24.0",
+    "scipy>=1.11.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.13.0",
+    "tabulate>=0.9.0",
+    "yfinance>=0.2.40",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pyright>=1.1.0",
+    "ruff>=0.1.0",
+]
+plotly = [
+    "plotly>=5.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ranaroussi/quantstats"
+Documentation = "https://github.com/ranaroussi/quantstats"
+Repository = "https://github.com/ranaroussi/quantstats"
+Changelog = "https://github.com/ranaroussi/quantstats/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "quantstats/version.py"
+pattern = 'version = "(?P<version>[^"]+)"'
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/quantstats",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE.txt",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["quantstats"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.pyright]
+include = ["quantstats"]
+exclude = ["tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in default argument
+    "SIM108", # ternary operator
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["quantstats"]

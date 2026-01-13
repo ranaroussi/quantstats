@@ -1,9 +1,10 @@
-pandas>=1.5.0,<3.0.0
-numpy>=1.21.0
-seaborn>=0.11.0
-matplotlib>=3.3.0
-scipy>=1.7.0
-tabulate>=0.8.9
-yfinance>=0.2.65
+# Core dependencies - see pyproject.toml for full list
+# This file is kept for backwards compatibility with pip install -r
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+seaborn>=0.13.0
+tabulate>=0.9.0
+yfinance>=0.2.40
 python-dateutil>=2.8.0
-packaging>=20.0

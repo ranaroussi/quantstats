@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Numpy compatibility layer
 Handles numpy version differences and deprecated functionality
@@ -144,12 +142,9 @@ def handle_numpy_warnings():
 
 def safe_percentile(data, percentile: Union[float, list], **kwargs):
     """
-    Safe percentile calculation that handles numpy version differences.
+    Safe percentile calculation.
 
-    This function provides a wrapper around np.percentile that handles
-    parameter changes across numpy versions. The 'method' parameter was
-    introduced in numpy 1.22.0, so this function ensures compatibility
-    with older versions by removing unsupported parameters.
+    This function provides a wrapper around np.percentile with consistent parameters.
 
     Parameters
     ----------
@@ -160,8 +155,7 @@ def safe_percentile(data, percentile: Union[float, list], **kwargs):
         Percentile(s) to compute. Values should be between 0 and 100.
         Can be a single value or an array of values
     **kwargs
-        Additional arguments passed to np.percentile. The 'method' parameter
-        is handled automatically based on numpy version
+        Additional arguments passed to np.percentile
 
     Returns
     -------
@@ -174,24 +168,15 @@ def safe_percentile(data, percentile: Union[float, list], **kwargs):
     >>> safe_percentile([1, 2, 3, 4, 5], 50)    # Returns 3.0 (median)
     >>> safe_percentile([1, 2, 3, 4, 5], [25, 75])  # Returns [2.0, 4.0]
     """
-    # Handle method parameter for newer numpy versions
-    if NUMPY_VERSION >= version.parse("1.22.0"):
-        # Numpy 1.22.0+ supports the 'method' parameter for percentile calculation
-        return np.percentile(data, percentile, **kwargs)
-    else:
-        # Remove method parameter for older versions to avoid TypeError
-        kwargs.pop("method", None)
-        return np.percentile(data, percentile, **kwargs)
+    # Numpy 1.24+ supports 'method' parameter for percentile calculation
+    return np.percentile(data, percentile, **kwargs)
 
 
 def safe_nanpercentile(data, percentile: Union[float, list], **kwargs):
     """
-    Safe nanpercentile calculation that handles numpy version differences.
+    Safe nanpercentile calculation that ignores NaN values.
 
-    This function provides a wrapper around np.nanpercentile that handles
-    parameter changes across numpy versions. Similar to safe_percentile,
-    but ignores NaN values in the calculation. The 'method' parameter was
-    introduced in numpy 1.22.0.
+    This function provides a wrapper around np.nanpercentile with consistent parameters.
 
     Parameters
     ----------
@@ -202,8 +187,7 @@ def safe_nanpercentile(data, percentile: Union[float, list], **kwargs):
         Percentile(s) to compute. Values should be between 0 and 100.
         Can be a single value or an array of values
     **kwargs
-        Additional arguments passed to np.nanpercentile. The 'method' parameter
-        is handled automatically based on numpy version
+        Additional arguments passed to np.nanpercentile
 
     Returns
     -------
@@ -216,24 +200,16 @@ def safe_nanpercentile(data, percentile: Union[float, list], **kwargs):
     >>> safe_nanpercentile([1, 2, np.nan, 4, 5], 50)    # Returns 3.0
     >>> safe_nanpercentile([1, np.nan, 3, 4, 5], [25, 75])  # Returns [2.0, 4.5]
     """
-    # Handle method parameter for newer numpy versions
-    if NUMPY_VERSION >= version.parse("1.22.0"):
-        # Numpy 1.22.0+ supports the 'method' parameter for nanpercentile calculation
-        return np.nanpercentile(data, percentile, **kwargs)
-    else:
-        # Remove method parameter for older versions to avoid TypeError
-        kwargs.pop("method", None)
-        return np.nanpercentile(data, percentile, **kwargs)
+    # Numpy 1.24+ supports 'method' parameter for nanpercentile calculation
+    return np.nanpercentile(data, percentile, **kwargs)
 
 
 def safe_quantile(data, quantile: Union[float, list], **kwargs):
     """
-    Safe quantile calculation that handles numpy version differences.
+    Safe quantile calculation.
 
-    This function provides a wrapper around np.quantile that handles
-    parameter changes across numpy versions. Quantiles are similar to
-    percentiles but use values between 0 and 1 instead of 0 and 100.
-    The 'method' parameter was introduced in numpy 1.22.0.
+    This function provides a wrapper around np.quantile with consistent parameters.
+    Quantiles are similar to percentiles but use values between 0 and 1.
 
     Parameters
     ----------
@@ -244,8 +220,7 @@ def safe_quantile(data, quantile: Union[float, list], **kwargs):
         Quantile(s) to compute. Values should be between 0 and 1.
         Can be a single value or an array of values
     **kwargs
-        Additional arguments passed to np.quantile. The 'method' parameter
-        is handled automatically based on numpy version
+        Additional arguments passed to np.quantile
 
     Returns
     -------
@@ -258,24 +233,15 @@ def safe_quantile(data, quantile: Union[float, list], **kwargs):
     >>> safe_quantile([1, 2, 3, 4, 5], 0.5)    # Returns 3.0 (median)
     >>> safe_quantile([1, 2, 3, 4, 5], [0.25, 0.75])  # Returns [2.0, 4.0]
     """
-    # Handle method parameter for newer numpy versions
-    if NUMPY_VERSION >= version.parse("1.22.0"):
-        # Numpy 1.22.0+ supports the 'method' parameter for quantile calculation
-        return np.quantile(data, quantile, **kwargs)
-    else:
-        # Remove method parameter for older versions to avoid TypeError
-        kwargs.pop("method", None)
-        return np.quantile(data, quantile, **kwargs)
+    # Numpy 1.24+ supports 'method' parameter for quantile calculation
+    return np.quantile(data, quantile, **kwargs)
 
 
 def safe_random_seed(seed: Optional[int]):
     """
     Safe random seed setting for numpy.
 
-    This function provides a unified interface for setting random seeds
-    across different numpy versions. Numpy 1.17.0 introduced a new random
-    number generator system, so this function handles both the old and new
-    approaches to ensure consistent random number generation.
+    This function provides a unified interface for setting random seeds.
 
     Parameters
     ----------
@@ -288,16 +254,9 @@ def safe_random_seed(seed: Optional[int]):
     >>> safe_random_seed(42)  # Sets seed for reproducible results
     >>> safe_random_seed(None)  # No seed set, random behavior continues
     """
-    # Check if seed is provided before attempting to set it
     if seed is not None:
-        if NUMPY_VERSION >= version.parse("1.17.0"):
-            # Use the new random number generator for numpy 1.17.0+
-            # This creates a new Generator instance with the specified seed
-            np.random.default_rng(seed)
-        else:
-            # Use the legacy random seed method for older numpy versions
-            # This sets the global random state
-            np.random.seed(seed)
+        # Use the modern random number generator (numpy 1.17.0+)
+        np.random.default_rng(seed)
 
 
 def safe_datetime64_unit(dt, unit: str):
@@ -305,8 +264,7 @@ def safe_datetime64_unit(dt, unit: str):
     Safe datetime64 unit conversion.
 
     This function provides a safe way to convert numpy datetime64 objects
-    to different time units. It handles differences in string formatting
-    between numpy versions to ensure consistent behavior.
+    to different time units.
 
     Parameters
     ----------
@@ -327,10 +285,4 @@ def safe_datetime64_unit(dt, unit: str):
     >>> safe_datetime64_unit(dt, 'D')  # Convert to day precision
     >>> safe_datetime64_unit(dt, 'H')  # Convert to hour precision
     """
-    # Handle string formatting differences between numpy versions
-    if NUMPY_VERSION >= version.parse("1.21.0"):
-        # Use f-string formatting for newer numpy versions
-        return dt.astype(f"datetime64[{unit}]")
-    else:
-        # Use older string formatting method for compatibility
-        return dt.astype("datetime64[{0}]".format(unit))
+    return dt.astype(f"datetime64[{unit}]")
