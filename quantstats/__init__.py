@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -106,6 +105,12 @@ def extend_pandas():
         stats.probabilistic_adjusted_sortino_ratio
     )
 
+    # Monte Carlo simulation
+    _po.montecarlo = stats.montecarlo  # type: ignore[attr-defined]
+    _po.montecarlo_sharpe = stats.montecarlo_sharpe  # type: ignore[attr-defined]
+    _po.montecarlo_drawdown = stats.montecarlo_drawdown  # type: ignore[attr-defined]
+    _po.montecarlo_cagr = stats.montecarlo_cagr  # type: ignore[attr-defined]
+
     # methods from utils
     _po.to_returns = utils.to_returns  # type: ignore[attr-defined]
     _po.to_prices = utils.to_prices  # type: ignore[attr-defined]
@@ -146,6 +151,8 @@ def extend_pandas():
     _po.plot_rolling_volatility = plots.rolling_volatility  # type: ignore[attr-defined]
     _po.plot_yearly_returns = plots.yearly_returns  # type: ignore[attr-defined]
     _po.plot_monthly_heatmap = plots.monthly_heatmap  # type: ignore[attr-defined]
+    _po.plot_montecarlo = plots.montecarlo  # type: ignore[attr-defined]
+    _po.plot_montecarlo_distribution = plots.montecarlo_distribution  # type: ignore[attr-defined]
 
     _po.metrics = reports.metrics  # type: ignore[attr-defined]
 

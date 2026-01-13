@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -26,6 +25,10 @@ from . import stats as _stats
 from ._compat import safe_concat, safe_resample
 import inspect
 import threading
+
+# Type alias for return data
+Returns = _pd.Series | _pd.DataFrame
+"""Type alias for returns data: can be a pandas Series or DataFrame."""
 
 
 # Custom exception classes for QuantStats
@@ -275,7 +278,7 @@ def multi_shift(df, shift=3):
     return result
 
 
-def to_returns(prices, rf=0.0):
+def to_returns(prices: Returns, rf: float = 0.0) -> Returns:
     """
     Calculate simple arithmetic returns from price series
 
@@ -294,7 +297,7 @@ def to_returns(prices, rf=0.0):
     return _prepare_returns(prices, rf)
 
 
-def to_prices(returns, base=1e5):
+def to_prices(returns: Returns, base: float = 1e5) -> Returns:
     """
     Convert returns series to price data
 
@@ -317,7 +320,7 @@ def to_prices(returns, base=1e5):
     return base + base * _stats.compsum(returns)
 
 
-def log_returns(returns, rf=0.0, nperiods=None):
+def log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = None) -> Returns:
     """
     Shorthand for to_log_returns function
 
@@ -338,7 +341,7 @@ def log_returns(returns, rf=0.0, nperiods=None):
     return to_log_returns(returns, rf, nperiods)
 
 
-def to_log_returns(returns, rf=0.0, nperiods=None):
+def to_log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = None) -> Returns:
     """
     Convert returns series to log returns
 
@@ -392,7 +395,7 @@ def exponential_stdev(returns, window=30, is_halflife=False):
     ).std()
 
 
-def rebase(prices, base=100.0):
+def rebase(prices: Returns, base: float = 100.0) -> Returns:
     """
     Rebase all series to a given intial base.
     This makes comparing/plotting different series together easier.
@@ -404,7 +407,7 @@ def rebase(prices, base=100.0):
     return prices.dropna() / prices.dropna().iloc[0] * base
 
 
-def group_returns(returns, groupby, compounded=False):
+def group_returns(returns: Returns, groupby, compounded: bool = False) -> Returns:
     """
     Summarize returns by grouping criteria
 
@@ -434,7 +437,7 @@ def group_returns(returns, groupby, compounded=False):
     return returns.groupby(groupby).sum()
 
 
-def aggregate_returns(returns, period=None, compounded=True):
+def aggregate_returns(returns: Returns, period: str | None = None, compounded: bool = True) -> Returns:
     """
     Aggregate returns based on specified time periods
 
@@ -501,7 +504,7 @@ def aggregate_returns(returns, period=None, compounded=True):
     return returns
 
 
-def to_excess_returns(returns, rf, nperiods=None):
+def to_excess_returns(returns: Returns, rf: float, nperiods: int | None = None) -> Returns:
     """
     Calculates excess returns by subtracting
     risk-free returns from total returns
@@ -900,29 +903,17 @@ def make_index(
 
     last_day = index.index[-1]
 
-    # Create rebalance markers
-    rbdf = safe_resample(index, rebalance, "first")
-    rbdf["break"] = rbdf.index.strftime("%s")
-
-    # Add rebalance markers to index returns
-    index = safe_concat([index, rbdf["break"]], axis=1)
-
-    # Mark first day of each rebalance period
-    index["first_day"] = _pd.isna(index["break"]) & ~_pd.isna(index["break"].shift(1))
-    index.loc[index.index[0], "first_day"] = True
-
-    # Apply weights on first day of each rebalance period
+    # Apply weights to each ticker's returns
+    # For a weighted portfolio, each day's portfolio return is sum of (weight * asset_return)
     for ticker, weight in ticker_weights.items():
-        index[ticker] = _np.where(
-            index["first_day"], weight * index[ticker], index[ticker]
-        )
+        index[ticker] = weight * index[ticker]
 
-    # Clean up temporary columns
-    index = index.drop(columns=["first_day", "break"])
+    # Calculate daily portfolio returns as sum of weighted asset returns
+    portfolio_returns = index.sum(axis=1)
 
     # Remove rows where all values are NaN
-    index = index.dropna(how="all")
-    return index[index.index <= last_day].sum(axis=1)
+    portfolio_returns = portfolio_returns.dropna()
+    return portfolio_returns[portfolio_returns.index <= last_day]
 
 
 def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):

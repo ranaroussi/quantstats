@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # QuantStats: Portfolio analytics for quants
 # https://github.com/ranaroussi/quantstats
@@ -31,10 +30,9 @@ from io import StringIO
 from pathlib import Path
 
 try:
-    from IPython.core.display import display as iDisplay, HTML as iHTML
+    from IPython.display import display as iDisplay, HTML as iHTML
 except ImportError:
-    from IPython.display import display as iDisplay
-    from IPython.core.display import HTML as iHTML
+    pass  # IPython not available, display functions won't be used
 
 
 def _get_trading_periods(periods_per_year=252):
@@ -230,21 +228,23 @@ def html(
             if isinstance(benchmark, str):
                 benchmark_title = benchmark
             elif isinstance(benchmark, _pd.Series):
-                benchmark_title = benchmark.name
+                benchmark_title = benchmark.name if benchmark.name else "Benchmark"
             elif isinstance(benchmark, _pd.DataFrame):
-                benchmark_title = benchmark[benchmark.columns[0]].name
+                col_name = benchmark[benchmark.columns[0]].name
+                benchmark_title = col_name if col_name else "Benchmark"
 
-        # Update template with benchmark information
-        tpl = tpl.replace(
-            "{{benchmark_title}}", f"Benchmark is {benchmark_title.upper()} | "
-        )
+        # Ensure benchmark_title is a string for .upper() call
+        if benchmark_title is None:
+            benchmark_title = "Benchmark"
         # Store original benchmark before any alignment for accurate EOY calculations
         # This preserves the full benchmark data including non-trading days
         if isinstance(benchmark, str):
             # Download the full benchmark data
             benchmark_original = _utils.download_returns(benchmark)
             if rf != 0:
-                benchmark_original = _utils.to_excess_returns(benchmark_original, rf)
+                benchmark_original = _utils.to_excess_returns(
+                    benchmark_original, rf, nperiods=periods_per_year
+                )
         elif isinstance(benchmark, _pd.Series):
             benchmark_original = benchmark.copy()
         else:
@@ -263,6 +263,33 @@ def html(
     tpl = tpl.replace("{{date_range}}", date_range[0] + " - " + date_range[-1])
     tpl = tpl.replace("{{title}}", title)
     tpl = tpl.replace("{{v}}", __version__)
+
+    # Build parameters string for subtitle (feature #472)
+    params_parts = []
+
+    # Add user-provided parameters first if present
+    user_params = kwargs.get("parameters", {})
+    if user_params:
+        for key, value in user_params.items():
+            params_parts.append(f"{key}: {value}")
+
+    # Add auto-detected parameters
+    if benchmark_title:
+        params_parts.append(f"Benchmark: {benchmark_title.upper()}")
+    if rf != 0:
+        params_parts.append(f"RF: {rf:.1%}")
+    if periods_per_year != 252:
+        params_parts.append(f"Periods: {periods_per_year}")
+    if not compounded:
+        params_parts.append("Simple Returns")
+    params_str = " &bull; ".join(params_parts)
+    if params_str:
+        params_str += " | "
+    tpl = tpl.replace("{{params}}", params_str)
+
+    # Add matched dates indicator
+    matched_dates_str = " (matched dates)" if match_dates and benchmark is not None else ""
+    tpl = tpl.replace("{{matched_dates}}", matched_dates_str)
 
     # Set names for data series to be used in charts and tables
     if benchmark is not None:
@@ -334,9 +361,9 @@ def html(
         yoy = _pd.DataFrame(_utils.group_returns(returns, returns.index.year) * 100)
         if isinstance(returns, _pd.Series):
             yoy.columns = ["Return"]
-            yoy["Cumulative"] = _utils.group_returns(returns, returns.index.year, True)
-            yoy["Return"] = yoy["Return"].round(2).astype(str) + "%"
-            yoy["Cumulative"] = (yoy["Cumulative"] * 100).round(2).astype(str) + "%"
+            yoy["Cumulative"] = _utils.group_returns(returns, returns.index.year, True) * 100
+            # Don't add "%" here - the CSS in report.html handles it via :after pseudo-element
+            # Adding "%" in Python causes double "%" display (bug #475)
         elif isinstance(returns, _pd.DataFrame):
             # Don't show cumulative for multiple strategy portfolios
             # just show compounded like when we have a benchmark
@@ -1138,6 +1165,8 @@ def metrics(
         benchmark = _utils._prepare_benchmark(benchmark, returns.index, rf)
         if match_dates is True:
             returns, benchmark = _match_dates(returns, benchmark)
+            # Truncate df to the aligned date range to exclude leading zeros
+            df = df.loc[returns.index]
         df["benchmark"] = benchmark
         # Update blank list for proper formatting
         if isinstance(returns, _pd.Series):
@@ -1232,7 +1261,13 @@ def metrics(
 
     # Calculate Omega ratio (probability-weighted ratio)
     if isinstance(returns, _pd.Series):
-        metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
+        if "benchmark" in df:
+            metrics["Omega"] = [
+                _stats.omega(df["returns"], rf, 0.0, win_year),
+                _stats.omega(df["benchmark"], rf, 0.0, win_year),
+            ]
+        else:
+            metrics["Omega"] = _stats.omega(df["returns"], rf, 0.0, win_year)
     elif isinstance(returns, _pd.DataFrame):
         omega_values = [
             _stats.omega(df[strategy_col], rf, 0.0, win_year)
@@ -1663,6 +1698,22 @@ def metrics(
 
     # Handle display vs return
     if display:
+        # Build and display parameters table (feature #472)
+        params_data = {
+            "Parameter": ["Risk-Free Rate", "Periods/Year", "Compounded", "Match Dates"],
+            "Value": [
+                f"{rf:.1%}" if rf != 0 else "0.0%",
+                str(periods_per_year),
+                "Yes" if compounded else "No",
+                "Yes" if match_dates else "No",
+            ],
+        }
+        if benchmark is not None:
+            params_data["Parameter"].insert(0, "Benchmark")
+            params_data["Value"].insert(0, benchmark_colname)
+        params_df = _pd.DataFrame(params_data)
+        print("\n" + _tabulate(params_df, headers="keys", tablefmt="simple", showindex=False))
+        print("\n")
         print(_tabulate(metrics, headers="keys", tablefmt="simple"))
         return None
 
@@ -1806,9 +1857,6 @@ def plots(
 
         return
 
-    # Ensure returns is DataFrame for full mode processing
-    returns = _pd.DataFrame(returns)
-
     # prepare timeseries
     if benchmark is not None:
         benchmark = _utils._prepare_benchmark(benchmark, returns.index)
@@ -1881,7 +1929,7 @@ def plots(
 
     # Calculate figure size for smaller plots
     small_fig_size = (figsize[0], figsize[0] * 0.35)
-    if len(returns.columns) > 1:
+    if isinstance(returns, _pd.DataFrame) and len(returns.columns) > 1:
         small_fig_size = (
             figsize[0],
             figsize[0] * (0.33 * (len(returns.columns) * 0.66)),

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Compatibility layer for pandas/numpy versions
 Handles version differences and deprecated functionality
@@ -177,9 +175,7 @@ def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],
     """
     Safe concatenation that handles pandas version differences.
 
-    This function provides a wrapper around pd.concat that handles changes
-    in parameter support across different pandas versions, particularly
-    the 'sort' parameter which was added in pandas 1.0.0.
+    This function provides a wrapper around pd.concat with consistent parameters.
 
     Parameters
     ----------
@@ -190,7 +186,7 @@ def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],
     ignore_index : bool, default False
         Whether to ignore the index and create a new default integer index
     sort : bool, default False
-        Whether to sort the result. Only supported in pandas 1.0.0+
+        Whether to sort the result
     **kwargs
         Additional arguments passed to pd.concat
 
@@ -204,17 +200,8 @@ def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],
     >>> safe_concat([df1, df2])  # Concatenate along rows
     >>> safe_concat([df1, df2], axis=1)  # Concatenate along columns
     """
-    # Handle sort parameter for older pandas versions
-    # The sort parameter was introduced in pandas 1.0.0
-    if PANDAS_VERSION < version.parse("1.0.0"):
-        # Remove sort parameter if it exists in kwargs for compatibility
-        kwargs.pop("sort", None)
-    else:
-        # Set sort parameter for newer pandas versions
-        kwargs["sort"] = sort
-
-    # Perform the concatenation with appropriate parameters
-    return pd.concat(objs, axis=axis, ignore_index=ignore_index, **kwargs)  # type: ignore[arg-type]
+    # Perform the concatenation with sort parameter (available in pandas 2.0+)
+    return pd.concat(objs, axis=axis, ignore_index=ignore_index, sort=sort, **kwargs)  # type: ignore[arg-type]
 
 
 def safe_append(df: pd.DataFrame,
@@ -222,11 +209,10 @@ def safe_append(df: pd.DataFrame,
                 ignore_index: bool = False,
                 sort: bool = False) -> pd.DataFrame:
     """
-    Safe append operation that works with all pandas versions.
+    Safe append operation using pd.concat.
 
-    DataFrame.append() was deprecated in pandas 1.4.0 and removed in 2.0.0.
-    This function provides a unified interface that uses the appropriate
-    method based on the pandas version.
+    DataFrame.append() was removed in pandas 2.0.0. This function provides
+    a unified interface using pd.concat.
 
     Parameters
     ----------
@@ -249,22 +235,15 @@ def safe_append(df: pd.DataFrame,
     >>> safe_append(df, new_row)  # Append a new row
     >>> safe_append(df, other_df, ignore_index=True)  # Append and reset index
     """
-    # Check pandas version to determine which method to use
-    if PANDAS_VERSION >= version.parse("1.4.0"):
-        # Use concat for newer pandas versions (recommended approach)
-        result = safe_concat([df, other], ignore_index=ignore_index, sort=sort)
-        # Ensure we return a DataFrame (concat can return Series in some cases)
-        if isinstance(result, pd.DataFrame):
-            return result
-        else:
-            # Convert Series to DataFrame - handle the case where result is a Series
-            if isinstance(result, pd.Series):
-                return pd.DataFrame([result])
-            else:
-                return pd.DataFrame(result)
+    # Use concat (append was removed in pandas 2.0)
+    result = safe_concat([df, other], ignore_index=ignore_index, sort=sort)
+    # Ensure we return a DataFrame
+    if isinstance(result, pd.DataFrame):
+        return result
+    elif isinstance(result, pd.Series):
+        return pd.DataFrame([result])
     else:
-        # Use the deprecated append method for older pandas versions
-        return df.append(other, ignore_index=ignore_index, sort=sort)
+        return pd.DataFrame(result)
 
 
 def safe_frequency_conversion(data: Union[pd.Series, pd.DataFrame],
