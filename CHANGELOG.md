@@ -1,6 +1,15 @@
 Changelog
 ===========
 
+0.0.81
+------
+
+**Hotfix Release**
+
+- Fixed `NameError: name 'dd_get_stats' is not defined` in `reports.full()` (#502)
+  - Root cause: Accidental find-and-replace during v0.0.80 lazy import refactoring changed `dd_stats` to `dd_get_stats()`
+  - Fix: Restored correct variable name `dd_stats` in `_calc_dd()` function
+
 0.0.80
 ------
 

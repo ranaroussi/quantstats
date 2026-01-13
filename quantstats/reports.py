@@ -2255,7 +2255,7 @@ def _calc_dd(df, display=True, as_pct=False):
     dd_stats["Max Drawdown %"] = dd_stats["Max Drawdown %"].astype(float) * pct
     dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(float) * pct
 
-    return dd_get_stats().T
+    return dd_stats.T
 
 
 def _html_table(obj, showindex="default"):
