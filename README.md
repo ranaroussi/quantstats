@@ -1,4 +1,4 @@
-[![Python version](https://img.shields.io/badge/python-3.6+-blue.svg?style=flat)](https://pypi.python.org/pypi/quantstats)
+[![Python version](https://img.shields.io/badge/python-3.10+-blue.svg?style=flat)](https://pypi.python.org/pypi/quantstats)
 [![PyPi version](https://img.shields.io/pypi/v/quantstats.svg?maxAge=60)](https://pypi.python.org/pypi/quantstats)
 [![PyPi status](https://img.shields.io/pypi/status/quantstats.svg?maxAge=60)](https://pypi.python.org/pypi/quantstats)
 [![PyPi downloads](https://img.shields.io/pypi/dm/quantstats.svg?maxAge=2592000&label=installs&color=%2327B1FF)](https://pypi.python.org/pypi/quantstats)
@@ -197,6 +197,26 @@ To view a complete list of available methods, run:
 
 **\*\*\* Full documentation coming soon \*\*\***
 
+### Important: Period-Based vs Trade-Based Metrics
+
+QuantStats analyzes **return series** (daily, weekly, monthly returns), not discrete trade data. This means:
+
+- **Win Rate** = percentage of periods with positive returns
+- **Consecutive Wins/Losses** = consecutive positive/negative return periods
+- **Payoff Ratio** = average winning period return / average losing period return
+- **Profit Factor** = sum of positive returns / sum of negative returns
+
+These metrics are **valid and useful** for:
+- Systematic/algorithmic strategies with regular rebalancing
+- Analyzing return-series behavior over time
+- Comparing strategies on a period-by-period basis
+
+For **discretionary traders** with multi-day trades, these period-based metrics may differ from trade-level statistics. A single 5-day trade might span 3 positive days and 2 negative days - QuantStats would count these as 3 "wins" and 2 "losses" at the daily level.
+
+This is consistent with how all return-based analytics work (Sharpe ratio, Sortino ratio, drawdown analysis, etc.) - they operate on return periods, not discrete trade entries/exits.
+
+---
+
 In the meantime, you can get insights as to optional parameters for each method, by using Python's `help` method:
 
 ```python
@@ -227,15 +247,15 @@ $ conda install -c ranaroussi quantstats
 
 ## Requirements
 
-* [Python](https://www.python.org) >= 3.5+
-* [pandas](https://github.com/pydata/pandas) (tested to work with >=0.24.0)
-* [numpy](http://www.numpy.org) >= 1.15.0
-* [scipy](https://www.scipy.org) >= 1.2.0
-* [matplotlib](https://matplotlib.org) >= 3.0.0
-* [seaborn](https://seaborn.pydata.org) >= 0.9.0
-* [tabulate](https://bitbucket.org/astanin/python-tabulate) >= 0.8.0
-* [yfinance](https://github.com/ranaroussi/yfinance) >= 0.1.38
-* [plotly](https://plot.ly/) >= 3.4.1 (optional, for using `plots.to_plotly()`)
+* [Python](https://www.python.org) >= 3.10
+* [pandas](https://github.com/pydata/pandas) >= 1.5.0
+* [numpy](http://www.numpy.org) >= 1.24.0
+* [scipy](https://www.scipy.org) >= 1.11.0
+* [matplotlib](https://matplotlib.org) >= 3.7.0
+* [seaborn](https://seaborn.pydata.org) >= 0.13.0
+* [tabulate](https://bitbucket.org/astanin/python-tabulate) >= 0.9.0
+* [yfinance](https://github.com/ranaroussi/yfinance) >= 0.2.40
+* [plotly](https://plot.ly/) >= 5.0.0 (optional, for using `plots.to_plotly()`)
 
 ## Questions?
 
