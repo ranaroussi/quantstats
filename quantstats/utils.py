@@ -21,7 +21,6 @@ import datetime as _dt
 import pandas as _pd
 import numpy as _np
 from ._compat import safe_yfinance_download
-from . import stats as _stats
 from ._compat import safe_concat, safe_resample
 import inspect
 import threading
@@ -313,6 +312,8 @@ def to_prices(returns: Returns, base: float = 1e5) -> Returns:
     pd.Series or pd.DataFrame
         Price data calculated from returns
     """
+    from . import stats as _stats  # deferred import to avoid circular dependency
+
     # Clean returns data by filling NaN and replacing infinite values
     returns = returns.copy().fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
 
@@ -431,6 +432,8 @@ def group_returns(returns: Returns, groupby, compounded: bool = False) -> Return
     group_returns(df, [df.index.year, df.index.month])
     """
     if compounded:
+        from . import stats as _stats  # deferred import to avoid circular dependency
+
         # Use compounded returns calculation
         return returns.groupby(groupby).apply(_stats.comp)
     # Use simple sum for non-compounded returns
