@@ -682,7 +682,7 @@ def avg_loss(
 
 def volatility(
     returns: Returns,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
     prepare_returns: bool = True,
 ) -> float | _pd.Series:
@@ -695,7 +695,7 @@ def volatility(
 
     Args:
         returns: Return series or DataFrame to analyze
-        periods: Number of periods per year for annualization (default: 365)
+        periods: Number of periods per year for annualization (default: 252)
         annualize: Whether to annualize the volatility (default: True)
         prepare_returns: Whether to prepare returns first (default: True)
 
@@ -725,7 +725,7 @@ def volatility(
 def rolling_volatility(
     returns: Returns,
     rolling_period: int = 126,
-    periods_per_year: int = 365,
+    periods_per_year: int = 252,
     prepare_returns: bool = True,
 ) -> _pd.Series:
     """
@@ -737,7 +737,7 @@ def rolling_volatility(
     Args:
         returns (pd.Series): Return series to analyze
         rolling_period (int): Rolling window size (default: 126, ~6 months)
-        periods_per_year (int): Periods per year for annualization (default: 365)
+        periods_per_year (int): Periods per year for annualization (default: 252)
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -757,7 +757,7 @@ def rolling_volatility(
 
 def implied_volatility(
     returns: Returns,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
 ) -> float | _pd.Series:
     """
@@ -768,7 +768,7 @@ def implied_volatility(
 
     Args:
         returns (pd.Series): Return series to analyze
-        periods (int): Number of periods for rolling calculation (default: 365)
+        periods (int): Number of periods for rolling calculation (default: 252)
         annualize (bool): Whether to annualize the volatility (default: True)
 
     Returns:
@@ -841,7 +841,7 @@ def autocorr_penalty(
 def sharpe(
     returns: Returns,
     rf: float = 0.0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
     smart: bool = False,
 ) -> float | _pd.Series:
@@ -855,7 +855,7 @@ def sharpe(
     Args:
         returns: Return series or DataFrame to analyze
         rf: Risk-free rate (annualized if periods specified, default: 0.0)
-        periods: Periods per year for annualization (default: 365)
+        periods: Periods per year for annualization (default: 252)
         annualize: Whether to annualize the ratio (default: True)
         smart: Whether to apply autocorrelation penalty (default: False)
 
@@ -901,7 +901,7 @@ def sharpe(
 def smart_sharpe(
     returns: Returns,
     rf: float = 0.0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
 ) -> float | _pd.Series:
     """
@@ -914,7 +914,7 @@ def smart_sharpe(
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the ratio (default: True)
 
     Returns:
@@ -933,7 +933,7 @@ def rolling_sharpe(
     rf: float = 0.0,
     rolling_period: int = 126,
     annualize: bool = True,
-    periods_per_year: int = 365,
+    periods_per_year: int = 252,
     prepare_returns: bool = True,
 ) -> _pd.Series:
     """
@@ -948,7 +948,7 @@ def rolling_sharpe(
         rf (float): Risk-free rate (annualized, default: 0.0)
         rolling_period (int): Rolling window size (default: 126, ~6 months)
         annualize (bool): Whether to annualize the ratio (default: True)
-        periods_per_year (int): Periods per year for annualization (default: 365)
+        periods_per_year (int): Periods per year for annualization (default: 252)
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -982,7 +982,7 @@ def rolling_sharpe(
 def sortino(
     returns: Returns,
     rf: float = 0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
     smart: bool = False,
 ) -> float | _pd.Series:
@@ -996,7 +996,7 @@ def sortino(
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the ratio (default: True)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1053,7 +1053,7 @@ def sortino(
 def smart_sortino(
     returns: Returns,
     rf: float = 0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
 ) -> float | _pd.Series:
     """
@@ -1066,7 +1066,7 @@ def smart_sortino(
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the ratio (default: True)
 
     Returns:
@@ -1085,7 +1085,7 @@ def rolling_sortino(
     rf: float = 0,
     rolling_period: int = 126,
     annualize: bool = True,
-    periods_per_year: int = 365,
+    periods_per_year: int = 252,
     **kwargs,
 ) -> _pd.Series:
     """
@@ -1099,7 +1099,7 @@ def rolling_sortino(
         rf (float): Risk-free rate (annualized, default: 0.0)
         rolling_period (int): Rolling window size (default: 126, ~6 months)
         annualize (bool): Whether to annualize the ratio (default: True)
-        periods_per_year (int): Periods per year for annualization (default: 365)
+        periods_per_year (int): Periods per year for annualization (default: 252)
         **kwargs: Additional keyword arguments (e.g., prepare_returns)
 
     Returns:
@@ -1149,7 +1149,7 @@ def rolling_sortino(
 def adjusted_sortino(
     returns: Returns,
     rf: float = 0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = True,
     smart: bool = False,
 ) -> float | _pd.Series:
@@ -1163,7 +1163,7 @@ def adjusted_sortino(
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the ratio (default: True)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1189,7 +1189,7 @@ def probabilistic_ratio(
     series: Returns,
     rf: float = 0.0,
     base: str = "sharpe",
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = False,
     smart: bool = False,
 ) -> float:
@@ -1204,7 +1204,7 @@ def probabilistic_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         base (str): Base metric ('sharpe', 'sortino', 'adjusted_sortino')
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the result (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1250,7 +1250,7 @@ def probabilistic_ratio(
 
     # Annualize if requested
     if annualize:
-        return psr * (365**0.5)
+        return psr * (252**0.5)
 
     return psr
 
@@ -1258,7 +1258,7 @@ def probabilistic_ratio(
 def probabilistic_sharpe_ratio(
     series: Returns,
     rf: float = 0.0,
-    periods: int = 365,
+    periods: int = 252,
     annualize: bool = False,
     smart: bool = False,
 ) -> float:
@@ -1272,7 +1272,7 @@ def probabilistic_sharpe_ratio(
     Args:
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the result (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1290,7 +1290,7 @@ def probabilistic_sharpe_ratio(
 
 
 def probabilistic_sortino_ratio(
-    series, rf=0.0, periods=365, annualize=False, smart=False
+    series, rf=0.0, periods=252, annualize=False, smart=False
 ):
     """
     Calculate the Probabilistic Sortino Ratio.
@@ -1301,7 +1301,7 @@ def probabilistic_sortino_ratio(
     Args:
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the result (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1319,7 +1319,7 @@ def probabilistic_sortino_ratio(
 
 
 def probabilistic_adjusted_sortino_ratio(
-    series, rf=0.0, periods=365, annualize=False, smart=False
+    series, rf=0.0, periods=252, annualize=False, smart=False
 ):
     """
     Calculate the Probabilistic Adjusted Sortino Ratio.
@@ -1330,7 +1330,7 @@ def probabilistic_adjusted_sortino_ratio(
     Args:
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         annualize (bool): Whether to annualize the result (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
@@ -1352,7 +1352,7 @@ def probabilistic_adjusted_sortino_ratio(
     )
 
 
-def treynor_ratio(returns, benchmark, periods=365.0, rf=0.0):
+def treynor_ratio(returns, benchmark, periods=252.0, rf=0.0):
     """
     Calculate the Treynor ratio.
 
@@ -1363,7 +1363,7 @@ def treynor_ratio(returns, benchmark, periods=365.0, rf=0.0):
     Args:
         returns (pd.Series): Return series to analyze
         benchmark (pd.Series): Benchmark return series for beta calculation
-        periods (float): Periods per year for annualization (default: 365.0)
+        periods (float): Periods per year for annualization (default: 252.0)
         rf (float): Risk-free rate (annualized, default: 0.0)
 
     Returns:
@@ -1395,7 +1395,7 @@ def omega(
     returns: Returns,
     rf: float = 0.0,
     required_return: float = 0.0,
-    periods: int = 365,
+    periods: int = 252,
 ) -> float:
     """
     Calculate the Omega ratio of a strategy.
@@ -1408,7 +1408,7 @@ def omega(
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         required_return (float): Required return threshold (default: 0.0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
 
     Returns:
         float: Omega ratio
@@ -1508,7 +1508,7 @@ def cagr(
     returns: Returns,
     rf: float = 0.0,
     compounded: bool = True,
-    periods: int = 365,
+    periods: int = 252,
 ) -> float | _pd.Series:
     """
     Calculate the Compound Annual Growth Rate (CAGR) of excess returns.
@@ -1520,7 +1520,7 @@ def cagr(
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         compounded (bool): Whether to compound returns (default: True)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
 
     Returns:
         float or pd.Series: CAGR percentage
@@ -1642,7 +1642,7 @@ def kurtosis(returns, prepare_returns=True):
 def calmar(
     returns: Returns,
     prepare_returns: bool = True,
-    periods: int = 365,
+    periods: int = 252,
 ) -> float:
     """
     Calculate the Calmar ratio (CAGR / Maximum Drawdown).
@@ -1654,7 +1654,7 @@ def calmar(
     Args:
         returns (pd.Series): Return series to analyze
         prepare_returns (bool): Whether to prepare returns first (default: True)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
 
     Returns:
         float: Calmar ratio
@@ -2673,7 +2673,7 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     return 0
 
 
-def greeks(returns, benchmark, periods=365.0, prepare_returns=True):
+def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
     """
     Calculate portfolio Greeks (alpha and beta) relative to benchmark.
 
@@ -2684,7 +2684,7 @@ def greeks(returns, benchmark, periods=365.0, prepare_returns=True):
     Args:
         returns (pd.Series): Return series to analyze
         benchmark (pd.Series): Benchmark return series for comparison
-        periods (float): Periods per year for alpha annualization (default: 365.0)
+        periods (float): Periods per year for alpha annualization (default: 252.0)
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -2728,7 +2728,7 @@ def greeks(returns, benchmark, periods=365.0, prepare_returns=True):
     ).fillna(0)
 
 
-def rolling_greeks(returns, benchmark, periods=365, prepare_returns=True):
+def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     """
     Calculate rolling Greeks (alpha and beta) over time.
 
@@ -2739,7 +2739,7 @@ def rolling_greeks(returns, benchmark, periods=365, prepare_returns=True):
     Args:
         returns (pd.Series): Return series to analyze
         benchmark (pd.Series): Benchmark return series for comparison
-        periods (int): Rolling window size (default: 365, ~1 year)
+        periods (int): Rolling window size (default: 252, ~1 year)
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -3170,7 +3170,7 @@ def montecarlo(returns, sims=1000, bust=None, goal=None, seed=None):
     return run_montecarlo(returns, sims=sims, bust=bust, goal=goal, seed=seed)
 
 
-def montecarlo_sharpe(returns, sims=1000, rf=0, periods=365, seed=None):
+def montecarlo_sharpe(returns, sims=1000, rf=0, periods=252, seed=None):
     """
     Distribution of Sharpe ratios across Monte Carlo simulations.
 
@@ -3182,7 +3182,7 @@ def montecarlo_sharpe(returns, sims=1000, rf=0, periods=365, seed=None):
         returns (pd.Series): Daily returns
         sims (int): Number of simulations (default: 1000)
         rf (float): Risk-free rate (default: 0)
-        periods (int): Periods per year for annualization (default: 365)
+        periods (int): Periods per year for annualization (default: 252)
         seed (int, optional): Random seed for reproducibility
 
     Returns:
@@ -3285,7 +3285,7 @@ def montecarlo_cagr(returns, sims=1000, seed=None):
 
     # Calculate CAGR for each simulation path
     n_periods = len(mc.data)
-    years = n_periods / 365  # Assume daily data
+    years = n_periods / 252  # Assume daily data
 
     cagr_values = []
     for col in mc.data.columns:
