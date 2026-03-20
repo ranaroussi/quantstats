@@ -1582,7 +1582,7 @@ def rar(returns, rf=0.0):
     returns = _utils._prepare_returns(returns, rf)
 
     # Calculate CAGR and divide by exposure time
-    return cagr(returns) / exposure(returns)
+    return cagr(returns, compounded=compounded) / exposure(returns)
 
 
 def skew(returns, prepare_returns=True):
