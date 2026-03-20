@@ -1569,6 +1569,7 @@ def rar(returns, rf=0.0):
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
+        compounded (bool): Whether to compound returns for CAGR calculation (default: True)
 
     Returns:
         float: Risk-adjusted return
