@@ -1558,7 +1558,7 @@ def cagr(
     return res
 
 
-def rar(returns, rf=0.0):
+def rar(returns, rf=0.0, compounded=True):
     """
     Calculate the Risk-Adjusted Return (RAR).
 
@@ -1569,6 +1569,8 @@ def rar(returns, rf=0.0):
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
+        compounded (bool): Whether to compound returns (default: True).
+            Set to False for intraday or non-compounded return streams.
 
     Returns:
         float: Risk-adjusted return
@@ -1582,7 +1584,7 @@ def rar(returns, rf=0.0):
     returns = _utils._prepare_returns(returns, rf)
 
     # Calculate CAGR and divide by exposure time
-    return cagr(returns) / exposure(returns)
+    return cagr(returns, compounded=compounded) / exposure(returns)
 
 
 def skew(returns, prepare_returns=True):
@@ -1642,6 +1644,7 @@ def kurtosis(returns, prepare_returns=True):
 def calmar(
     returns: Returns,
     prepare_returns: bool = True,
+    compounded: bool = True,
     periods: int = 252,
 ) -> float:
     """
@@ -1654,6 +1657,8 @@ def calmar(
     Args:
         returns (pd.Series): Return series to analyze
         prepare_returns (bool): Whether to prepare returns first (default: True)
+        compounded (bool): Whether to compound returns (default: True).
+            Set to False for intraday or non-compounded return streams.
         periods (int): Periods per year for annualization (default: 252)
 
     Returns:
@@ -1670,7 +1675,7 @@ def calmar(
         returns = _utils._prepare_returns(returns)
 
     # Calculate CAGR and maximum drawdown
-    cagr_ratio = cagr(returns, periods=periods)
+    cagr_ratio = cagr(returns, compounded=compounded, periods=periods)
     max_dd = max_drawdown(returns)
 
     # Return ratio of CAGR to absolute maximum drawdown
