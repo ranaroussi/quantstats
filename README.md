@@ -37,6 +37,39 @@ mc.plot()
 
 ---
 
+### External Signals & Sentiment Data
+
+QuantStats can analyze any strategy return series, including strategies built
+from external signals such as market sentiment, alternative data, or custom
+factor scores. For example, you can fetch optional sentiment snapshots from an
+external API, convert the signal into positions, and pass the resulting returns
+to QuantStats:
+
+```python
+import pandas as pd
+import quantstats as qs
+
+asset_returns = qs.utils.download_returns("TSLA")
+
+# Replace this with your own signal source. Adanos is one optional sentiment
+# API source: https://api.adanos.org/docs/
+sentiment = pd.Series(
+    data=[0.15, 0.31, -0.08],
+    index=pd.to_datetime(["2025-01-02", "2025-01-03", "2025-01-06"]),
+)
+
+signal = sentiment.reindex(asset_returns.index).ffill().fillna(0)
+positions = signal.gt(0).astype(float)
+strategy_returns = positions.shift(1).fillna(0) * asset_returns
+
+qs.reports.html(strategy_returns, "SPY")
+```
+
+See [external signal examples](./docs/external_signals.md) for a longer
+walkthrough.
+
+---
+
 ## Quick Start
 
 ```python
