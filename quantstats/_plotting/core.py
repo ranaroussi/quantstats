@@ -272,8 +272,9 @@ def plot_returns_bars(
     # Reduce label density for long time series
     if len(years) > 10:
         mod = int(len(years) / 10)
+        tick_positions = ax.get_xticks()
         _plt.xticks(
-            _np.arange(len(years)),
+            tick_positions,
             [str(year) if not i % mod else "" for i, year in enumerate(years)],
         )
 
