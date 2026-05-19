@@ -2632,7 +2632,7 @@ def r2(returns, benchmark):
     return r_squared(returns, benchmark)
 
 
-def information_ratio(returns, benchmark, prepare_returns=True):
+def information_ratio(returns, benchmark, compounded=True, prepare_returns=True):
     """
     Calculate the Information Ratio.
 
@@ -2644,6 +2644,9 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     Args:
         returns (pd.Series): Return series to analyze
         benchmark (pd.Series): Benchmark return series for comparison
+        compounded (bool): Whether to use geometric (compounded) returns
+            for active return calculation (default: True). When True, uses
+            geometric mean; when False, uses arithmetic mean.
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -2667,9 +2670,16 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     # Calculate tracking error (standard deviation of active returns)
     std = diff_rets.std()
 
+    # Calculate active return based on compounding preference
+    if compounded:
+        active_return = (1 + returns).prod() ** (1 / len(returns)) - \
+            (1 + benchmark).prod() ** (1 / len(benchmark))
+    else:
+        active_return = diff_rets.mean()
+
     # Return Information Ratio (active return / tracking error)
     if std != 0:
-        return diff_rets.mean() / diff_rets.std()
+        return active_return / std
     return 0
 
 
