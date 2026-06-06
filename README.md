@@ -12,7 +12,7 @@
 
 
 
-# Quick Links
+## Navigation
 - [Quick Start](#quick-start)
 - [Understanding Returns](#understanding-returns-important)
 - [Documentation](docs/docs_and_api_ref.md)
@@ -21,7 +21,6 @@
 - [Questions and Contributions](#questions-and-contributions)
 - [Changelog »](./CHANGELOG.md)
 
----
 
 ## Quick Start
 
@@ -39,13 +38,13 @@ import quantstats as qs
 qs.extend_pandas()
 
 # fetch the daily returns for a stock
-stock = qs.utils.download_returns('META')
+returns = qs.utils.download_returns('META')
 
 # show sharpe ratio
-qs.stats.sharpe(stock)
+qs.stats.sharpe(returns)
 
 # or using extend_pandas() :)
-stock.sharpe()
+returns.sharpe()
 ```
 
 Output:
@@ -100,7 +99,29 @@ Output (full-size version [here](https://rawcdn.githack.com/ranaroussi/quantstat
   />
 </p>
 
-### Important: Period-Based vs Trade-Based Metrics
+### The Returns object
+As seen in previous examples, QuantStat's primary input is a time-series:
+```python
+returns = qs.utils.download_returns('META')
+qs.stats.sharpe(returns)
+```
+Or a dataframe (several series with a shared index):
+```python
+returns = DataFrame()
+returns["META"] = qs.utils.download_returns('META')
+returns["TSLA"] = qs.utils.download_returns('TSLA')
+qs.stats.sharpe(returns)
+```
+
+Quantstats makes several notable assumptions about this object by default:
+1. This is a daily (`datetime64[s]` index) time-series of returns (`float64`). These returns are the percent gain from the previous period (e.g. 10% growth -> 0.1, NOT 1.1).
+2. There are 252 periods (rows) in a year (not 365!) corresponding to the number of trading days in the U.S. stock market. Many methods assume this amount of periods by default; if you have substantially more or less data in your time-series, the annualization math may be skewed.
+3. For an example of correctly shaped returns, see time-series returned by `qs.utils.download_returns()`
+
+
+## Additional Notes
+
+### Period-Based vs Trade-Based Metrics
 
 QuantStats analyzes **return series** (daily, weekly, monthly returns), not discrete trade data. This means:
 
@@ -118,11 +139,9 @@ For **discretionary traders** with multi-day trades, these period-based metrics 
 
 This is consistent with how all return-based analytics work (Sharpe ratio, Sortino ratio, drawdown analysis, etc.) - they operate on return periods, not discrete trade entries/exits.
 
----
 
+### Help on function conditional_value_at_risk in module quantstats.stats:
 ```
-Help on function conditional_value_at_risk in module quantstats.stats:
-
 conditional_value_at_risk(returns, sigma=1, confidence=0.99)
     calculates the conditional daily value-at-risk (aka expected shortfall)
     quantifies the amount of tail risk an investment
