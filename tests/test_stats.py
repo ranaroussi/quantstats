@@ -140,6 +140,19 @@ class TestRatios:
         # Higher rf should lower Sharpe ratio
         assert result_with_rf < result_no_rf
 
+    def test_sharpe_with_time_varying_rf(self, sample_returns):
+        """Test Sharpe ratio with time-varying risk-free rate."""
+        rf = pd.Series(
+            np.linspace(0.01, 0.03, len(sample_returns)),
+            index=sample_returns.index,
+        )
+
+        result = stats.sharpe(sample_returns, rf=rf)
+
+        if isinstance(result, pd.Series):
+            result = result.iloc[0]
+        assert np.isfinite(result)
+
     def test_sortino(self, sample_returns):
         """Test Sortino ratio calculation."""
         result = stats.sortino(sample_returns)

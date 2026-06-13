@@ -97,6 +97,19 @@ def _get_trading_periods(periods_per_year=252):
     return periods_per_year, half_year
 
 
+def _get_rf_display_value(rf, index=None):
+    """Return a scalar risk-free rate for report display."""
+    return _get_utils()._to_scalar(rf, index)
+
+
+def _format_rf(rf, index=None):
+    """Format scalar and time-varying risk-free rates for report parameters."""
+    value = _get_rf_display_value(rf, index)
+    if isinstance(rf, (_pd.Series, _pd.DataFrame)):
+        return f"time-varying (avg {value:.1%})"
+    return f"{value:.1%}"
+
+
 def _print_parameters_table(
     benchmark_title=None,
     periods_per_year=252,
@@ -127,7 +140,7 @@ def _print_parameters_table(
     if benchmark_title:
         print(f"{'Benchmark':<25}{benchmark_title.upper():>15}")
     print(f"{'Periods/Year':<25}{periods_per_year:>15}")
-    print(f"{'Risk-Free Rate':<25}{rf:>14.1%}")
+    print(f"{'Risk-Free Rate':<25}{_format_rf(rf):>15}")
     print(f"{'Compounded':<25}{'Yes' if compounded else 'No':>15}")
     if benchmark_title:
         print(f"{'Match Dates':<25}{'Yes' if match_dates else 'No':>15}")
@@ -304,7 +317,7 @@ def html(
         if isinstance(benchmark, str):
             # Download the full benchmark data
             benchmark_original = _get_utils().download_returns(benchmark)
-            if rf != 0:
+            if _get_utils()._is_non_zero(rf):
                 benchmark_original = _get_utils().to_excess_returns(
                     benchmark_original, rf, nperiods=periods_per_year
                 )
@@ -343,7 +356,7 @@ def html(
     if benchmark_title:
         params_parts.append(f"Benchmark: {benchmark_title.upper()}")
     params_parts.append(f"Periods/Year: {periods_per_year}")
-    params_parts.append(f"RF: {rf:.1%}")
+    params_parts.append(f"RF: {_format_rf(rf, returns.index)}")
 
     params_str = " &bull; ".join(params_parts)
     if params_str:
@@ -1263,10 +1276,11 @@ def metrics(
                 df["returns_" + str(i + 1)] = returns[strategy_col]
 
     # Calculate start and end dates for each series
+    display_rf = _get_rf_display_value(rf, df.index)
     if isinstance(returns, _pd.Series):
         s_start = {"returns": df["returns"].index.strftime("%Y-%m-%d")[0]}
         s_end = {"returns": df["returns"].index.strftime("%Y-%m-%d")[-1]}
-        s_rf = {"returns": rf}
+        s_rf = {"returns": display_rf}
     elif isinstance(returns, _pd.DataFrame):
         df_strategy_columns = [col for col in df.columns if col != "benchmark"]
         s_start = {
@@ -1277,13 +1291,13 @@ def metrics(
             strategy_col: df[strategy_col].dropna().index.strftime("%Y-%m-%d")[-1]
             for strategy_col in df_strategy_columns
         }
-        s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
+        s_rf = {strategy_col: display_rf for strategy_col in df_strategy_columns}
 
     # Add benchmark dates if present
     if "benchmark" in df:
         s_start["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[0]
         s_end["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[-1]
-        s_rf["benchmark"] = rf
+        s_rf["benchmark"] = display_rf
 
     # Fill missing values with zeros for calculations
     df = df.fillna(0)
@@ -1802,7 +1816,7 @@ def metrics(
         params_data = {
             "Parameter": ["Risk-Free Rate", "Periods/Year", "Compounded", "Match Dates"],
             "Value": [
-                f"{rf:.1%}" if rf != 0 else "0.0%",
+                _format_rf(rf, df.index),
                 str(periods_per_year),
                 "Yes" if compounded else "No",
                 "Yes" if match_dates else "No",

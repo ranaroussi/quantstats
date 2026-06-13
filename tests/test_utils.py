@@ -64,6 +64,27 @@ class TestToReturns:
         assert result.dropna().abs().max() < 1
 
 
+class TestToExcessReturns:
+    """Test excess returns calculation."""
+
+    def test_dataframe_subtracts_time_varying_rf_by_index(self):
+        """Test DataFrame returns subtract Series RF by date index."""
+        dates = pd.date_range("2020-01-01", periods=3, freq="D")
+        returns = pd.DataFrame(
+            {"A": [0.02, 0.03, 0.04], "B": [0.01, 0.02, 0.03]},
+            index=dates,
+        )
+        rf = pd.Series([0.001, 0.002, 0.003], index=dates)
+
+        result = utils.to_excess_returns(returns, rf)
+
+        expected = pd.DataFrame(
+            {"A": [0.019, 0.028, 0.037], "B": [0.009, 0.018, 0.027]},
+            index=dates,
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+
 class TestToPrices:
     """Test to_prices function."""
 

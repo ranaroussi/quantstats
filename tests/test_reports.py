@@ -140,6 +140,24 @@ class TestHTMLReport:
             if os.path.exists(output_path):
                 os.remove(output_path)
 
+    def test_html_time_varying_rf(self, sample_returns):
+        """Test time-varying risk-free rate in parameters."""
+        rf = pd.Series(
+            np.linspace(0.01, 0.03, len(sample_returns)),
+            index=sample_returns.index,
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
+            output_path = f.name
+
+        try:
+            reports.html(sample_returns, output=output_path, rf=rf)
+            with open(output_path, encoding="utf-8") as f:
+                content = f.read()
+                assert "RF: time-varying (avg 2.0%)" in content
+        finally:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
 
 class TestMetrics:
     """Test metrics function."""
@@ -173,6 +191,18 @@ class TestMetrics:
         result_with_rf = reports.metrics(sample_returns, rf=0.02, display=False)
         # Results should be different
         assert not result_no_rf.equals(result_with_rf)
+
+    def test_metrics_with_time_varying_rf(self, sample_returns):
+        """Test metrics with time-varying risk-free rate."""
+        rf = pd.Series(
+            np.linspace(0.01, 0.03, len(sample_returns)),
+            index=sample_returns.index,
+        )
+
+        result = reports.metrics(sample_returns, rf=rf, display=False)
+
+        assert isinstance(result, pd.DataFrame)
+        assert result.loc["Risk-Free Rate", "Strategy"] == 2.0
 
 
 class TestMatchDates:

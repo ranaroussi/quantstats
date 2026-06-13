@@ -873,7 +873,7 @@ def sharpe(
     validate_input(returns)
 
     # Validate parameters for risk-free rate handling
-    if rf != 0 and periods is None:
+    if _utils._is_non_zero(rf) and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
                          "This is needed to properly annualize the risk-free rate.")
 
@@ -963,7 +963,7 @@ def rolling_sharpe(
         >>> print(rolling_sharpe_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if rf != 0 and rolling_period is None:
+    if _utils._is_non_zero(rf) and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
     if prepare_returns:
@@ -1018,7 +1018,7 @@ def sortino(
     validate_input(returns)
 
     # Validate parameters for risk-free rate handling
-    if rf != 0 and periods is None:
+    if _utils._is_non_zero(rf) and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
                          "This is needed to properly annualize the risk-free rate.")
 
@@ -1114,7 +1114,7 @@ def rolling_sortino(
         >>> print(rolling_sortino_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if rf != 0 and rolling_period is None:
+    if _utils._is_non_zero(rf) and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
     if kwargs.get("prepare_returns", True):
@@ -1219,6 +1219,8 @@ def probabilistic_ratio(
         >>> prob_ratio = probabilistic_ratio(returns, base="sharpe")
         >>> print(f"Probabilistic Sharpe ratio: {prob_ratio:.4f}")
     """
+    rf = _utils._to_scalar(rf, series.index)
+
     # Calculate the base ratio depending on the selected metric
     if base.lower() == "sharpe":
         base = sharpe(series, periods=periods, annualize=False, smart=smart)
@@ -1237,6 +1239,11 @@ def probabilistic_ratio(
 
     n = len(series)
 
+    if isinstance(series, _pd.DataFrame):
+        base = _np.asarray(base, dtype=float)
+        skew_no = _np.asarray(skew_no, dtype=float)
+        kurtosis_no = _np.asarray(kurtosis_no, dtype=float)
+
     # Calculate standard error of the ratio incorporating higher moments
     # Formula accounts for skewness and kurtosis effects on ratio distribution
     sigma_sr = _np.sqrt(
@@ -1247,6 +1254,8 @@ def probabilistic_ratio(
     # Calculate standardized ratio and convert to probability
     ratio = (base - rf) / sigma_sr
     psr = _norm.cdf(ratio)
+    if isinstance(series, _pd.DataFrame):
+        psr = _pd.Series(psr, index=series.columns)
 
     # Annualize if requested
     if annualize:
@@ -1388,7 +1397,7 @@ def treynor_ratio(returns, benchmark, periods=252.0, rf=0.0):
         return 0
 
     # Calculate excess return over risk-free rate divided by beta
-    return (comp(returns) - rf) / beta
+    return (comp(returns) - _utils._to_scalar(rf, returns.index)) / beta
 
 
 def omega(
@@ -1723,6 +1732,8 @@ def ulcer_performance_index(returns, rf=0):
         >>> upi_value = ulcer_performance_index(returns)
         >>> print(f"Ulcer Performance Index: {upi_value:.4f}")
     """
+    rf = _utils._to_scalar(rf, returns.index)
+
     # Calculate excess return divided by Ulcer Index
     ulcer = ulcer_index(returns)
     
@@ -1778,6 +1789,8 @@ def serenity_index(returns, rf=0):
         Based on KeyQuant whitepaper:
         https://www.keyquant.com/Download/GetFile?Filename=%5CPublications%5CKeyQuant_WhitePaper_APT_Part1.pdf
     """
+    rf = _utils._to_scalar(rf, returns.index)
+
     # Convert returns to drawdown series
     dd = to_drawdown_series(returns)
 
@@ -2350,6 +2363,8 @@ def recovery_factor(returns, rf=0.0, prepare_returns=True):
         >>> rf_value = recovery_factor(returns)
         >>> print(f"Recovery factor: {rf_value:.4f}")
     """
+    rf = _utils._to_scalar(rf, returns.index)
+
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 

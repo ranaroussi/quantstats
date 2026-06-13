@@ -101,6 +101,26 @@ def validate_input(data, allow_empty=False):
     return True
 
 
+def _is_non_zero(value):
+    """Return True if a scalar or pandas object contains any non-zero values."""
+    if isinstance(value, (_pd.Series, _pd.DataFrame)):
+        return bool((value.fillna(0) != 0).to_numpy().any())
+    return bool(value != 0)
+
+
+def _to_scalar(value, index=None):
+    """Return a scalar value, averaging pandas objects after optional index alignment."""
+    if isinstance(value, (_pd.Series, _pd.DataFrame)):
+        values = value
+        if index is not None:
+            values = values[values.index.isin(index)]
+        result = values.mean()
+        if isinstance(result, _pd.Series):
+            result = result.mean()
+        return 0.0 if _pd.isna(result) else float(result)
+    return value
+
+
 # Cache for _prepare_returns function with thread safety
 _PREPARE_RETURNS_CACHE = {}
 _CACHE_MAX_SIZE = 100
@@ -134,8 +154,15 @@ def _generate_cache_key(data, rf, nperiods):
         else:
             data_hash = hash(str(data))
 
+        if isinstance(rf, _pd.Series):
+            rf_hash = _pd.util.hash_pandas_object(rf).sum()
+        elif isinstance(rf, _pd.DataFrame):
+            rf_hash = _pd.util.hash_pandas_object(rf).sum()
+        else:
+            rf_hash = rf
+
         # Include parameters in the key
-        key = f"{data_hash}_{rf}_{nperiods}"
+        key = f"{data_hash}_{rf_hash}_{nperiods}"
         return key
     except (ValueError, TypeError, AttributeError, MemoryError):
         # If hashing fails, return None to skip caching
@@ -534,7 +561,10 @@ def to_excess_returns(returns: Returns, rf: float, nperiods: int | None = None) 
         rf = _np.power(1 + rf, 1.0 / nperiods) - 1.0
 
     # Calculate excess returns
-    df = returns - rf
+    if isinstance(returns, _pd.DataFrame) and isinstance(rf, _pd.Series):
+        df = returns.sub(rf, axis=0)
+    else:
+        df = returns - rf
     df = df.tz_localize(None)
     return df
 
@@ -638,7 +668,7 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
 
     # Calculate excess returns if rf > 0 and function needs it
     if function not in unnecessary_function_calls:
-        if rf > 0:
+        if _is_non_zero(rf):
             result = to_excess_returns(data, rf, nperiods)
             # Cache the result
             if cache_key:
