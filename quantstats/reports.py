@@ -1555,7 +1555,7 @@ def metrics(
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
-    d = today - relativedelta(years=10)
+    d = today - relativedelta(months=119)
     metrics["10Y (ann.) %"] = (
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )

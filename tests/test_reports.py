@@ -174,6 +174,26 @@ class TestMetrics:
         # Results should be different
         assert not result_no_rf.equals(result_with_rf)
 
+    def test_metrics_10y_annualized_return_uses_partial_month_offset(self):
+        """Test 10Y annualized return uses the same partial-month offset as 3Y/5Y."""
+        dates = pd.date_range("2016-01-31", periods=121, freq="ME")
+        returns = pd.Series(0.01, index=dates, name="Strategy")
+        returns.iloc[0] = -0.50
+
+        result = reports.metrics(
+            returns,
+            display=False,
+            prepare_returns=False,
+            periods_per_year=12,
+        )
+
+        assert result.loc["10Y (ann.)", "Strategy"] == result.loc[
+            "3Y (ann.)", "Strategy"
+        ]
+        assert result.loc["10Y (ann.)", "Strategy"] == result.loc[
+            "5Y (ann.)", "Strategy"
+        ]
+
 
 class TestMatchDates:
     """Test date matching functionality."""
