@@ -7,9 +7,11 @@ import pandas as pd
 import numpy as np
 import tempfile
 import os
+import matplotlib.pyplot as plt
 
 import quantstats as qs
 from quantstats import plots
+from quantstats._plotting import wrappers as plotting_wrappers
 
 
 @pytest.fixture
@@ -53,6 +55,21 @@ class TestPlotFunctions:
         """Test yearly returns bar chart."""
         fig = plots.yearly_returns(sample_returns, show=False)
         assert fig is not None
+
+    def test_yearly_returns_sparsifies_labels_for_long_ranges(self):
+        """Test yearly returns uses sparser year labels once the range exceeds 10 years."""
+        np.random.seed(7)
+        dates = pd.date_range("2010-01-01", periods=365 * 12, freq="D")
+        returns = pd.Series(np.random.randn(len(dates)) * 0.01, index=dates, name="Strategy")
+        benchmark = pd.Series(np.random.randn(len(dates)) * 0.008, index=dates, name="Benchmark")
+
+        fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+        labels = [tick.get_text() for tick in fig.axes[0].get_xticklabels()]
+        non_empty_labels = [label for label in labels if label]
+
+        assert len(labels) == 12
+        assert len(non_empty_labels) == 6
+        assert non_empty_labels == ["2010", "2012", "2014", "2016", "2018", "2020"]
 
     def test_histogram(self, sample_returns, sample_benchmark):
         """Test histogram plot."""
@@ -98,6 +115,21 @@ class TestPlotFunctions:
         """Test monthly heatmap."""
         fig = plots.monthly_heatmap(sample_returns, show=False)
         assert fig is not None
+
+    def test_monthly_heatmap_closes_its_own_figure(self, sample_returns, monkeypatch):
+        """Test monthly heatmap closes the figure it created."""
+        closed = []
+        original_close = plt.close
+
+        def spy_close(fig=None):
+            closed.append(fig)
+            return original_close(fig)
+
+        monkeypatch.setattr(plotting_wrappers._plt, "close", spy_close)
+
+        fig = plots.monthly_heatmap(sample_returns, show=False)
+
+        assert fig in closed
 
     def test_distribution(self, sample_returns):
         """Test distribution box plot."""
