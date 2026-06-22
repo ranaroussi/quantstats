@@ -54,6 +54,21 @@ class TestPlotFunctions:
         fig = plots.yearly_returns(sample_returns, show=False)
         assert fig is not None
 
+    def test_yearly_returns_sparsifies_labels_for_long_ranges(self):
+        """Test yearly returns uses sparser year labels once the range exceeds 10 years."""
+        np.random.seed(7)
+        dates = pd.date_range("2010-01-01", periods=365 * 12, freq="D")
+        returns = pd.Series(np.random.randn(len(dates)) * 0.01, index=dates, name="Strategy")
+        benchmark = pd.Series(np.random.randn(len(dates)) * 0.008, index=dates, name="Benchmark")
+
+        fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+        labels = [tick.get_text() for tick in fig.axes[0].get_xticklabels()]
+        non_empty_labels = [label for label in labels if label]
+
+        assert len(labels) == 12
+        assert len(non_empty_labels) == 6
+        assert non_empty_labels == ["2010", "2012", "2014", "2016", "2018", "2020"]
+
     def test_histogram(self, sample_returns, sample_benchmark):
         """Test histogram plot."""
         fig = plots.histogram(sample_returns, sample_benchmark, show=False)

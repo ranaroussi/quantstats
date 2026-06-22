@@ -260,22 +260,21 @@ def plot_returns_bars(
 
     # Format x-axis labels
     try:
-        ax.set_xticklabels(df.index.year)
-        years = sorted(list(set(df.index.year)))
+        years = [str(year) for year in df.index.year]
     except AttributeError:
-        ax.set_xticklabels(df.index)
-        years = sorted(list(set(df.index)))
+        years = [str(label) for label in df.index]
+
+    tick_labels = years
 
     # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
     # years = sorted(list(set(df.index.year)))
 
     # Reduce label density for long time series
     if len(years) > 10:
-        mod = int(len(years) / 10)
-        _plt.xticks(
-            _np.arange(len(years)),
-            [str(year) if not i % mod else "" for i, year in enumerate(years)],
-        )
+        step = max(1, int(_np.ceil(len(years) / 10)))
+        tick_labels = [label if not i % step else "" for i, label in enumerate(years)]
+
+    ax.set_xticklabels(tick_labels)
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
