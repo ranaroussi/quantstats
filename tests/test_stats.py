@@ -197,6 +197,36 @@ class TestBenchmarkComparison:
         result = stats.information_ratio(sample_returns, sample_benchmark)
         assert np.isfinite(result)
 
+    def test_information_ratio_compounded(self):
+        """Test Information Ratio with compounded active return."""
+        dates = pd.date_range("2020-01-01", periods=4, freq="D")
+        returns = pd.Series([0.50, -0.20, 0.40, -0.10], index=dates)
+        benchmark = pd.Series([0.10, 0.05, 0.10, 0.05], index=dates)
+
+        active_returns = returns - benchmark
+        tracking_error = active_returns.std()
+        expected = (
+            stats.expected_return(returns, compounded=True, prepare_returns=False)
+            - stats.expected_return(benchmark, compounded=True, prepare_returns=False)
+        ) / tracking_error
+
+        result = stats.information_ratio(returns, benchmark, compounded=True, prepare_returns=False)
+
+        np.testing.assert_allclose(result, expected)
+
+    def test_information_ratio_default_matches_arithmetic_mean(self):
+        """Test Information Ratio default behavior stays arithmetic."""
+        dates = pd.date_range("2020-01-01", periods=4, freq="D")
+        returns = pd.Series([0.50, -0.20, 0.40, -0.10], index=dates)
+        benchmark = pd.Series([0.10, 0.05, 0.10, 0.05], index=dates)
+
+        active_returns = returns - benchmark
+        expected = active_returns.mean() / active_returns.std()
+
+        result = stats.information_ratio(returns, benchmark, prepare_returns=False)
+
+        np.testing.assert_allclose(result, expected)
+
     def test_treynor_ratio(self, sample_returns, sample_benchmark):
         """Test Treynor Ratio calculation."""
         result = stats.treynor_ratio(sample_returns, sample_benchmark)
