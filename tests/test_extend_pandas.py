@@ -87,3 +87,14 @@ class TestExtendPandasWithParams:
         # May or may not be different depending on returns
         assert np.isfinite(result_comp)
         assert np.isfinite(result_simple)
+
+    def test_information_ratio_compounded(self):
+        """Test Information Ratio with compounded option via pandas."""
+        qs.extend_pandas()
+        dates = pd.date_range("2020-01-01", periods=4, freq="D")
+        returns = pd.Series([0.50, -0.20, 0.40, -0.10], index=dates)
+        benchmark = pd.Series([0.10, 0.05, 0.10, 0.05], index=dates)
+
+        result = returns.information_ratio(benchmark, compounded=True, prepare_returns=False)
+
+        assert np.isfinite(result)
