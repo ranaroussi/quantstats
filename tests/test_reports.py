@@ -10,6 +10,7 @@ import os
 
 import quantstats as qs
 from quantstats import reports
+from dateutil.relativedelta import relativedelta
 
 
 @pytest.fixture
@@ -173,6 +174,29 @@ class TestMetrics:
         result_with_rf = reports.metrics(sample_returns, rf=0.02, display=False)
         # Results should be different
         assert not result_no_rf.equals(result_with_rf)
+
+    def test_metrics_use_full_three_and_five_year_windows(self):
+        """Test that multi-year annualized metrics use full labeled windows."""
+        dates = pd.date_range("2020-01-31", "2026-01-31", freq="ME")
+        returns = pd.Series(0.0, index=dates, name="Strategy")
+        returns.loc[pd.Timestamp("2021-01-31")] = 0.25
+        returns.loc[pd.Timestamp("2023-01-31")] = 0.15
+
+        result = reports.metrics(returns, display=False)
+
+        expected_3y = qs.stats.cagr(
+            returns[returns.index >= dates[-1] - relativedelta(years=3)],
+            rf=0.0,
+            compounded=True,
+        ).iloc[0]
+        expected_5y = qs.stats.cagr(
+            returns[returns.index >= dates[-1] - relativedelta(years=5)],
+            rf=0.0,
+            compounded=True,
+        ).iloc[0]
+
+        assert result.loc["3Y (ann.)", "Strategy"] == pytest.approx(round(expected_3y, 2))
+        assert result.loc["5Y (ann.)", "Strategy"] == pytest.approx(round(expected_5y, 2))
 
 
 class TestMatchDates:

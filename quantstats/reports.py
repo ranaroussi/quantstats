@@ -1545,12 +1545,12 @@ def metrics(
         metrics["1Y %"] = _np.sum(df[df.index >= y1], axis=0) * pct
 
     # Multi-year annualized returns
-    d = today - relativedelta(months=35)
+    d = today - relativedelta(years=3)
     metrics["3Y (ann.) %"] = (
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
-    d = today - relativedelta(months=59)
+    d = today - relativedelta(years=5)
     metrics["5Y (ann.) %"] = (
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
