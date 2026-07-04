@@ -2,10 +2,14 @@
 Tests for quantstats.stats module
 """
 
+import importlib
+import sys
+import builtins
+from datetime import datetime
+
 import pytest
 import pandas as pd
 import numpy as np
-from datetime import datetime
 
 import quantstats as qs
 from quantstats import stats
@@ -43,6 +47,29 @@ def negative_returns():
     dates = pd.date_range("2020-01-01", periods=100, freq="D")
     returns = pd.Series(-np.abs(np.random.randn(100) * 0.01) - 0.001, index=dates)
     return returns
+
+
+def test_stats_import_fallback_when_scipy_is_broken(monkeypatch):
+    """Importing stats should still work when SciPy import fails."""
+    real_import = builtins.__import__
+
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "scipy" or name.startswith("scipy."):
+            raise ImportError("simulated SciPy import failure")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    sys.modules.pop("quantstats.stats", None)
+    module = importlib.import_module("quantstats.stats")
+
+    assert module._norm.cdf(0.0) == pytest.approx(0.5)
+    assert module._norm.ppf(0.5, mu=2.0, sigma=3.0) == pytest.approx(2.0)
+
+    slope, intercept, r_value, _, _ = module._linregress([0, 1, 2], [0, 1, 2])
+    assert slope == pytest.approx(1.0)
+    assert intercept == pytest.approx(0.0)
+    assert r_value == pytest.approx(1.0)
 
 
 class TestBasicStats:

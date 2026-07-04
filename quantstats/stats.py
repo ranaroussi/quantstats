@@ -35,7 +35,47 @@ import pandas as _pd
 import numpy as _np
 from numpy.typing import NDArray
 from math import ceil as _ceil, sqrt as _sqrt
-from scipy.stats import norm as _norm, linregress as _linregress
+
+try:
+    from scipy.stats import norm as _norm, linregress as _linregress
+except Exception:  # pragma: no cover - exercised by regression test
+    from statistics import NormalDist
+
+    class _NormFallback:
+        @staticmethod
+        def cdf(x):
+            return NormalDist().cdf(float(x))
+
+        @staticmethod
+        def ppf(q, mu=0.0, sigma=1.0):
+            return NormalDist(mu=mu, sigma=sigma).inv_cdf(float(q))
+
+    _norm = _NormFallback()
+
+    def _linregress(x, y):
+        x_arr = _np.asarray(x, dtype=float)
+        y_arr = _np.asarray(y, dtype=float)
+        if x_arr.size != y_arr.size:
+            raise ValueError("x and y must have the same size")
+        if x_arr.size < 2:
+            raise ValueError("x and y must contain at least two points")
+
+        x_mean = x_arr.mean()
+        y_mean = y_arr.mean()
+        x_diff = x_arr - x_mean
+        y_diff = y_arr - y_mean
+        denom = _np.dot(x_diff, x_diff)
+        if denom == 0:
+            slope = 0.0
+            intercept = y_mean
+            r_val = 0.0
+        else:
+            slope = _np.dot(x_diff, y_diff) / denom
+            intercept = y_mean - slope * x_mean
+            numerator = _np.dot(x_diff, y_diff)
+            denominator = _np.sqrt(_np.dot(x_diff, x_diff) * _np.dot(y_diff, y_diff))
+            r_val = numerator / denominator if denominator != 0 else 0.0
+        return slope, intercept, r_val, _np.nan, _np.nan
 
 from . import utils as _utils
 from ._compat import safe_concat
