@@ -181,3 +181,16 @@ class TestFileStream:
         result = utils._file_stream()
         assert hasattr(result, "read")
         assert hasattr(result, "write")
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    dates = pd.date_range("2020-01-01", periods=100, freq="D")
+    prices = pd.Series(100 * np.cumprod(1 + np.random.randn(100) * 0.02), index=dates)
+    returns = pd.Series(np.random.randn(100) * 0.02, index=dates)
+
+    print("Utils demo")
+    print(f"Returns from prices: {utils.to_returns(prices).dropna().head().tolist()}")
+    print(f"Prices from returns: {utils.to_prices(returns, base=100).head().tolist()}")
+    print(f"Aggregated monthly: {utils.aggregate_returns(returns, 'month').head().tolist()}")
+    print(f"Portfolio value: {utils.make_portfolio(returns, start_balance=10000, mode='comp').iloc[-1]:.2f}")

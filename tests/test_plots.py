@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import tempfile
 import os
+import matplotlib.pyplot as plt
 
 import quantstats as qs
 from quantstats import plots
@@ -38,6 +39,15 @@ class TestPlotFunctions:
         # snapshot should work with show=False
         fig = plots.snapshot(sample_returns, show=False)
         assert fig is not None
+
+    def test_snapshot_keeps_figure_visible_when_showing(self, sample_returns):
+        """Test snapshot plot keeps the figure open when show=True."""
+        plt.close("all")
+        plt.ion()
+
+        plots.snapshot(sample_returns, show=True)
+
+        assert len(plt.get_fignums()) > 0
 
     def test_returns_plot(self, sample_returns, sample_benchmark):
         """Test returns plot."""

@@ -254,3 +254,18 @@ class TestEdgeCases:
             sample_returns, benchmark=benchmark_no_name, display=False
         )
         assert isinstance(result, pd.DataFrame)
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    dates = pd.date_range("2020-01-01", periods=252, freq="D")
+    strategy = pd.Series(np.random.randn(252) * 0.02, index=dates, name="Strategy")
+    benchmark = pd.Series(np.random.randn(252) * 0.015, index=dates, name="SPY")
+
+    metrics_df = reports.metrics(strategy, benchmark, display=False)
+    print("Reports demo")
+    print(metrics_df.head())
+
+    output_path = "reports_demo.html"
+    reports.html(strategy, benchmark, output=output_path, title="Demo Report")
+    print(f"HTML report written to {output_path}")

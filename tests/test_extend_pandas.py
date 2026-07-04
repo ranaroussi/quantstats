@@ -87,3 +87,18 @@ class TestExtendPandasWithParams:
         # May or may not be different depending on returns
         assert np.isfinite(result_comp)
         assert np.isfinite(result_simple)
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    dates = pd.date_range("2020-01-01", periods=252, freq="D")
+    returns = pd.Series(np.random.randn(252) * 0.02, index=dates, name="Strategy")
+
+    qs.extend_pandas()
+
+    print("Pandas extension demo")
+    print(f"Sharpe: {returns.sharpe():.4f}")
+    print(f"Sortino: {returns.sortino():.4f}")
+    print(f"Max drawdown: {returns.max_drawdown():.4f}")
+    print(f"CAGR: {returns.cagr():.4f}")
+    print(f"Volatility: {returns.volatility():.4f}")

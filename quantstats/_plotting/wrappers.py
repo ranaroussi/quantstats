@@ -388,14 +388,11 @@ def snapshot(
 
     # Show plot if requested
     if show:
-        _plt.show(block=False)
+        _plt.show(block=not _plt.isinteractive())
+        return None
 
-    _plt.close()
-
-    if not show:
-        return fig
-
-    return None
+    _plt.close(fig)
+    return fig
 
 
 def earnings(

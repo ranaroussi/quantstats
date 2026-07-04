@@ -131,3 +131,17 @@ class TestSafeAppend:
         df2 = pd.DataFrame({"A": [4, 5, 6]})
         result = safe_append(df1, df2, ignore_index=True)
         assert list(result.index) == [0, 1, 2, 3, 4, 5]
+
+
+if __name__ == "__main__":
+    dates = pd.date_range("2020-01-01", periods=10, freq="D")
+    series = pd.Series(np.random.randn(10), index=dates)
+
+    print("Compat demo")
+    print(f"Frequency alias for 'M': {get_frequency_alias('M')}")
+    print(f"Frequency alias for 'Q': {get_frequency_alias('Q')}")
+    print(f"Timezone normalized: {normalize_timezone(series.copy()).index.tz}")
+    resampled = safe_resample(series, "M", "mean")
+    print(f"Resampled length: {len(resampled)}")
+    concatenated = safe_concat([series.iloc[:5], series.iloc[5:]])
+    print(f"Concatenated length: {len(concatenated)}")

@@ -195,3 +195,19 @@ class TestMonteCarloEdgeCases:
         
         # Terminal values should all be negative
         assert (mc.data.iloc[-1] < 0).all()
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    dates = pd.date_range("2020-01-01", periods=252, freq="D")
+    returns = pd.Series(np.random.randn(252) * 0.02, index=dates, name="Strategy")
+
+    mc = run_montecarlo(returns, sims=200, seed=42, bust=-0.2, goal=0.5)
+
+    print("Monte Carlo simulation output")
+    print(f"Rows: {mc.data.shape[0]}, simulations: {mc.data.shape[1]}")
+    print(f"Bust probability: {mc.bust_probability:.1%}" if mc.bust_probability is not None else "Bust probability: n/a")
+    print(f"Goal probability: {mc.goal_probability:.1%}" if mc.goal_probability is not None else "Goal probability: n/a")
+    print("Summary stats:")
+    for key, value in mc.stats.items():
+        print(f"  {key}: {value:.4f}")

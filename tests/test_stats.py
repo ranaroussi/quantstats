@@ -271,3 +271,16 @@ class TestEdgeCases:
         result = stats.sharpe(df)
         assert isinstance(result, pd.Series)
         assert len(result) == 2
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    dates = pd.date_range("2020-01-01", periods=252, freq="D")
+    returns = pd.Series(np.random.randn(252) * 0.02, index=dates, name="Strategy")
+
+    print("Stats demo")
+    print(f"Sharpe: {stats.sharpe(returns):.4f}")
+    print(f"Sortino: {stats.sortino(returns):.4f}")
+    print(f"Max drawdown: {stats.max_drawdown(returns):.4f}")
+    print(f"CAGR: {stats.cagr(returns):.4f}")
+    print(f"Volatility: {stats.volatility(returns):.4f}")

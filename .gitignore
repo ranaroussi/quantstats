@@ -3,6 +3,7 @@
 __pycache__/*
 quantstats/__pycache__/*
 dist
+/.venv/*
 /build
 /docs/build/doctrees/*
 /docs/build/html/*
