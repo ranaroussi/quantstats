@@ -18,8 +18,13 @@
 
 import io as _io
 import datetime as _dt
+import json as _json
+import os as _os
 import pandas as _pd
 import numpy as _np
+from urllib.error import HTTPError as _HTTPError
+from urllib.parse import urlencode as _urlencode
+from urllib.request import Request as _Request, urlopen as _urlopen
 from ._compat import safe_yfinance_download
 from ._compat import safe_concat, safe_resample
 import inspect
@@ -697,6 +702,140 @@ def download_returns(ticker, period="max", proxy=None):
     df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change(fill_method=None)  # type: ignore
     df = df.fillna(0).tz_localize(None)
     return df
+
+
+def _split_fxmacrodata_pair(pair):
+    normalized = "".join(char for char in str(pair).upper() if char.isalpha())
+    if len(normalized) != 6:
+        raise ValueError("FXMacroData pairs must look like 'EURUSD' or 'EUR/USD'")
+    return normalized[:3], normalized[3:]
+
+
+def _format_fxmacrodata_date(value):
+    if value is None:
+        return None
+    return _pd.Timestamp(value).date().isoformat()
+
+
+def _read_fxmacrodata_error(error):
+    try:
+        body = error.read().decode("utf-8").strip()
+    except Exception:
+        body = ""
+    message = f"FXMacroData API error {error.code}"
+    if body:
+        message = f"{message}: {body}"
+    return message
+
+
+def download_fxmacrodata_prices(
+    pair,
+    start=None,
+    end=None,
+    api_key=None,
+    base_url="https://fxmacrodata.com/api/v1",
+    timeout=30,
+):
+    """
+    Download daily FX spot/reference prices from FXMacroData.
+
+    Parameters
+    ----------
+    pair : str
+        Six-letter FX pair such as ``"EURUSD"`` or separated pair such as
+        ``"EUR/USD"``.
+    start : str or datetime-like, optional
+        Start date.
+    end : str or datetime-like, optional
+        End date.
+    api_key : str, optional
+        FXMacroData API key. If omitted, ``FXMACRODATA_API_KEY`` or
+        ``FXMD_API_KEY`` will be used when present.
+    base_url : str, default "https://fxmacrodata.com/api/v1"
+        FXMacroData API base URL.
+    timeout : int or float, default 30
+        Request timeout in seconds.
+
+    Returns
+    -------
+    pd.Series
+        Daily FX price series indexed by date.
+    """
+    base_currency, quote_currency = _split_fxmacrodata_pair(pair)
+    params = {}
+    start_date = _format_fxmacrodata_date(start)
+    end_date = _format_fxmacrodata_date(end)
+    if start_date:
+        params["start_date"] = start_date
+    if end_date:
+        params["end_date"] = end_date
+
+    api_key = api_key or _os.getenv("FXMACRODATA_API_KEY") or _os.getenv("FXMD_API_KEY")
+    if api_key:
+        params["api_key"] = api_key
+
+    url = f"{base_url.rstrip('/')}/forex/{base_currency.lower()}/{quote_currency.lower()}"
+    query = _urlencode(params)
+    if query:
+        url = f"{url}?{query}"
+
+    request = _Request(url, headers={"Accept": "application/json"})
+    try:
+        with _urlopen(request, timeout=timeout) as response:
+            payload = _json.loads(response.read().decode("utf-8"))
+    except _HTTPError as error:
+        raise ValueError(_read_fxmacrodata_error(error)) from error
+
+    rows = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("FXMacroData response did not include a data list")
+
+    records = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        date_value = row.get("date")
+        value = row.get("val")
+        if date_value is None or value is None:
+            continue
+        records.append((_pd.Timestamp(date_value), value))
+
+    if not records:
+        raise ValueError(f"FXMacroData response did not include dated values for {pair}")
+
+    series = _pd.Series(
+        data=[value for _, value in records],
+        index=_pd.DatetimeIndex([date for date, _ in records]),
+        name=f"{base_currency}{quote_currency}",
+    )
+    return _pd.to_numeric(series, errors="coerce").dropna().sort_index().tz_localize(None)
+
+
+def download_fxmacrodata_returns(
+    pair,
+    start=None,
+    end=None,
+    api_key=None,
+    base_url="https://fxmacrodata.com/api/v1",
+    timeout=30,
+):
+    """
+    Download FXMacroData daily FX prices and convert them to returns.
+
+    Returns
+    -------
+    pd.Series
+        Daily percentage returns for the requested FX pair.
+    """
+    prices = download_fxmacrodata_prices(
+        pair,
+        start=start,
+        end=end,
+        api_key=api_key,
+        base_url=base_url,
+        timeout=timeout,
+    )
+    return prices.pct_change(fill_method=None).fillna(0)
 
 
 def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=True):

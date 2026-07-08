@@ -5,6 +5,7 @@ Tests for quantstats.utils module
 import pytest
 import pandas as pd
 import numpy as np
+import json
 
 import quantstats as qs
 from quantstats import utils
@@ -62,6 +63,79 @@ class TestToReturns:
         assert isinstance(result, pd.Series)
         # Should be small values (returns)
         assert result.dropna().abs().max() < 1
+
+
+class TestFXMacroDataDownloads:
+    """Test FXMacroData price and returns helpers."""
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return self.payload.encode("utf-8")
+
+    def test_download_fxmacrodata_prices(self, monkeypatch):
+        captured = {}
+
+        def fake_urlopen(request, timeout):
+            captured["url"] = request.full_url
+            captured["accept"] = request.headers["Accept"]
+            captured["timeout"] = timeout
+            return self.FakeResponse(
+                json.dumps(
+                    {
+                        "data": [
+                            {"date": "2024-01-03", "val": 1.0920},
+                            {"date": "2024-01-01", "val": "1.1038"},
+                        ]
+                    }
+                )
+            )
+
+        monkeypatch.setattr(utils, "_urlopen", fake_urlopen)
+        actual = utils.download_fxmacrodata_prices(
+            "eur/usd",
+            start="2024-01-01",
+            end="2024-01-31",
+            api_key="test-key",
+            timeout=12,
+        )
+
+        expected = pd.Series(
+            [1.1038, 1.092],
+            index=pd.to_datetime(["2024-01-01", "2024-01-03"]),
+            name="EURUSD",
+        )
+        pd.testing.assert_series_equal(actual, expected)
+        assert captured == {
+            "url": "https://fxmacrodata.com/api/v1/forex/eur/usd?start_date=2024-01-01&end_date=2024-01-31&api_key=test-key",
+            "accept": "application/json",
+            "timeout": 12,
+        }
+
+    def test_download_fxmacrodata_returns(self, monkeypatch):
+        prices = pd.Series(
+            [1.10, 1.21],
+            index=pd.to_datetime(["2024-01-01", "2024-01-02"]),
+            name="EURUSD",
+        )
+        monkeypatch.setattr(utils, "download_fxmacrodata_prices", lambda *args, **kwargs: prices)
+
+        actual = utils.download_fxmacrodata_returns("EURUSD")
+
+        expected = pd.Series(
+            [0.0, 0.1],
+            index=pd.to_datetime(["2024-01-01", "2024-01-02"]),
+            name="EURUSD",
+        )
+        pd.testing.assert_series_equal(actual, expected)
 
 
 class TestToPrices:
