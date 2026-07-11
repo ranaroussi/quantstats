@@ -482,12 +482,18 @@ def aggregate_returns(returns: Returns, period: str | None = None, compounded: b
         return group_returns(returns, index.year, compounded=compounded)
 
     # Group by week
+    # ``DatetimeIndex.week`` was removed in pandas 2.0; use the ISO week
+    # number from ``isocalendar()`` (which ``.week`` was an alias for).
     if "week" in period:
-        return group_returns(returns, index.week, compounded=compounded)
+        return group_returns(returns, index.isocalendar().week, compounded=compounded)
 
     # End of week grouping
     if "eow" in period or period == "W":
-        return group_returns(returns, [index.year, index.week], compounded=compounded)
+        return group_returns(
+            returns,
+            [index.year, index.isocalendar().week],
+            compounded=compounded,
+        )
 
     # End of month grouping
     if "eom" in period or period == "ME":

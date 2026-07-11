@@ -118,6 +118,46 @@ class TestAggregateReturns:
         result = utils.aggregate_returns(returns, "year")
         assert len(result) <= len(returns)
 
+    def test_aggregate_weekly(self):
+        """Test weekly aggregation (regression test for pandas>=2.0).
+
+        ``DatetimeIndex.week`` was removed in pandas 2.0, so weekly
+        aggregation must rely on ``isocalendar().week`` instead.
+        """
+        dates = pd.date_range("2020-01-01", periods=28, freq="D")
+        returns = pd.Series(np.linspace(0.001, 0.028, 28), index=dates)
+
+        result = utils.aggregate_returns(returns, "W")
+        assert isinstance(result, pd.Series)
+
+        # Compare against an explicit isocalendar-based compounding reference.
+        iso = returns.index.isocalendar()
+        expected = returns.groupby([iso.year, iso.week]).apply(
+            lambda x: (1 + x).prod() - 1
+        )
+        assert len(result) == len(expected)
+        np.testing.assert_allclose(
+            np.sort(result.values), np.sort(expected.values), rtol=1e-10
+        )
+
+    def test_aggregate_week_keyword(self):
+        """The 'week' period string must also aggregate without error."""
+        dates = pd.date_range("2020-01-01", periods=21, freq="D")
+        returns = pd.Series(np.linspace(0.001, 0.021, 21), index=dates)
+        result = utils.aggregate_returns(returns, "week")
+        assert isinstance(result, pd.Series)
+        assert len(result) <= len(returns)
+
+    def test_stats_weekly_aggregate(self):
+        """Public stats API must support weekly aggregation (aggregate='W')."""
+        from quantstats import stats
+
+        dates = pd.date_range("2020-01-01", periods=28, freq="D")
+        returns = pd.Series(np.linspace(0.001, 0.028, 28), index=dates)
+        weekly = utils.aggregate_returns(returns, "W")
+        np.testing.assert_allclose(stats.best(returns, aggregate="W"), weekly.max())
+        np.testing.assert_allclose(stats.worst(returns, aggregate="W"), weekly.min())
+
 
 class TestRebase:
     """Test rebase function."""
