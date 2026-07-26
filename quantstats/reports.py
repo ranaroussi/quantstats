@@ -376,6 +376,7 @@ def html(
         prepare_returns=False,
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
+        match_dates=match_dates,
     )[2:]
 
     # Format metrics table for HTML display
@@ -903,6 +904,7 @@ def full(
                 prepare_returns=False,
                 benchmark_title=benchmark_title,
                 strategy_title=strategy_title,
+                match_dates=match_dates,
             )
         )
 
@@ -949,6 +951,7 @@ def full(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
         print("\n\n")
         print("[Worst 5 Drawdowns]\n")
@@ -1088,6 +1091,7 @@ def basic(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
     else:
@@ -1111,6 +1115,7 @@ def basic(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
 
         print("\n\n")
