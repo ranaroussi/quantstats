@@ -2406,18 +2406,27 @@ def risk_return_ratio(returns, prepare_returns=True):
         return returns.mean() / std
 
 
-def _get_baseline_value(prices):
+def _get_baseline_value(prices, from_returns):
     """
     Determine the appropriate baseline value for drawdown calculations.
 
-    This function analyzes the price series to determine the correct baseline
-    value that should represent "no drawdown" (i.e., the starting equity).
+    The baseline is the equity held just before the first observation, so that
+    a loss in the very first period is not hidden by treating that period's
+    close as the running peak.
+
+    Returns rebuilt by _prepare_prices() are priced as base * (1 + compsum)
+    with base 1.0, so 1.0 is exactly the equity they started from. A series
+    that was already prices carries no such earlier point: its first
+    observation is the start of the record, and any other baseline would
+    invent a peak the portfolio never reached.
 
     Args:
-        prices (pd.Series): Price series
+        prices (pd.Series | pd.DataFrame): Price series
+        from_returns (bool | pd.Series): Whether the prices were converted from
+            returns, per column for DataFrame input
 
     Returns:
-        float: Baseline value for drawdown calculations
+        float | pd.Series: Baseline value(s) for drawdown calculations
     """
     if len(prices) == 0:
         return 1.0
@@ -2427,25 +2436,12 @@ def _get_baseline_value(prices):
         # If prices is a DataFrame, ensure it has at least one column
         if prices.shape[1] == 0:
             return 1.0  # Default baseline for empty DataFrame with no columns
-        # Get the first value of the first column
-        first_price = prices.iat[0, 0]
-    else:
-        # If prices is a Series, get the first value directly
-        first_price = prices.iloc[0]
+        # Baseline per column, since columns may be on different scales
+        converted = _pd.Series(from_returns, index=prices.columns, dtype=bool)
+        return prices.iloc[0].mask(converted, 1.0)
 
-    # If the first price is much larger than 1, it's likely from to_prices conversion
-    # The to_prices function uses base * (1 + compsum), so we determine the appropriate baseline
-    if first_price > 1000:
-        # This suggests it came from to_prices with a large base (default 1e5)
-        # However, we should use a more reasonable baseline for drawdown calculations
-        # We'll use the same scale as the prices but represent the "no loss" baseline
-        return 1e5
-    elif first_price > 10:
-        # Smaller base value scale
-        return 100.0
-    else:
-        # Normal price scale, use 1.0 as baseline
-        return 1.0
+    # If prices is a Series, the first value is the start of the record
+    return 1.0 if bool(from_returns) else prices.iloc[0]
 
 
 def max_drawdown(prices: Returns) -> float:
@@ -2470,6 +2466,7 @@ def max_drawdown(prices: Returns) -> float:
     validate_input(prices)
 
     # Prepare prices (convert from returns if needed)
+    from_returns = _utils._looks_like_returns(prices)
     prices = _utils._prepare_prices(prices)
 
     if len(prices) == 0:
@@ -2485,7 +2482,7 @@ def max_drawdown(prices: Returns) -> float:
     phantom_date = prices.index[0] - time_delta
 
     # Determine appropriate baseline value
-    baseline_value = _get_baseline_value(prices)
+    baseline_value = _get_baseline_value(prices, from_returns)
 
     # Create extended series with phantom baseline
     extended_prices = prices.copy()
@@ -2518,6 +2515,7 @@ def to_drawdown_series(returns):
     validate_input(returns)
 
     # Convert returns to prices
+    from_returns = _utils._looks_like_returns(returns)
     prices = _utils._prepare_prices(returns)
 
     if len(prices) == 0:
@@ -2533,7 +2531,7 @@ def to_drawdown_series(returns):
     phantom_date = prices.index[0] - time_delta
 
     # Determine appropriate baseline value
-    baseline_value = _get_baseline_value(prices)
+    baseline_value = _get_baseline_value(prices, from_returns)
 
     # Create extended series with phantom baseline
     extended_prices = prices.copy()

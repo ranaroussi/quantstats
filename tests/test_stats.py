@@ -224,6 +224,47 @@ class TestDrawdown:
         assert "end" in result.columns
         assert "max drawdown" in result.columns
 
+    @pytest.mark.parametrize("scale", [1.0, 10.0, 100.0, 1000.0, 10000.0])
+    def test_max_drawdown_price_series_any_scale(self, scale):
+        """Price series drawdowns must not depend on the price level."""
+        dates = pd.date_range("2020-01-01", periods=6, freq="D")
+        prices = pd.Series([5.0, 5.5, 5.2, 6.0, 5.4, 5.8], index=dates) * scale
+        # Peak 6.0 * scale, trough 5.4 * scale
+        expected = 5.4 / 6.0 - 1
+        np.testing.assert_almost_equal(stats.max_drawdown(prices), expected, decimal=10)
+
+    def test_to_drawdown_series_price_series_starts_flat(self):
+        """A price series is at its own peak on day one, so drawdown is 0."""
+        dates = pd.date_range("2020-01-01", periods=5, freq="D")
+        prices = pd.Series([50.0, 55.0, 52.0, 60.0, 54.0], index=dates)
+        dd = stats.to_drawdown_series(prices)
+        expected = prices / prices.cummax() - 1
+        pd.testing.assert_series_equal(
+            dd, expected, check_names=False, check_freq=False
+        )
+
+    def test_max_drawdown_dataframe_columns_scale_independent(self):
+        """Each column gets its own baseline instead of the first column's."""
+        dates = pd.date_range("2020-01-01", periods=5, freq="D")
+        prices = pd.DataFrame(
+            {
+                "cheap": [50.0, 55.0, 52.0, 60.0, 54.0],
+                "rich": [5000.0, 5500.0, 5200.0, 6000.0, 5400.0],
+            },
+            index=dates,
+        )
+        result = stats.max_drawdown(prices)
+        expected = 5.4 / 6.0 - 1
+        np.testing.assert_almost_equal(result["cheap"], expected, decimal=10)
+        np.testing.assert_almost_equal(result["rich"], expected, decimal=10)
+
+    def test_max_drawdown_returns_counts_first_period_loss(self):
+        """Returns start from a known baseline, so a day-one loss still counts."""
+        dates = pd.date_range("2020-01-01", periods=4, freq="D")
+        returns = pd.Series([-0.10, 0.01, 0.01, 0.01], index=dates)
+        assert stats.max_drawdown(returns) <= -0.10 + 1e-12
+        assert stats.to_drawdown_series(returns).iloc[0] == pytest.approx(-0.10)
+
 
 class TestConsecutive:
     """Test consecutive wins/losses functions."""

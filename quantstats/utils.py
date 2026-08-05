@@ -539,6 +539,53 @@ def to_excess_returns(returns: Returns, rf: float, nperiods: int | None = None) 
     return df
 
 
+def _looks_like_returns(data):
+    """
+    Check whether data holds returns rather than price levels
+
+    This is the same test _prepare_prices() applies when deciding what to
+    convert, exposed so that callers can tell whether the prices they got
+    back were rebuilt from returns or passed through untouched.
+
+    Parameters
+    ----------
+    data : pd.Series or pd.DataFrame
+        Input data (returns or prices)
+
+    Returns
+    -------
+    bool or pd.Series
+        One bool per column for DataFrame input, a single bool otherwise
+    """
+    if isinstance(data, _pd.DataFrame):
+        return _pd.Series(
+            {col: _looks_like_returns_column(data[col]) for col in data.columns},
+            dtype=bool,
+        )
+
+    return bool(data.min() < 0 or data.max() < 1)
+
+
+def _looks_like_returns_column(column):
+    """
+    Check a single DataFrame column for returns-like values
+
+    Parameters
+    ----------
+    column : pd.Series
+        Column to inspect
+
+    Returns
+    -------
+    bool
+        True when the column looks like returns
+    """
+    # Cache dropna operation to avoid repeated computation
+    col_clean = column.dropna()
+    # Check if data looks like returns (negative values or values < 1)
+    return bool(col_clean.min() <= 0 or col_clean.max() < 1)
+
+
 def _prepare_prices(data, base=1.0):
     """
     Convert return data into prices and perform cleanup
@@ -558,15 +605,11 @@ def _prepare_prices(data, base=1.0):
     data = data.copy()
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            # Cache dropna operation to avoid repeated computation
-            col_clean = data[col].dropna()
-            # Check if data looks like returns (negative values or values < 1)
-            if col_clean.min() <= 0 or col_clean.max() < 1:
+            if _looks_like_returns_column(data[col]):
                 data[col] = to_prices(data[col], base)
 
     # Check if series looks like returns data
-    # elif data.min() < 0 and data.max() < 1:
-    elif data.min() < 0 or data.max() < 1:
+    elif _looks_like_returns(data):
         data = to_prices(data, base)
 
     # Clean data by filling NaN and replacing infinite values
