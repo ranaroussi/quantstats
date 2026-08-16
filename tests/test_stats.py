@@ -175,6 +175,49 @@ class TestRatios:
         result = stats.cagr(sample_returns)
         assert np.isfinite(result)
 
+    def test_cagr_with_rf(self, sample_returns):
+        """rf should actually be subtracted (excess-return CAGR), not ignored.
+
+        Regression test for issue #537: `_prepare_returns` used to route rf
+        handling by inspecting the calling function's name via
+        `inspect.stack()`, and hard-excluded "cagr" from ever applying rf,
+        so `cagr(returns, rf=X)` was identical for every X.
+        """
+        result_no_rf = stats.cagr(sample_returns, rf=0.0)
+        result_with_rf = stats.cagr(sample_returns, rf=0.02)
+        assert result_with_rf != result_no_rf
+        # A positive rf should reduce the excess-return CAGR.
+        assert result_with_rf < result_no_rf
+
+    def test_kelly_criterion(self):
+        """kelly_criterion must divide by the average-loss magnitude.
+
+        Regression test for issue #537: the formula
+        ``((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio``
+        simplifies to a function of the win/loss *ratio* only, so it is
+        scale-invariant and off by a factor of |avg_loss| versus the
+        textbook growth-optimal Kelly fraction
+        ``f* = win_prob / |avg_loss| - lose_prob / avg_win``.
+
+        Uses a deterministic two-outcome series (60 wins of +2%, 40 losses
+        of -1%) so the closed-form Kelly fraction is exactly checkable:
+        win_loss_ratio = 2, win_prob = 0.6, lose_prob = 0.4, so
+        f* = ((2 * 0.6) - 0.4) / 2 / 0.01 = 40.0.
+        """
+        dates = pd.date_range("2020-01-01", periods=100, freq="D")
+        values = [0.02] * 60 + [-0.01] * 40
+        returns = pd.Series(values, index=dates)
+
+        result = stats.kelly_criterion(returns)
+        np.testing.assert_almost_equal(result, 40.0, decimal=6)
+
+        # Scale-dependence: halving/scaling the return series should scale
+        # the Kelly fraction inversely (it did not, before the fix).
+        half = stats.kelly_criterion(returns * 0.5)
+        tenth = stats.kelly_criterion(returns * 0.1)
+        np.testing.assert_almost_equal(half, result * 2, decimal=6)
+        np.testing.assert_almost_equal(tenth, result * 10, decimal=6)
+
 
 class TestBenchmarkComparison:
     """Test benchmark comparison functions."""

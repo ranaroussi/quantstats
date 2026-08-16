@@ -749,7 +749,8 @@ def rolling_volatility(
         >>> print(rolling_vol)
     """
     if prepare_returns:
-        returns = _utils._prepare_returns(returns, rolling_period)
+        # Note: this function has no rf parameter, so rf is never applied here.
+        returns = _utils._prepare_returns(returns, rolling_period, apply_rf=False)
 
     # Calculate rolling standard deviation and annualize
     return returns.rolling(rolling_period).std() * _np.sqrt(periods_per_year)
@@ -1487,8 +1488,9 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     Note:
         See here for more info: https://archive.is/wip/2rwFW
     """
-    # Prepare returns and resample to specified frequency
-    returns = _utils._prepare_returns(returns, rf).resample(resolution).sum()
+    # Prepare returns and resample to specified frequency. rf is accepted for
+    # API compatibility but is not subtracted here (matches historical behavior).
+    returns = _utils._prepare_returns(returns, rf, apply_rf=False).resample(resolution).sum()
 
     # Calculate absolute sum of negative returns (pain)
     downside = abs(returns[returns < 0].sum())
@@ -2555,24 +2557,38 @@ def kelly_criterion(returns, prepare_returns=True):
     Calculates the recommended maximum amount of capital that
     should be allocated to the given strategy, based on the
     Kelly Criterion (http://en.wikipedia.org/wiki/Kelly_criterion)
+
+    The growth-optimal fraction for a two-outcome return series is
+    f* = win_prob / |avg_loss| - lose_prob / avg_win, which factors to
+    (win_prob - lose_prob / win_loss_ratio) / |avg_loss|. The final
+    division by the average-loss magnitude is required to convert the
+    (scale-invariant) win/loss ratio into an actual capital fraction -
+    without it, the result is off by a factor of |avg_loss| and does not
+    change when the return series is scaled.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     win_loss_ratio = payoff_ratio(returns)
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
+    avg_loss_val = avg_loss(returns)
 
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(win_loss_ratio, _pd.Series):
         # DataFrame input - element-wise operations with zero/nan protection
         # Replace 0 and NaN values with NaN to avoid division issues
         win_loss_ratio_safe = win_loss_ratio.replace(0, _np.nan)
-        return ((win_loss_ratio_safe * win_prob) - lose_prob) / win_loss_ratio_safe
+        avg_loss_safe = abs(avg_loss_val).replace(0, _np.nan)
+        kelly_fraction = ((win_loss_ratio_safe * win_prob) - lose_prob) / win_loss_ratio_safe
+        return kelly_fraction / avg_loss_safe
     else:
         # Series input - scalar operations
         if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
             return _np.nan
-        return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
+        if avg_loss_val == 0 or _pd.isna(avg_loss_val):
+            return _np.nan
+        kelly_fraction = ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
+        return kelly_fraction / abs(avg_loss_val)
 
 
 # ==== VS. BENCHMARK ====

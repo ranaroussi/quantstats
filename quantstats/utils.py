@@ -22,7 +22,6 @@ import pandas as _pd
 import numpy as _np
 from ._compat import safe_yfinance_download
 from ._compat import safe_concat, safe_resample
-import inspect
 import threading
 
 # Type alias for return data
@@ -107,7 +106,7 @@ _CACHE_MAX_SIZE = 100
 _cache_lock = threading.Lock()
 
 
-def _generate_cache_key(data, rf, nperiods):
+def _generate_cache_key(data, rf, nperiods, apply_rf=True):
     """
     Generate a cache key for the _prepare_returns function
 
@@ -119,6 +118,8 @@ def _generate_cache_key(data, rf, nperiods):
         Risk-free rate parameter
     nperiods : int
         Number of periods parameter
+    apply_rf : bool
+        Whether the risk-free rate is applied (excess returns are computed)
 
     Returns
     -------
@@ -134,8 +135,10 @@ def _generate_cache_key(data, rf, nperiods):
         else:
             data_hash = hash(str(data))
 
-        # Include parameters in the key
-        key = f"{data_hash}_{rf}_{nperiods}"
+        # Include parameters in the key (apply_rf must be part of the key since
+        # two calls with identical data/rf/nperiods can still want different
+        # treatment of rf depending on the caller)
+        key = f"{data_hash}_{rf}_{nperiods}_{apply_rf}"
         return key
     except (ValueError, TypeError, AttributeError, MemoryError):
         # If hashing fails, return None to skip caching
@@ -580,7 +583,7 @@ def _prepare_prices(data, base=1.0):
     return data
 
 
-def _prepare_returns(data, rf=0.0, nperiods=None):
+def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
     """
     Convert price data into returns and perform cleanup
 
@@ -592,6 +595,13 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
         Risk-free rate
     nperiods : int, optional
         Number of periods for risk-free rate conversion
+    apply_rf : bool, default True
+        Whether `rf` should be subtracted to compute excess returns here.
+        Callers that need `rf` for something other than excess returns
+        (e.g. because they annualize it separately, or because a caller
+        further up the stack already applied it) should pass False
+        explicitly rather than relying on this function to infer intent
+        from who is calling it.
 
     Returns
     -------
@@ -599,15 +609,13 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
         Cleaned returns data
     """
     # Try to get from cache first
-    cache_key = _generate_cache_key(data, rf, nperiods)
+    cache_key = _generate_cache_key(data, rf, nperiods, apply_rf)
     if cache_key:
         with _cache_lock:
             if cache_key in _PREPARE_RETURNS_CACHE:
                 return _PREPARE_RETURNS_CACHE[cache_key].copy()
 
     data = data.copy()
-    # Get calling function name for conditional processing
-    function = inspect.stack()[1][3]
 
     # Process DataFrame columns
     if isinstance(data, _pd.DataFrame):
@@ -628,24 +636,16 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
 
-    # Functions that don't need excess returns calculation
-    unnecessary_function_calls = [
-        "_prepare_benchmark",
-        "cagr",
-        "gain_to_pain_ratio",
-        "rolling_volatility",
-    ]
-
-    # Calculate excess returns if rf > 0 and function needs it
-    if function not in unnecessary_function_calls:
-        if rf > 0:
-            result = to_excess_returns(data, rf, nperiods)
-            # Cache the result
-            if cache_key:
-                _clear_cache_if_full()
-                with _cache_lock:
-                    _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
-            return result
+    # Calculate excess returns if the caller wants rf applied and rf is non-zero.
+    # (Negative rf is valid too, e.g. negative-yielding cash - only rf == 0 is a no-op.)
+    if apply_rf and rf != 0:
+        result = to_excess_returns(data, rf, nperiods)
+        # Cache the result
+        if cache_key:
+            _clear_cache_if_full()
+            with _cache_lock:
+                _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
+        return result
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive
@@ -737,9 +737,10 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         benchmark = benchmark.tz_convert('UTC').tz_localize(None)
     # If already timezone-naive, no action needed
 
-    # Prepare returns or return raw data
+    # Prepare returns or return raw data. rf is not applied here (excess
+    # returns for a benchmark are computed by the caller where needed).
     if prepare_returns:
-        return _prepare_returns(benchmark.dropna(), rf=rf)
+        return _prepare_returns(benchmark.dropna(), rf=rf, apply_rf=False)
     return benchmark.dropna()
 
 
