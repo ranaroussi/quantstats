@@ -23,6 +23,7 @@ import os as _os
 import pandas as _pd
 import numpy as _np
 from urllib.error import HTTPError as _HTTPError
+from urllib.error import URLError as _URLError
 from urllib.parse import urlencode as _urlencode
 from urllib.request import Request as _Request, urlopen as _urlopen
 from ._compat import safe_yfinance_download
@@ -706,7 +707,7 @@ def download_returns(ticker, period="max", proxy=None):
 
 def _split_fxmacrodata_pair(pair):
     normalized = "".join(char for char in str(pair).upper() if char.isalpha())
-    if len(normalized) != 6:
+    if len(normalized) != 6 or not normalized.isascii():
         raise ValueError("FXMacroData pairs must look like 'EURUSD' or 'EUR/USD'")
     return normalized[:3], normalized[3:]
 
@@ -718,14 +719,7 @@ def _format_fxmacrodata_date(value):
 
 
 def _read_fxmacrodata_error(error):
-    try:
-        body = error.read().decode("utf-8").strip()
-    except Exception:
-        body = ""
-    message = f"FXMacroData API error {error.code}"
-    if body:
-        message = f"{message}: {body}"
-    return message
+    return f"FXMacroData API error {error.code}"
 
 
 def download_fxmacrodata_prices(
@@ -733,7 +727,7 @@ def download_fxmacrodata_prices(
     start=None,
     end=None,
     api_key=None,
-    base_url="https://fxmacrodata.com/api/v1",
+    base_url="https://api.fxmacrodata.com/v1",
     timeout=30,
 ):
     """
@@ -751,7 +745,7 @@ def download_fxmacrodata_prices(
     api_key : str, optional
         FXMacroData API key. If omitted, ``FXMACRODATA_API_KEY`` or
         ``FXMD_API_KEY`` will be used when present.
-    base_url : str, default "https://fxmacrodata.com/api/v1"
+    base_url : str, default "https://api.fxmacrodata.com/v1"
         FXMacroData API base URL.
     timeout : int or float, default 30
         Request timeout in seconds.
@@ -769,26 +763,38 @@ def download_fxmacrodata_prices(
         params["start_date"] = start_date
     if end_date:
         params["end_date"] = end_date
+    if start_date and end_date and start_date > end_date:
+        raise ValueError("start must not be after end")
 
     api_key = api_key or _os.getenv("FXMACRODATA_API_KEY") or _os.getenv("FXMD_API_KEY")
     if api_key:
         params["api_key"] = api_key
 
-    url = f"{base_url.rstrip('/')}/forex/{base_currency.lower()}/{quote_currency.lower()}"
-    query = _urlencode(params)
-    if query:
-        url = f"{url}?{query}"
+    endpoint = f"{base_url.rstrip('/')}/forex/{base_currency.lower()}/{quote_currency.lower()}"
+    params.update({"limit": 100, "offset": 0})
+    rows = []
+    while True:
+        request = _Request(
+            f"{endpoint}?{_urlencode(params)}",
+            headers={"Accept": "application/json"},
+        )
+        try:
+            with _urlopen(request, timeout=timeout) as response:
+                payload = _json.loads(response.read().decode("utf-8"))
+        except _HTTPError as error:
+            raise ValueError(_read_fxmacrodata_error(error)) from None
+        except _URLError:
+            raise ValueError("FXMacroData request failed") from None
+        except (UnicodeDecodeError, _json.JSONDecodeError):
+            raise ValueError("FXMacroData returned invalid JSON") from None
 
-    request = _Request(url, headers={"Accept": "application/json"})
-    try:
-        with _urlopen(request, timeout=timeout) as response:
-            payload = _json.loads(response.read().decode("utf-8"))
-    except _HTTPError as error:
-        raise ValueError(_read_fxmacrodata_error(error)) from error
-
-    rows = payload.get("data") if isinstance(payload, dict) else None
-    if not isinstance(rows, list):
-        raise ValueError("FXMacroData response did not include a data list")
+        page = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(page, list):
+            raise ValueError("FXMacroData response did not include a data list")
+        rows.extend(row for row in page if isinstance(row, dict))
+        if len(page) < params["limit"]:
+            break
+        params["offset"] += params["limit"]
 
     records = []
     for row in rows:
@@ -808,7 +814,9 @@ def download_fxmacrodata_prices(
         index=_pd.DatetimeIndex([date for date, _ in records]),
         name=f"{base_currency}{quote_currency}",
     )
-    return _pd.to_numeric(series, errors="coerce").dropna().sort_index().tz_localize(None)
+    series = _pd.to_numeric(series, errors="coerce").dropna().sort_index()
+    series = series[~series.index.duplicated(keep="first")]
+    return series.tz_localize(None)
 
 
 def download_fxmacrodata_returns(
@@ -816,7 +824,7 @@ def download_fxmacrodata_returns(
     start=None,
     end=None,
     api_key=None,
-    base_url="https://fxmacrodata.com/api/v1",
+    base_url="https://api.fxmacrodata.com/v1",
     timeout=30,
 ):
     """

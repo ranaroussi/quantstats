@@ -82,12 +82,14 @@ class TestFXMacroDataDownloads:
             return self.payload.encode("utf-8")
 
     def test_download_fxmacrodata_prices(self, monkeypatch):
-        captured = {}
+        captured = []
 
         def fake_urlopen(request, timeout):
-            captured["url"] = request.full_url
-            captured["accept"] = request.headers["Accept"]
-            captured["timeout"] = timeout
+            captured.append({
+                "url": request.full_url,
+                "accept": request.headers["Accept"],
+                "timeout": timeout,
+            })
             return self.FakeResponse(
                 json.dumps(
                     {
@@ -114,11 +116,11 @@ class TestFXMacroDataDownloads:
             name="EURUSD",
         )
         pd.testing.assert_series_equal(actual, expected)
-        assert captured == {
-            "url": "https://fxmacrodata.com/api/v1/forex/eur/usd?start_date=2024-01-01&end_date=2024-01-31&api_key=test-key",
+        assert captured == [{
+            "url": "https://api.fxmacrodata.com/v1/forex/eur/usd?start_date=2024-01-01&end_date=2024-01-31&api_key=test-key&limit=100&offset=0",
             "accept": "application/json",
             "timeout": 12,
-        }
+        }]
 
     def test_download_fxmacrodata_returns(self, monkeypatch):
         prices = pd.Series(
@@ -136,6 +138,11 @@ class TestFXMacroDataDownloads:
             name="EURUSD",
         )
         pd.testing.assert_series_equal(actual, expected)
+
+    def test_download_fxmacrodata_prices_rejects_reversed_dates(self):
+        with pytest.raises(ValueError, match="start"):
+            utils.download_fxmacrodata_prices(
+                "EURUSD", start="2024-02-01", end="2024-01-01")
 
 
 class TestToPrices:

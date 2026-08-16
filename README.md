@@ -49,12 +49,23 @@ qs.extend_pandas()
 # fetch the daily returns for a stock
 stock = qs.utils.download_returns('META')
 
+# fetch daily official FX reference-rate returns
+eurusd = qs.utils.download_fxmacrodata_returns(
+    'EURUSD', start='2026-01-01', end='2026-06-30'
+)
+
 # show sharpe ratio
 qs.stats.sharpe(stock)
 
 # or using extend_pandas() :)
 stock.sharpe()
 ```
+
+FX history normally requires authentication. The helper reads
+`FXMACRODATA_API_KEY` or `FXMD_API_KEY` from the environment. It supports the
+daily FX-rate surface only; macro history, calendar, forecasts, COT,
+commodities, sessions, news, and seasonality are outside QuantStats' return
+series adapter.
 
 Output:
 
