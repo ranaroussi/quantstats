@@ -126,16 +126,26 @@ def _generate_cache_key(data, rf, nperiods):
         Cache key string or None if hashing fails
     """
     try:
+        # Include container metadata because equivalent Series and one-column
+        # DataFrames have the same value hash but must keep distinct results.
         # Create a hash from the data
         if isinstance(data, _pd.Series):
             data_hash = _pd.util.hash_pandas_object(data).sum()
+            metadata = ("Series", repr(data.name), str(data.dtype))
         elif isinstance(data, _pd.DataFrame):
             data_hash = _pd.util.hash_pandas_object(data).sum()
+            metadata = (
+                "DataFrame",
+                tuple(repr(column) for column in data.columns),
+                repr(data.columns.names),
+                tuple(str(dtype) for dtype in data.dtypes),
+            )
         else:
             data_hash = hash(str(data))
+            metadata = (type(data).__name__,)
 
         # Include parameters in the key
-        key = f"{data_hash}_{rf}_{nperiods}"
+        key = f"{data_hash}_{metadata}_{rf}_{nperiods}"
         return key
     except (ValueError, TypeError, AttributeError, MemoryError):
         # If hashing fails, return None to skip caching

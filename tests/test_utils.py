@@ -52,6 +52,48 @@ class TestPrepareReturns:
         assert isinstance(result, pd.DataFrame)
         assert len(result.columns) == 2
 
+    def test_cache_preserves_series_and_dataframe_types(self):
+        """Equivalent Series and DataFrame inputs must not share a cache entry."""
+        index = pd.date_range("2024-01-01", periods=3)
+        series = pd.Series([0.01, -0.02, 0.03], index=index, name="Strategy")
+        frame = series.to_frame()
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        prepared_frame = utils._prepare_returns(frame)
+        prepared_series = utils._prepare_returns(series)
+
+        assert isinstance(prepared_frame, pd.DataFrame)
+        assert isinstance(prepared_series, pd.Series)
+        assert prepared_series.name == "Strategy"
+        assert utils._generate_cache_key(frame, 0.0, None) != utils._generate_cache_key(
+            series, 0.0, None
+        )
+        assert utils._generate_cache_key(
+            series, 0.0, None
+        ) != utils._generate_cache_key(series.rename("Benchmark"), 0.0, None)
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        prepared_series = utils._prepare_returns(series)
+        prepared_frame = utils._prepare_returns(frame)
+
+        assert isinstance(prepared_series, pd.Series)
+        assert isinstance(prepared_frame, pd.DataFrame)
+
+    def test_cache_preserves_dataframe_column_labels(self):
+        """Equivalent values with different labels must not share a cache entry."""
+        index = pd.date_range("2024-01-01", periods=3)
+        frame_a = pd.DataFrame({"A": [0.01, -0.02, 0.03]}, index=index)
+        frame_b = pd.DataFrame({"B": [0.01, -0.02, 0.03]}, index=index)
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        utils._prepare_returns(frame_a)
+        prepared_b = utils._prepare_returns(frame_b)
+
+        assert prepared_b.columns.tolist() == ["B"]
+        assert utils._generate_cache_key(
+            frame_a, 0.0, None
+        ) != utils._generate_cache_key(frame_b, 0.0, None)
+
 
 class TestToReturns:
     """Test to_returns function."""

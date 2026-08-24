@@ -279,9 +279,10 @@ def html(
 
     # Handle strategy title - can be single string or list for multiple columns
     strategy_title = kwargs.get("strategy_title", "Strategy")
-    if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
-            strategy_title = list(returns.columns)
+    if isinstance(returns, _pd.DataFrame) and isinstance(strategy_title, str):
+        strategy_title = (
+            list(returns.columns) if len(returns.columns) > 1 else [strategy_title]
+        )
 
     # Process benchmark data if provided
     if benchmark is not None:
@@ -2238,6 +2239,12 @@ def _calc_dd(df, display=True, as_pct=False):
         ]
     else:
         ret_dd = dd_info
+
+    if isinstance(ret_dd.columns, _pd.MultiIndex) and ret_dd.columns.nlevels > 1:
+        strategy_levels = ret_dd.columns.get_level_values(0)
+        if strategy_levels.nunique() == 1:
+            # A single-column DataFrame has metric names at the second level.
+            ret_dd = ret_dd.xs(strategy_levels[0], axis=1, level=0)
 
     # Calculate drawdown statistics based on data structure
     if (

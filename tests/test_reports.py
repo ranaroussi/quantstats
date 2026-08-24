@@ -9,7 +9,7 @@ import tempfile
 import os
 
 import quantstats as qs
-from quantstats import reports
+from quantstats import reports, utils
 
 
 @pytest.fixture
@@ -236,6 +236,26 @@ class TestEdgeCases:
     def test_html_with_dataframe(self, sample_returns, sample_benchmark):
         """Test HTML generation with DataFrame input."""
         df = pd.DataFrame({"Strategy": sample_returns})
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
+            output_path = f.name
+
+        try:
+            reports.html(df, sample_benchmark, output=output_path)
+            assert os.path.exists(output_path)
+        finally:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
+    @pytest.mark.parametrize("warm_series_cache", [False, True])
+    def test_html_single_column_dataframe_cache_isolation(
+        self, sample_returns, sample_benchmark, warm_series_cache
+    ):
+        """Single-column DataFrames work with cold and Series-warmed caches."""
+        df = pd.DataFrame({"Strategy": sample_returns})
+        utils._PREPARE_RETURNS_CACHE.clear()
+        if warm_series_cache:
+            utils._prepare_returns(sample_returns)
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
             output_path = f.name
 
