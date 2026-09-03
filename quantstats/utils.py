@@ -569,9 +569,15 @@ def _prepare_prices(data, base=1.0):
     elif data.min() < 0 or data.max() < 1:
         data = to_prices(data, base)
 
-    # Clean data by filling NaN and replacing infinite values
+    # Clean data by carrying the last known price across gaps.
+    #
+    # These are prices, not returns, so a missing observation must not be
+    # filled with 0: that asserts the asset was worth nothing on that date,
+    # which turns a missing print into a -100% drawdown. Carry the last known
+    # price forward instead, and back-fill a leading gap so the series starts
+    # flat rather than at zero.
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
-        data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
+        data = data.ffill().bfill().replace([_np.inf, -_np.inf], float("NaN"))
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive

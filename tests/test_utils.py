@@ -181,3 +181,53 @@ class TestFileStream:
         result = utils._file_stream()
         assert hasattr(result, "read")
         assert hasattr(result, "write")
+
+
+class TestPreparePricesGaps:
+    """_prepare_prices must not turn a missing price into a price of zero."""
+
+    @staticmethod
+    def _gapped():
+        idx = pd.date_range("2024-01-01", periods=10, freq="D")
+        return pd.Series(
+            [100, 101, np.nan, 120, 121, 122, np.nan, 90, 91, 92],
+            index=idx,
+            dtype=float,
+        )
+
+    def test_gap_is_not_filled_with_zero(self):
+        """A NaN price is carried forward, not replaced by 0."""
+        result = utils._prepare_prices(self._gapped())
+        assert not (result == 0).any()
+        assert result.iloc[2] == 101.0  # carried from the previous print
+        assert result.iloc[6] == 122.0
+
+    def test_leading_gap_starts_flat(self):
+        """A leading NaN back-fills to the first observed price, not to 0."""
+        idx = pd.date_range("2024-01-01", periods=5, freq="D")
+        result = utils._prepare_prices(
+            pd.Series([np.nan, np.nan, 100, 110, 90], index=idx, dtype=float)
+        )
+        assert result.iloc[0] == 100.0
+        assert not (result == 0).any()
+
+    def test_max_drawdown_ignores_the_gap(self):
+        """A missing print must not register as a -100% drawdown."""
+        gapped = self._gapped()
+        observed = gapped.dropna()
+        expected = float((observed / observed.cummax() - 1).min())
+        assert qs.stats.max_drawdown(gapped) == pytest.approx(expected)
+
+    def test_dataframe_gaps_handled_per_column(self):
+        idx = pd.date_range("2024-01-01", periods=10, freq="D")
+        df = pd.DataFrame(
+            {"a": self._gapped().values, "b": self._gapped().values[::-1]}, index=idx
+        )
+        result = utils._prepare_prices(df)
+        assert not (result == 0).any().any()
+
+    def test_clean_series_is_unchanged(self, sample_prices):
+        """No behaviour change when there is nothing missing."""
+        pd.testing.assert_series_equal(
+            utils._prepare_prices(sample_prices), sample_prices, check_freq=False
+        )
