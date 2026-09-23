@@ -1547,8 +1547,14 @@ def cagr(
     # handle annualization in quantstats
     years = len(returns) / periods
 
-    # Calculate CAGR using geometric mean formula
-    res = abs(total + 1.0) ** (1.0 / years) - 1
+    # Calculate CAGR using geometric mean formula. A terminal wealth ratio
+    # below zero (only reachable with compounded=False, when summed returns
+    # fall below -100%) has no real-valued geometric growth rate, so report
+    # NaN rather than taking abs() and turning the loss into a gain.
+    wealth = _np.asarray(total + 1.0, dtype=float)
+    res = _np.where(wealth < 0, _np.nan, _np.abs(wealth) ** (1.0 / years) - 1)
+    if res.ndim == 0:
+        res = float(res)
 
     # Handle DataFrame input
     if isinstance(returns, _pd.DataFrame):

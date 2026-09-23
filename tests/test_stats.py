@@ -175,6 +175,25 @@ class TestRatios:
         result = stats.cagr(sample_returns)
         assert np.isfinite(result)
 
+    def test_cagr_uncompounded_loss_below_minus_100pct_is_nan(self):
+        """Summed returns below -100% have no real geometric growth rate;
+        cagr must not abs() the terminal wealth into a positive CAGR."""
+        idx = pd.bdate_range("2020-01-01", periods=4)
+        returns = pd.Series([-0.6, -0.6, -0.6, -0.6], index=idx)  # sum = -2.4
+        assert np.isnan(stats.cagr(returns, compounded=False, periods=4))
+
+    def test_cagr_total_wipeout_is_minus_100pct(self):
+        idx = pd.bdate_range("2020-01-01", periods=2)
+        returns = pd.Series([-0.5, -0.5], index=idx)  # sum = -1.0
+        assert stats.cagr(returns, compounded=False, periods=2) == pytest.approx(-1.0)
+
+    def test_cagr_dataframe_flags_only_the_bad_column(self):
+        idx = pd.bdate_range("2020-01-01", periods=4)
+        df = pd.DataFrame({"ok": [0.01] * 4, "bad": [-0.6] * 4}, index=idx)
+        res = stats.cagr(df, compounded=False, periods=4)
+        assert np.isfinite(res["ok"])
+        assert np.isnan(res["bad"])
+
 
 class TestBenchmarkComparison:
     """Test benchmark comparison functions."""
