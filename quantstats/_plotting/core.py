@@ -30,14 +30,16 @@ except (KeyError, ValueError, OSError):
     pass
 
 import matplotlib.dates as _mdates
+import numpy as _np
+import pandas as _pd
+import seaborn as _sns
 from matplotlib.ticker import (
     FormatStrFormatter as _FormatStrFormatter,
+)
+from matplotlib.ticker import (
     FuncFormatter as _FuncFormatter,
 )
 
-import pandas as _pd
-import numpy as _np
-import seaborn as _sns
 # Lazy import to avoid circular dependency during package initialization
 _stats = None
 
@@ -46,6 +48,7 @@ def _get_stats():
     global _stats
     if _stats is None:
         from .. import stats
+
         _stats = stats
     return _stats
 
@@ -53,7 +56,7 @@ def _get_stats():
 from .._compat import safe_resample
 
 if TYPE_CHECKING:
-    from matplotlib.figure import Figure as _Figure
+    pass
 
 # Type alias for return data
 Returns = _pd.Series | _pd.DataFrame
@@ -194,7 +197,7 @@ def plot_returns_bars(
     """
     # Validate volatility matching requirements
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.loc[returns.index].std()
         returns = (returns / returns.std()) * bmark_vol
@@ -437,7 +440,7 @@ def plot_timeseries(
 
     # Validate volatility matching requirements
     if match_volatility and benchmark is None:
-        raise ValueError("match_volatility requires passing of " "benchmark.")
+        raise ValueError("match_volatility requires passing of benchmark.")
     if match_volatility and benchmark is not None:
         bmark_vol = benchmark.std()
         returns = (returns / returns.std()) * bmark_vol
@@ -713,9 +716,9 @@ def plot_histogram(
     alpha = 0.7
     if isinstance(returns, _pd.DataFrame):
         pallete = (
-            colors[1:(len(returns.columns) + 1)]
+            colors[1 : (len(returns.columns) + 1)]
             if benchmark is None
-            else colors[:(len(returns.columns) + 1)]
+            else colors[: (len(returns.columns) + 1)]
         )
         if len(returns.columns) > 1:
             alpha = 0.5
@@ -755,7 +758,9 @@ def plot_histogram(
         if isinstance(returns, _pd.Series):
             combined_returns = returns.copy()
             if kde:
-                _sns.kdeplot(data=combined_returns, color="black", ax=ax, warn_singular=False)
+                _sns.kdeplot(
+                    data=combined_returns, color="black", ax=ax, warn_singular=False
+                )
 
             _sns.histplot(
                 data=combined_returns,
@@ -799,7 +804,7 @@ def plot_histogram(
 
     # Format x-axis as percentage
     ax.xaxis.set_major_formatter(
-        _plt.FuncFormatter(lambda x, loc: "{:,}%".format(int(x * 100)))
+        _plt.FuncFormatter(lambda x, loc: f"{int(x * 100):,}%")
     )
 
     # Removed static lines for clarity
@@ -1140,13 +1145,15 @@ def plot_rolling_beta(
     # Calculate and plot primary beta window
     i = 1
     if isinstance(returns, _pd.Series):
-        beta = _get_stats().rolling_greeks(returns, benchmark, window1)["beta"].fillna(0)
+        beta = (
+            _get_stats().rolling_greeks(returns, benchmark, window1)["beta"].fillna(0)
+        )
         ax.plot(beta, lw=lw, label=window1_label, color=colors[1])
     elif isinstance(returns, _pd.DataFrame):
         beta = {
-            col: _get_stats().rolling_greeks(returns[col], benchmark, window1)["beta"].fillna(
-                0
-            )
+            col: _get_stats()
+            .rolling_greeks(returns[col], benchmark, window1)["beta"]
+            .fillna(0)
             for col in returns.columns
         }
         for name, b in beta.items():
@@ -1167,7 +1174,9 @@ def plot_rolling_beta(
             )
         elif isinstance(returns, _pd.DataFrame):
             betas_w2 = {
-                col: _get_stats().rolling_greeks(returns[col], benchmark, window2)["beta"]
+                col: _get_stats().rolling_greeks(returns[col], benchmark, window2)[
+                    "beta"
+                ]
                 for col in returns.columns
             }
             for name, beta_w2 in betas_w2.items():
@@ -1365,7 +1374,7 @@ def plot_longest_drawdowns(
     # Highlight drawdown periods
     highlight = "black" if grayscale else "red"
     # Vectorized approach instead of iterrows
-    for start, end in zip(longest_dd["start"], longest_dd["end"]):
+    for start, end in zip(longest_dd["start"], longest_dd["end"], strict=False):
         ax.axvspan(
             *_mdates.datestr2num([str(start), str(end)]),
             color=highlight,
@@ -1550,7 +1559,7 @@ def plot_distribution(
 
     # Format y-axis as percentage
     ax.yaxis.set_major_formatter(
-        _plt.FuncFormatter(lambda x, loc: "{:,}%".format(int(x * 100)))
+        _plt.FuncFormatter(lambda x, loc: f"{int(x * 100):,}%")
     )
 
     # Configure y-axis label

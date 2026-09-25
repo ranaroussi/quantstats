@@ -22,7 +22,7 @@ from . import version
 __version__ = version.version
 __author__ = "Ran Aroussi"
 
-from . import stats, utils, plots, reports
+from . import plots, reports, stats, utils
 
 __all__ = ["stats", "plots", "reports", "utils", "extend_pandas"]
 

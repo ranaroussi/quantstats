@@ -31,7 +31,6 @@ jobs:
 
     - name: Check formatting
       run: ruff format --check quantstats tests
-      continue-on-error: true
 
   test:
     name: Python ${{ matrix.python-version }} / pandas ${{ matrix.pandas-version }} / numpy ${{ matrix.numpy-version }}

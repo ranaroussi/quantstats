@@ -340,9 +340,9 @@ class TestCompoundedFlag:
             prepare_returns=False,
         )
 
-        assert geometric.loc["Calmar", "Strategy"] != arithmetic.loc[
-            "Calmar", "Strategy"
-        ]
+        assert (
+            geometric.loc["Calmar", "Strategy"] != arithmetic.loc["Calmar", "Strategy"]
+        )
 
 
 class TestTenYearWindow:
@@ -357,12 +357,12 @@ class TestTenYearWindow:
             returns, display=False, prepare_returns=False, periods_per_year=12
         )
 
-        assert result.loc["10Y (ann.)", "Strategy"] == result.loc[
-            "3Y (ann.)", "Strategy"
-        ]
-        assert result.loc["10Y (ann.)", "Strategy"] == result.loc[
-            "5Y (ann.)", "Strategy"
-        ]
+        assert (
+            result.loc["10Y (ann.)", "Strategy"] == result.loc["3Y (ann.)", "Strategy"]
+        )
+        assert (
+            result.loc["10Y (ann.)", "Strategy"] == result.loc["5Y (ann.)", "Strategy"]
+        )
 
 
 class TestInformationRatio:
@@ -482,9 +482,10 @@ class TestMatchDatesForwarding:
             daily_returns, benchmark, display=False, match_dates=False
         )
 
-        assert matched.loc["Start Period", "Benchmark"] != unmatched.loc[
-            "Start Period", "Benchmark"
-        ]
+        assert (
+            matched.loc["Start Period", "Benchmark"]
+            != unmatched.loc["Start Period", "Benchmark"]
+        )
 
 
 class TestExtendPandasStillWorks:

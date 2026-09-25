@@ -26,7 +26,7 @@ by shuffling historical returns, enabling probability-based risk assessment.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Dict, Any
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -62,12 +62,12 @@ class MonteCarloResult:
 
     data: pd.DataFrame
     original: pd.Series
-    bust_threshold: Optional[float] = None
-    goal_threshold: Optional[float] = None
-    _maxdd_cache: Optional[pd.Series] = field(default=None, repr=False)
+    bust_threshold: float | None = None
+    goal_threshold: float | None = None
+    _maxdd_cache: pd.Series | None = field(default=None, repr=False)
 
     @property
-    def stats(self) -> Dict[str, float]:
+    def stats(self) -> dict[str, float]:
         """
         Terminal value statistics across all simulations.
 
@@ -90,7 +90,7 @@ class MonteCarloResult:
         }
 
     @property
-    def maxdd(self) -> Dict[str, float]:
+    def maxdd(self) -> dict[str, float]:
         """
         Maximum drawdown statistics across all simulations.
 
@@ -123,7 +123,7 @@ class MonteCarloResult:
         }
 
     @property
-    def bust_probability(self) -> Optional[float]:
+    def bust_probability(self) -> float | None:
         """
         Probability of exceeding the bust (drawdown) threshold.
 
@@ -144,7 +144,7 @@ class MonteCarloResult:
         return bust_count / len(self._maxdd_cache)
 
     @property
-    def goal_probability(self) -> Optional[float]:
+    def goal_probability(self) -> float | None:
         """
         Probability of reaching the goal (return) threshold.
 
@@ -176,9 +176,7 @@ class MonteCarloResult:
         """
         return self.data.quantile(p / 100, axis=1)
 
-    def confidence_band(
-        self, level: float = 0.95
-    ) -> Tuple[pd.Series, pd.Series]:
+    def confidence_band(self, level: float = 0.95) -> tuple[pd.Series, pd.Series]:
         """
         Get lower and upper bounds for a confidence interval.
 
@@ -220,9 +218,9 @@ class MonteCarloResult:
 def run_montecarlo(
     returns: pd.Series,
     sims: int = 1000,
-    bust: Optional[float] = None,
-    goal: Optional[float] = None,
-    seed: Optional[int] = None,
+    bust: float | None = None,
+    goal: float | None = None,
+    seed: int | None = None,
 ) -> MonteCarloResult:
     """
     Run Monte Carlo simulation by shuffling returns.

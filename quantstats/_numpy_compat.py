@@ -9,17 +9,18 @@ It handles deprecated functionality, version-specific changes, and provides fall
 mechanisms for functions that may not exist in older versions.
 """
 
-import numpy as np
 import warnings
+from typing import Any
+
+import numpy as np
 from packaging import version
-from typing import Union, Optional, Any
 
 # Version detection - Parse numpy version string to enable version comparisons
 NUMPY_VERSION = version.parse(np.__version__)
 
 # Handle deprecated numpy functions
 # In numpy 1.25.0+, np.product was deprecated in favor of np.prod
-if NUMPY_VERSION >= version.parse("1.25.0"):
+if version.parse("1.25.0") <= NUMPY_VERSION:
     # Use np.prod instead of deprecated np.product for newer versions
     product = np.prod
 else:
@@ -140,7 +141,7 @@ def handle_numpy_warnings():
     return warnings.catch_warnings()
 
 
-def safe_percentile(data, percentile: Union[float, list], **kwargs):
+def safe_percentile(data, percentile: float | list, **kwargs):
     """
     Safe percentile calculation.
 
@@ -172,7 +173,7 @@ def safe_percentile(data, percentile: Union[float, list], **kwargs):
     return np.percentile(data, percentile, **kwargs)
 
 
-def safe_nanpercentile(data, percentile: Union[float, list], **kwargs):
+def safe_nanpercentile(data, percentile: float | list, **kwargs):
     """
     Safe nanpercentile calculation that ignores NaN values.
 
@@ -204,7 +205,7 @@ def safe_nanpercentile(data, percentile: Union[float, list], **kwargs):
     return np.nanpercentile(data, percentile, **kwargs)
 
 
-def safe_quantile(data, quantile: Union[float, list], **kwargs):
+def safe_quantile(data, quantile: float | list, **kwargs):
     """
     Safe quantile calculation.
 
@@ -237,7 +238,7 @@ def safe_quantile(data, quantile: Union[float, list], **kwargs):
     return np.quantile(data, quantile, **kwargs)
 
 
-def safe_random_seed(seed: Optional[int]):
+def safe_random_seed(seed: int | None):
     """
     Safe random seed setting for numpy.
 

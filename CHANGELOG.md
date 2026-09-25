@@ -88,6 +88,9 @@ Changelog
 - Bumped `actions/checkout` and `actions/setup-python` to v7 (#526, #534).
 - Removed the abandoned `.travis.yml` (Python 3.6-3.9, `nosetests`).
 - Added a regression test module covering every fix above.
+- Applied `ruff` autofixes and formatting across the codebase, and
+  grandfathered the remaining violations per file so lint is enforced on new
+  code.
 
 0.0.81
 ------

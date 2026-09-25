@@ -16,13 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io as _io
 import datetime as _dt
-import pandas as _pd
-import numpy as _np
-from ._compat import safe_yfinance_download
-from ._compat import safe_concat, safe_resample
+import io as _io
 import threading
+
+import numpy as _np
+import pandas as _pd
+
+from ._compat import safe_concat, safe_yfinance_download
 
 # Type alias for return data
 Returns = _pd.Series | _pd.DataFrame
@@ -164,7 +165,9 @@ def _clear_cache_if_full():
     with _cache_lock:
         if len(_PREPARE_RETURNS_CACHE) >= _CACHE_MAX_SIZE:
             # Remove oldest entries (simple FIFO) - keep the most recent half
-            keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[:-(_CACHE_MAX_SIZE // 2)]
+            keys_to_remove = list(_PREPARE_RETURNS_CACHE.keys())[
+                : -(_CACHE_MAX_SIZE // 2)
+            ]
             for key in keys_to_remove:
                 del _PREPARE_RETURNS_CACHE[key]
 
@@ -333,7 +336,9 @@ def to_prices(returns: Returns, base: float = 1e5) -> Returns:
     return base + base * _stats.compsum(returns)
 
 
-def log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = None) -> Returns:
+def log_returns(
+    returns: Returns, rf: float = 0.0, nperiods: int | None = None
+) -> Returns:
     """
     Shorthand for to_log_returns function
 
@@ -354,7 +359,9 @@ def log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = None) 
     return to_log_returns(returns, rf, nperiods)
 
 
-def to_log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = None) -> Returns:
+def to_log_returns(
+    returns: Returns, rf: float = 0.0, nperiods: int | None = None
+) -> Returns:
     """
     Convert returns series to log returns
 
@@ -378,6 +385,7 @@ def to_log_returns(returns: Returns, rf: float = 0.0, nperiods: int | None = Non
         return _np.log(returns + 1).replace([_np.inf, -_np.inf], float("NaN"))  # type: ignore
     except (ValueError, TypeError, AttributeError, OverflowError) as e:
         from warnings import warn
+
         warn(f"Error converting to log returns: {type(e).__name__}: {e}, returning 0.0")
         return 0.0
 
@@ -452,7 +460,9 @@ def group_returns(returns: Returns, groupby, compounded: bool = False) -> Return
     return returns.groupby(groupby).sum()
 
 
-def aggregate_returns(returns: Returns, period: str | None = None, compounded: bool = True) -> Returns:
+def aggregate_returns(
+    returns: Returns, period: str | None = None, compounded: bool = True
+) -> Returns:
     """
     Aggregate returns based on specified time periods
 
@@ -472,9 +482,9 @@ def aggregate_returns(returns: Returns, period: str | None = None, compounded: b
     """
     # Normalize timezone for consistency before aggregation
     # Convert to UTC if timezone-aware, then make naive
-    if hasattr(returns.index, 'tz') and returns.index.tz is not None:
-        returns = returns.tz_convert('UTC').tz_localize(None)
-    
+    if hasattr(returns.index, "tz") and returns.index.tz is not None:
+        returns = returns.tz_convert("UTC").tz_localize(None)
+
     # Return original data if no period specified or daily period
     if period is None or "day" in period:
         return returns
@@ -497,9 +507,7 @@ def aggregate_returns(returns: Returns, period: str | None = None, compounded: b
     # ``DatetimeIndex.week`` was removed in pandas 2.0; ``isocalendar().week``
     # is the ISO week number it was an alias for.
     if "week" in period:
-        return group_returns(
-            returns, index.isocalendar().week, compounded=compounded
-        )
+        return group_returns(returns, index.isocalendar().week, compounded=compounded)
 
     # End of week grouping
     if "eow" in period or period == "W":
@@ -527,7 +535,9 @@ def aggregate_returns(returns: Returns, period: str | None = None, compounded: b
     return returns
 
 
-def to_excess_returns(returns: Returns, rf: float, nperiods: int | None = None) -> Returns:
+def to_excess_returns(
+    returns: Returns, rf: float, nperiods: int | None = None
+) -> Returns:
     """
     Calculates excess returns by subtracting
     risk-free returns from total returns
@@ -633,8 +643,8 @@ def _prepare_prices(data, base=1.0):
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive
-    if hasattr(data.index, 'tz') and data.index.tz is not None:
-        data = data.tz_convert('UTC').tz_localize(None)
+    if hasattr(data.index, "tz") and data.index.tz is not None:
+        data = data.tz_convert("UTC").tz_localize(None)
     return data
 
 
@@ -718,8 +728,8 @@ def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive
-    if hasattr(data.index, 'tz') and data.index.tz is not None:
-        data = data.tz_convert('UTC').tz_localize(None)
+    if hasattr(data.index, "tz") and data.index.tz is not None:
+        data = data.tz_convert("UTC").tz_localize(None)
 
     # Cache the result
     if cache_key:
@@ -763,7 +773,9 @@ def download_returns(ticker, period="max", proxy=None):
         params["period"] = period
 
     # Download data and calculate returns
-    df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change(fill_method=None)  # type: ignore
+    df = safe_yfinance_download(proxy=proxy, **params)["Close"].pct_change(
+        fill_method=None
+    )  # type: ignore
     df = df.fillna(0).tz_localize(None)
     return df
 
@@ -788,7 +800,6 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
 
     # Align benchmark with strategy period if needed
     if isinstance(period, _pd.DatetimeIndex) and set(period) != set(benchmark.index):
-
         # Adjust Benchmark to Strategy frequency
         benchmark_prices = to_prices(benchmark, base=1)
         new_index = _pd.date_range(start=period[0], end=period[-1], freq="D")
@@ -802,8 +813,8 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
 
     # Normalize timezone information for consistent comparisons
     # Convert to UTC if timezone-aware, then make naive
-    if hasattr(benchmark.index, 'tz') and benchmark.index.tz is not None:
-        benchmark = benchmark.tz_convert('UTC').tz_localize(None)
+    if hasattr(benchmark.index, "tz") and benchmark.index.tz is not None:
+        benchmark = benchmark.tz_convert("UTC").tz_localize(None)
     # If already timezone-naive, no action needed
 
     # Prepare returns or return raw data. The benchmark is never converted to
@@ -966,7 +977,7 @@ def make_index(
 
     # Match dates to start from first non-zero date
     if match_dates:
-        index = index[max(index.ne(0).idxmax()):]
+        index = index[max(index.ne(0).idxmax()) :]
 
     # Handle case with no rebalancing
     if rebalance is None:

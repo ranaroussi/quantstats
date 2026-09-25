@@ -2,12 +2,10 @@
 Tests for quantstats.stats module
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from datetime import datetime
+import pandas as pd
+import pytest
 
-import quantstats as qs
 from quantstats import stats
 
 
@@ -61,7 +59,9 @@ class TestBasicStats:
         assert isinstance(result, pd.Series)
         assert len(result) == len(sample_returns)
         # Final value should match comp()
-        np.testing.assert_almost_equal(result.iloc[-1], stats.comp(sample_returns), decimal=10)
+        np.testing.assert_almost_equal(
+            result.iloc[-1], stats.comp(sample_returns), decimal=10
+        )
 
     def test_exposure(self, sample_returns):
         """Test exposure calculation."""
@@ -153,9 +153,9 @@ class TestRatios:
         sharpe = stats.sharpe(sample_returns)
         sortino = stats.sortino(sample_returns)
         # Handle both scalar and Series results
-        if hasattr(sharpe, 'values'):
+        if hasattr(sharpe, "values"):
             sharpe = float(sharpe.values[0]) if len(sharpe) > 0 else float(sharpe)
-        if hasattr(sortino, 'values'):
+        if hasattr(sortino, "values"):
             sortino = float(sortino.values[0]) if len(sortino) > 0 else float(sortino)
         # They should be different (Sortino only penalizes downside)
         assert sharpe != sortino

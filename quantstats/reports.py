@@ -17,13 +17,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as _pd
-import numpy as _np
-from math import sqrt as _sqrt, ceil as _ceil
-from datetime import datetime as _dt
-from base64 import b64encode as _b64encode
 import re as _regex
+from base64 import b64encode as _b64encode
+from datetime import datetime as _dt
+from math import ceil as _ceil
+from math import sqrt as _sqrt
+
+import numpy as _np
+import pandas as _pd
 from tabulate import tabulate as _tabulate
+
 from . import __version__
 
 # Lazy imports to avoid circular dependency during package initialization
@@ -36,6 +39,7 @@ def _get_stats():
     global _stats
     if _stats is None:
         from . import stats
+
         _stats = stats
     return _stats
 
@@ -44,6 +48,7 @@ def _get_utils():
     global _utils
     if _utils is None:
         from . import utils
+
         _utils = utils
     return _utils
 
@@ -52,16 +57,21 @@ def _get_plots():
     global _plots
     if _plots is None:
         from . import plots
+
         _plots = plots
     return _plots
-from dateutil.relativedelta import relativedelta
-from io import StringIO
-from pathlib import Path
+
+
 import tempfile
 import webbrowser
+from io import StringIO
+from pathlib import Path
+
+from dateutil.relativedelta import relativedelta
 
 try:
-    from IPython.display import display as iDisplay, HTML as iHTML
+    from IPython.display import HTML as iHTML
+    from IPython.display import display as iDisplay
 except ImportError:
     pass  # IPython not available, display functions won't be used
 
@@ -274,7 +284,7 @@ def html(
     # Secure file path handling for HTML template
     if template_path is None:
         # Use default template path - report.html in same directory
-        template_path = Path(__file__).parent / 'report.html'
+        template_path = Path(__file__).parent / "report.html"
     else:
         template_path = Path(template_path)
 
@@ -287,7 +297,7 @@ def html(
         raise ValueError(f"Template path is not a file: {template_path}")
 
     # Read template securely with UTF-8 encoding
-    tpl = template_path.read_text(encoding='utf-8')
+    tpl = template_path.read_text(encoding="utf-8")
 
     # prepare timeseries
     if match_dates:
@@ -369,7 +379,9 @@ def html(
     tpl = tpl.replace("{{params}}", params_str)
 
     # Add matched dates indicator
-    matched_dates_str = " (matched dates)" if match_dates and benchmark is not None else ""
+    matched_dates_str = (
+        " (matched dates)" if match_dates and benchmark is not None else ""
+    )
     tpl = tpl.replace("{{matched_dates}}", matched_dates_str)
 
     # Set names for data series to be used in charts and tables
@@ -412,7 +424,7 @@ def html(
         for i in reversed(range(num_cols + 1, num_cols + 3)):
             str_td = "<td></td>" * i
             tpl = tpl.replace(
-                f"<tr>{str_td}</tr>", '<tr><td colspan="{}"><hr></td></tr>'.format(i)
+                f"<tr>{str_td}</tr>", f'<tr><td colspan="{i}"><hr></td></tr>'
             )
 
     # Clean up table formatting with horizontal rules
@@ -427,9 +439,15 @@ def html(
     if benchmark is not None:
         # Use original benchmark for EOY comparison to preserve accurate yearly returns
         # This prevents loss of benchmark returns on non-trading days
-        benchmark_for_eoy = benchmark_original if benchmark_original is not None else benchmark
+        benchmark_for_eoy = (
+            benchmark_original if benchmark_original is not None else benchmark
+        )
         yoy = _get_stats().compare(
-            returns, benchmark_for_eoy, "YE", compounded=compounded, prepare_returns=False
+            returns,
+            benchmark_for_eoy,
+            "YE",
+            compounded=compounded,
+            prepare_returns=False,
         )
         # Set appropriate column names based on data type
         if isinstance(returns, _pd.Series):
@@ -444,10 +462,14 @@ def html(
     else:
         # Generate EOY returns table without benchmark comparison
         # pct multiplier
-        yoy = _pd.DataFrame(_get_utils().group_returns(returns, returns.index.year) * 100)
+        yoy = _pd.DataFrame(
+            _get_utils().group_returns(returns, returns.index.year) * 100
+        )
         if isinstance(returns, _pd.Series):
             yoy.columns = ["Return"]
-            yoy["Cumulative"] = _get_utils().group_returns(returns, returns.index.year, True) * 100
+            yoy["Cumulative"] = (
+                _get_utils().group_returns(returns, returns.index.year, True) * 100
+            )
             # Don't add "%" here - the CSS in report.html handles it via :after pseudo-element
             # Adding "%" in Python causes double "%" display (bug #475)
         elif isinstance(returns, _pd.DataFrame):
@@ -463,9 +485,11 @@ def html(
     if isinstance(returns, _pd.Series):
         # Calculate drawdown series and get worst drawdown periods
         dd = _get_stats().to_drawdown_series(returns)
-        dd_info = _get_stats().drawdown_details(dd).sort_values(
-            by="max drawdown", ascending=True
-        )[:10]
+        dd_info = (
+            _get_stats()
+            .drawdown_details(dd)
+            .sort_values(by="max drawdown", ascending=True)[:10]
+        )
         dd_info = dd_info[["start", "end", "max drawdown", "days"]]
         dd_info.columns = ["Started", "Recovered", "Drawdown", "Days"]
         tpl = tpl.replace("{{dd_info}}", _html_table(dd_info, False))
@@ -474,16 +498,18 @@ def html(
         dd_info_list = []
         for col in returns.columns:
             dd = _get_stats().to_drawdown_series(returns[col])
-            dd_info = _get_stats().drawdown_details(dd).sort_values(
-                by="max drawdown", ascending=True
-            )[:10]
+            dd_info = (
+                _get_stats()
+                .drawdown_details(dd)
+                .sort_values(by="max drawdown", ascending=True)[:10]
+            )
             dd_info = dd_info[["start", "end", "max drawdown", "days"]]
             dd_info.columns = ["Started", "Recovered", "Drawdown", "Days"]
             dd_info_list.append(_html_table(dd_info, False))
 
         # Combine all drawdown tables with headers
         dd_html_table = ""
-        for html_str, col in zip(dd_info_list, returns.columns):
+        for html_str, col in zip(dd_info_list, returns.columns, strict=False):
             dd_html_table = (
                 dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
             )
@@ -894,7 +920,9 @@ def full(
     # Process drawdown details based on data type
     if isinstance(dd, _pd.Series):
         col = _get_stats().drawdown_details(dd).columns[4]
-        dd_info = _get_stats().drawdown_details(dd).sort_values(by=col, ascending=True)[:5]
+        dd_info = (
+            _get_stats().drawdown_details(dd).sort_values(by=col, ascending=True)[:5]
+        )
         if not dd_info.empty:
             dd_info.index = range(1, min(6, len(dd_info) + 1))
             dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
@@ -903,9 +931,11 @@ def full(
         col = _get_stats().drawdown_details(dd).columns.get_level_values(1)[4]
         dd_info_dict = {}
         for ptf in dd.columns:
-            dd_info = _get_stats().drawdown_details(dd[ptf]).sort_values(
-                by=col, ascending=True
-            )[:5]
+            dd_info = (
+                _get_stats()
+                .drawdown_details(dd[ptf])
+                .sort_values(by=col, ascending=True)[:5]
+            )
             if not dd_info.empty:
                 dd_info.index = range(1, min(6, len(dd_info) + 1))
                 dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
@@ -1335,7 +1365,9 @@ def metrics(
 
     # Calculate return metrics based on compounding preference
     if compounded:
-        metrics["Cumulative Return %"] = (_get_stats().comp(df) * pct).map("{:,.2f}".format)
+        metrics["Cumulative Return %"] = (_get_stats().comp(df) * pct).map(
+            "{:,.2f}".format
+        )
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
@@ -1404,7 +1436,9 @@ def metrics(
         # Calculate annualized volatility
         if isinstance(returns, _pd.Series):
             ret_vol = (
-                _get_stats().volatility(df["returns"], win_year, True, prepare_returns=False)
+                _get_stats().volatility(
+                    df["returns"], win_year, True, prepare_returns=False
+                )
                 * pct
             )
         elif isinstance(returns, _pd.DataFrame):
@@ -1442,17 +1476,21 @@ def metrics(
             elif isinstance(returns, _pd.DataFrame):
                 metrics["R^2"] = (
                     [
-                        _get_stats().r_squared(
+                        _get_stats()
+                        .r_squared(
                             df[strategy_col], df["benchmark"], prepare_returns=False
-                        ).round(2)
+                        )
+                        .round(2)
                         for strategy_col in df_strategy_columns
                     ]
                 ) + ["-"]
                 metrics["Information Ratio"] = (
                     [
-                        _get_stats().information_ratio(
+                        _get_stats()
+                        .information_ratio(
                             df[strategy_col], df["benchmark"], prepare_returns=False
-                        ).round(2)
+                        )
+                        .round(2)
                         for strategy_col in df_strategy_columns
                     ]
                 ) + ["-"]
@@ -1474,20 +1512,28 @@ def metrics(
         metrics["Kurtosis"] = _get_stats().kurtosis(df, prepare_returns=False)
 
         # Additional ratios
-        metrics["Ulcer Performance Index"] = _get_stats().ulcer_performance_index(df, rf)
+        metrics["Ulcer Performance Index"] = _get_stats().ulcer_performance_index(
+            df, rf
+        )
         metrics["Risk-Adjusted Return %"] = (
             _get_stats().rar(df, rf, compounded=compounded) * pct
         )
-        metrics["Risk-Return Ratio"] = _get_stats().risk_return_ratio(df, prepare_returns=False)
+        metrics["Risk-Return Ratio"] = _get_stats().risk_return_ratio(
+            df, prepare_returns=False
+        )
 
         # Add separator
         metrics["~~~~~~~~~~"] = blank
 
         # Average return metrics
-        metrics["Avg. Return %"] = _get_stats().avg_return(df, prepare_returns=False) * pct
+        metrics["Avg. Return %"] = (
+            _get_stats().avg_return(df, prepare_returns=False) * pct
+        )
         metrics["Avg. Win %"] = _get_stats().avg_win(df, prepare_returns=False) * pct
         metrics["Avg. Loss %"] = _get_stats().avg_loss(df, prepare_returns=False) * pct
-        metrics["Win/Loss Ratio"] = _get_stats().win_loss_ratio(df, prepare_returns=False)
+        metrics["Win/Loss Ratio"] = _get_stats().win_loss_ratio(
+            df, prepare_returns=False
+        )
         metrics["Profit Ratio"] = _get_stats().profit_ratio(df, prepare_returns=False)
 
         # Add separator
@@ -1495,7 +1541,9 @@ def metrics(
 
         # Expected returns at different frequencies
         metrics["Expected Daily %%"] = (
-            _get_stats().expected_return(df, compounded=compounded, prepare_returns=False)
+            _get_stats().expected_return(
+                df, compounded=compounded, prepare_returns=False
+            )
             * pct
         )
         metrics["Expected Monthly %%"] = (
@@ -1547,11 +1595,17 @@ def metrics(
     # Trading-based performance metrics
     metrics["Payoff Ratio"] = _get_stats().payoff_ratio(df, prepare_returns=False)
     metrics["Profit Factor"] = _get_stats().profit_factor(df, prepare_returns=False)
-    metrics["Common Sense Ratio"] = _get_stats().common_sense_ratio(df, prepare_returns=False)
+    metrics["Common Sense Ratio"] = _get_stats().common_sense_ratio(
+        df, prepare_returns=False
+    )
     metrics["CPC Index"] = _get_stats().cpc_index(df, prepare_returns=False)
     metrics["Tail Ratio"] = _get_stats().tail_ratio(df, prepare_returns=False)
-    metrics["Outlier Win Ratio"] = _get_stats().outlier_win_ratio(df, prepare_returns=False)
-    metrics["Outlier Loss Ratio"] = _get_stats().outlier_loss_ratio(df, prepare_returns=False)
+    metrics["Outlier Win Ratio"] = _get_stats().outlier_win_ratio(
+        df, prepare_returns=False
+    )
+    metrics["Outlier Loss Ratio"] = _get_stats().outlier_loss_ratio(
+        df, prepare_returns=False
+    )
 
     # # returns
     metrics["~~"] = blank
@@ -1569,7 +1623,9 @@ def metrics(
         )
         metrics["3M %"] = _get_stats().comp(df[df.index >= m3]) * pct
         metrics["6M %"] = _get_stats().comp(df[df.index >= m6]) * pct
-        metrics["YTD %"] = _get_stats().comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+        metrics["YTD %"] = (
+            _get_stats().comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
+        )
         metrics["1Y %"] = _get_stats().comp(df[df.index >= y1]) * pct
     else:
         metrics["MTD %"] = (
@@ -1598,7 +1654,9 @@ def metrics(
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
-    metrics["All-time (ann.) %"] = _get_stats().cagr(df, 0.0, compounded, win_year) * pct
+    metrics["All-time (ann.) %"] = (
+        _get_stats().cagr(df, 0.0, compounded, win_year) * pct
+    )
 
     # Best/worst period analysis (full mode only)
     # best/worst
@@ -1838,7 +1896,12 @@ def metrics(
     if display:
         # Build and display parameters table (feature #472)
         params_data = {
-            "Parameter": ["Risk-Free Rate", "Periods/Year", "Compounded", "Match Dates"],
+            "Parameter": [
+                "Risk-Free Rate",
+                "Periods/Year",
+                "Compounded",
+                "Match Dates",
+            ],
             "Value": [
                 f"{_rf_scalar(rf):.1%}",
                 str(periods_per_year),
@@ -1850,7 +1913,10 @@ def metrics(
             params_data["Parameter"].insert(0, "Benchmark")
             params_data["Value"].insert(0, benchmark_colname)
         params_df = _pd.DataFrame(params_data)
-        print("\n" + _tabulate(params_df, headers="keys", tablefmt="simple", showindex=False))
+        print(
+            "\n"
+            + _tabulate(params_df, headers="keys", tablefmt="simple", showindex=False)
+        )
         print("\n")
         print(_tabulate(metrics, headers="keys", tablefmt="simple"))
         return None
@@ -2346,9 +2412,9 @@ def _calc_dd(df, display=True, as_pct=False):
                 "max drawdown"
             ].values[0]
             / 100,
-            "Max DD Date": bench_dd.sort_values(
-                by="max drawdown", ascending=True
-            )["valley"].values[0],
+            "Max DD Date": bench_dd.sort_values(by="max drawdown", ascending=True)[
+                "valley"
+            ].values[0],
             "Max DD Period Start": bench_dd.sort_values(
                 by="max drawdown", ascending=True
             )["start"].values[0],
@@ -2456,9 +2522,7 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
     a.download="{{filename}}";
     a.hidden=true;document.body.appendChild(a);
     a.innerHTML="download report";
-    a.click();</script>""".replace(
-            "\n", ""
-        ),
+    a.click();</script>""".replace("\n", ""),
     )
 
     # Insert HTML content and clean up formatting
@@ -2497,9 +2561,7 @@ def _open_html(html):
         " ",
         """<script>
     var win=window.open();win.document.body.innerHTML='{{html}}';
-    </script>""".replace(
-            "\n", ""
-        ),
+    </script>""".replace("\n", ""),
     )
 
     # Insert HTML content and clean up formatting
@@ -2546,9 +2608,7 @@ def _embed_figure(figfiles, figfmt):
                 return figbytes.decode()
             # For other formats, encode as base64 data URI
             data_uri = _b64encode(figbytes).decode()
-            embed_string.join(
-                '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
-            )
+            embed_string.join(f'<img src="data:image/{figfmt};base64,{data_uri}" />')
     else:
         # Handle single figure
         figbytes = figfiles.getvalue()
@@ -2557,6 +2617,6 @@ def _embed_figure(figfiles, figfmt):
             return figbytes.decode()
         # For other formats, encode as base64 data URI
         data_uri = _b64encode(figbytes).decode()
-        embed_string = '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+        embed_string = f'<img src="data:image/{figfmt};base64,{data_uri}" />'
 
     return embed_string

@@ -2,13 +2,13 @@
 Tests for quantstats.reports module
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-import tempfile
 import os
+import tempfile
 
-import quantstats as qs
+import numpy as np
+import pandas as pd
+import pytest
+
 from quantstats import reports
 
 
@@ -42,7 +42,7 @@ class TestHTMLReport:
             reports.html(sample_returns, sample_benchmark, output=output_path)
             assert os.path.exists(output_path)
             # Check file has content
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert len(content) > 1000  # Should have substantial content
                 assert "<!DOCTYPE html>" in content
@@ -57,7 +57,7 @@ class TestHTMLReport:
 
         try:
             reports.html(sample_returns, output=output_path, title="My Strategy")
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "My Strategy" in content
                 assert "(Compounded)" in content
@@ -72,7 +72,7 @@ class TestHTMLReport:
 
         try:
             reports.html(sample_returns, output=output_path, compounded=False)
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "(Compounded)" not in content
         finally:
@@ -86,7 +86,7 @@ class TestHTMLReport:
 
         try:
             reports.html(sample_returns, sample_benchmark, output=output_path)
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "Benchmark:" in content
                 assert "Periods/Year: 252" in content
@@ -104,7 +104,7 @@ class TestHTMLReport:
             reports.html(
                 sample_returns, sample_benchmark, output=output_path, match_dates=True
             )
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "(matched dates)" in content
         finally:
@@ -118,7 +118,7 @@ class TestHTMLReport:
 
         try:
             reports.html(sample_returns, output=output_path)
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "prefers-color-scheme:dark" not in content
                 assert "color-scheme" not in content
@@ -133,7 +133,7 @@ class TestHTMLReport:
 
         try:
             reports.html(sample_returns, output=output_path, rf=0.05)
-            with open(output_path, "r") as f:
+            with open(output_path) as f:
                 content = f.read()
                 assert "RF: 5.0%" in content
         finally:
@@ -183,16 +183,16 @@ class TestMatchDates:
         # Create returns starting later than benchmark
         dates1 = pd.date_range("2020-01-10", periods=100, freq="D")
         dates2 = pd.date_range("2020-01-01", periods=110, freq="D")
-        
+
         returns = pd.Series(np.random.randn(100) * 0.01, index=dates1)
         benchmark = pd.Series(np.random.randn(110) * 0.01, index=dates2)
-        
+
         # Set first values to non-zero
         returns.iloc[0] = 0.01
         benchmark.iloc[0] = 0.01
-        
+
         aligned_ret, aligned_bench = reports._match_dates(returns, benchmark)
-        
+
         # Both should now start from the same date
         assert aligned_ret.index[0] == aligned_bench.index[0]
 

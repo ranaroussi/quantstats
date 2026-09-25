@@ -23,15 +23,17 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as _plt
-from matplotlib.ticker import (
-    StrMethodFormatter as _StrMethodFormatter,
-    FuncFormatter as _FuncFormatter,
-)
-
 import numpy as _np
 import pandas as _pd
-from .._compat import safe_resample
 import seaborn as _sns
+from matplotlib.ticker import (
+    FuncFormatter as _FuncFormatter,
+)
+from matplotlib.ticker import (
+    StrMethodFormatter as _StrMethodFormatter,
+)
+
+from .._compat import safe_resample
 
 # Lazy imports to avoid circular dependency during package initialization
 # These modules are imported when first accessed via _get_stats() and _get_utils()
@@ -43,6 +45,7 @@ def _get_stats():
     global _stats
     if _stats is None:
         from .. import stats
+
         _stats = stats
     return _stats
 
@@ -51,8 +54,10 @@ def _get_utils():
     global _utils
     if _utils is None:
         from .. import utils
+
         _utils = utils
     return _utils
+
 
 from . import core as _core
 
@@ -185,7 +190,12 @@ def snapshot(
     # Select color scheme based on grayscale preference
     colors = _GRAYSCALE_COLORS if grayscale else _FLATUI_COLORS
     # Convert to portfolio format and calculate percentage changes
-    returns = _get_utils().make_portfolio(returns.dropna(), 1, mode).pct_change(fill_method=None).fillna(0)
+    returns = (
+        _get_utils()
+        .make_portfolio(returns.dropna(), 1, mode)
+        .pct_change(fill_method=None)
+        .fillna(0)
+    )
 
     # Use current figure size if not specified
     if figsize is None:
@@ -488,12 +498,10 @@ def earnings(
                 returns.index.date[1:2][0].strftime("%e %b '%y"),  # type: ignore
                 returns.index.date[-1:][0].strftime("%e %b '%y"),  # type: ignore
                 _get_utils()._score_str(
-                    "${:,}".format(round(returns.values[-1] - returns.values[0], 2))
+                    f"${round(returns.values[-1] - returns.values[0], 2):,}"
                 ),
                 _get_utils()._score_str(
-                    "{:,}%".format(
-                        round((returns.values[-1] / returns.values[0] - 1) * 100, 2)
-                    )
+                    f"{round((returns.values[-1] / returns.values[0] - 1) * 100, 2):,}%"
                 ),
             ),
             fontsize=10,
@@ -522,7 +530,7 @@ def earnings(
 
     # Set y-axis label showing starting balance
     ax.set_ylabel(
-        "Value of  ${:,.0f}".format(start_balance),
+        f"Value of  ${start_balance:,.0f}",
         fontname=fontname,
         fontweight="bold",
         fontsize=11,
@@ -1737,7 +1745,9 @@ def monthly_heatmap(
     cmap = "gray" if grayscale else "RdYlGn"
 
     # Convert to monthly returns and convert to percentage
-    returns = _get_stats().monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
+    returns = (
+        _get_stats().monthly_returns(returns, eoy=eoy, compounded=compounded) * 100
+    )
 
     # Calculate figure height based on number of years
     fig_height = len(returns) / 2.5
@@ -1779,7 +1789,8 @@ def monthly_heatmap(
         )
         # Calculate benchmark monthly returns
         benchmark = (
-            _get_stats().monthly_returns(benchmark, eoy=eoy, compounded=compounded) * 100
+            _get_stats().monthly_returns(benchmark, eoy=eoy, compounded=compounded)
+            * 100
         )
         # Calculate active returns (strategy - benchmark)
         active_returns = returns - benchmark

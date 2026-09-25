@@ -2,16 +2,16 @@
 Tests for quantstats._compat module
 """
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 from quantstats._compat import (
     get_frequency_alias,
     normalize_timezone,
-    safe_resample,
-    safe_concat,
     safe_append,
+    safe_concat,
+    safe_resample,
 )
 
 

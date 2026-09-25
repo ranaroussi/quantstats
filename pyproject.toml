@@ -122,3 +122,15 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["quantstats"]
+
+# Pre-existing violations, grandfathered per file so the rules stay enforced
+# everywhere else and new code cannot add to the backlog. Delete entries as
+# the files get cleaned up; do not add new ones.
+[tool.ruff.lint.per-file-ignores]
+"quantstats/_plotting/core.py" = ["E402", "SIM102", "SIM105", "UP031"]
+"quantstats/_plotting/wrappers.py" = ["E402", "SIM105", "UP031"]
+"quantstats/plots.py" = ["F403"]
+"quantstats/reports.py" = ["E402", "SIM102", "UP031"]
+"quantstats/stats.py" = ["B028", "SIM102"]
+"quantstats/utils.py" = ["B028", "B904", "SIM118", "UP038"]
+"tests/test_stats.py" = ["B017", "UP038"]

@@ -2,13 +2,13 @@
 Tests for quantstats.plots module
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-import tempfile
 import os
+import tempfile
 
-import quantstats as qs
+import numpy as np
+import pandas as pd
+import pytest
+
 from quantstats import plots
 
 

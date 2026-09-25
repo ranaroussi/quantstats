@@ -8,12 +8,13 @@ and numpy, ensuring that quantstats functions work consistently across various
 dependency versions. It handles deprecated functionality and version-specific changes.
 """
 
-import pandas as pd
-import numpy as np
 import warnings
-from packaging import version
+from collections.abc import Callable
+
+import numpy as np
+import pandas as pd
 import yfinance as yf
-from typing import Union, Optional, List, Callable
+from packaging import version
 
 # Version detection - Parse version strings to enable version comparisons
 PANDAS_VERSION = version.parse(pd.__version__)
@@ -23,10 +24,10 @@ NUMPY_VERSION = version.parse(np.__version__)
 # Starting from pandas 2.2.0, frequency aliases changed to be more explicit
 # M -> ME (Month End), Q -> QE (Quarter End), A/Y -> YE (Year End)
 FREQUENCY_ALIASES = {
-    "M": "ME" if PANDAS_VERSION >= version.parse("2.2.0") else "M",
-    "Q": "QE" if PANDAS_VERSION >= version.parse("2.2.0") else "Q",
-    "A": "YE" if PANDAS_VERSION >= version.parse("2.2.0") else "A",
-    "Y": "YE" if PANDAS_VERSION >= version.parse("2.2.0") else "Y",
+    "M": "ME" if version.parse("2.2.0") <= PANDAS_VERSION else "M",
+    "Q": "QE" if version.parse("2.2.0") <= PANDAS_VERSION else "Q",
+    "A": "YE" if version.parse("2.2.0") <= PANDAS_VERSION else "A",
+    "Y": "YE" if version.parse("2.2.0") <= PANDAS_VERSION else "Y",
 }
 
 
@@ -56,18 +57,18 @@ def get_frequency_alias(freq: str) -> str:
     return FREQUENCY_ALIASES.get(freq, freq)
 
 
-def normalize_timezone(data: Union[pd.Series, pd.DataFrame]) -> Union[pd.Series, pd.DataFrame]:
+def normalize_timezone(data: pd.Series | pd.DataFrame) -> pd.Series | pd.DataFrame:
     """
     Normalize timezone information for consistent comparisons.
-    
+
     If data has timezone info, converts to UTC then removes timezone info.
     This ensures all data can be compared regardless of original timezone.
-    
+
     Parameters
     ----------
     data : pd.Series or pd.DataFrame
         Time series data with DatetimeIndex
-        
+
     Returns
     -------
     pd.Series or pd.DataFrame
@@ -75,21 +76,23 @@ def normalize_timezone(data: Union[pd.Series, pd.DataFrame]) -> Union[pd.Series,
     """
     if not isinstance(data.index, pd.DatetimeIndex):
         return data
-    
+
     # If timezone aware, convert to UTC then make naive
     if data.index.tz is not None:
         result = data.copy()
-        result.index = result.index.tz_convert('UTC').tz_localize(None)
+        result.index = result.index.tz_convert("UTC").tz_localize(None)
         return result
-    
+
     # Already timezone naive, return as is
     return data
 
 
-def safe_resample(data: Union[pd.Series, pd.DataFrame],
-                  freq: str,
-                  func_name: Optional[Union[str, Callable]] = None,
-                  **kwargs):
+def safe_resample(
+    data: pd.Series | pd.DataFrame,
+    freq: str,
+    func_name: str | Callable | None = None,
+    **kwargs,
+):
     """
     Safe resample operation that works with all pandas versions.
 
@@ -163,19 +166,22 @@ def safe_resample(data: Union[pd.Series, pd.DataFrame],
         # For callable functions, use apply method
         # Suppress FutureWarning about callable usage - our use is intentional
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=FutureWarning, 
-                                    message=".*callable.*")
+            warnings.filterwarnings(
+                "ignore", category=FutureWarning, message=".*callable.*"
+            )
             result = resampler.apply(func_name, **kwargs)
-    
+
     # Normalize timezone to ensure consistent comparisons
     return normalize_timezone(result)
 
 
-def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],
-                axis: int = 0,
-                ignore_index: bool = False,
-                sort: bool = False,
-                **kwargs) -> Union[pd.Series, pd.DataFrame]:
+def safe_concat(
+    objs: list[pd.Series | pd.DataFrame],
+    axis: int = 0,
+    ignore_index: bool = False,
+    sort: bool = False,
+    **kwargs,
+) -> pd.Series | pd.DataFrame:
     """
     Safe concatenation that handles pandas version differences.
 
@@ -208,10 +214,12 @@ def safe_concat(objs: List[Union[pd.Series, pd.DataFrame]],
     return pd.concat(objs, axis=axis, ignore_index=ignore_index, sort=sort, **kwargs)  # type: ignore[arg-type]
 
 
-def safe_append(df: pd.DataFrame,
-                other: Union[pd.DataFrame, pd.Series],
-                ignore_index: bool = False,
-                sort: bool = False) -> pd.DataFrame:
+def safe_append(
+    df: pd.DataFrame,
+    other: pd.DataFrame | pd.Series,
+    ignore_index: bool = False,
+    sort: bool = False,
+) -> pd.DataFrame:
     """
     Safe append operation using pd.concat.
 
@@ -250,8 +258,9 @@ def safe_append(df: pd.DataFrame,
         return pd.DataFrame(result)
 
 
-def safe_frequency_conversion(data: Union[pd.Series, pd.DataFrame],
-                              freq: str) -> Union[pd.Series, pd.DataFrame]:
+def safe_frequency_conversion(
+    data: pd.Series | pd.DataFrame, freq: str
+) -> pd.Series | pd.DataFrame:
     """
     Safe frequency conversion for time series data.
 
@@ -366,9 +375,9 @@ def get_string_accessor(series: pd.Series):
     return series.str
 
 
-def safe_yfinance_download(tickers: Union[str, List[str]],
-                           proxy: Optional[str] = None,
-                           **kwargs) -> pd.DataFrame:
+def safe_yfinance_download(
+    tickers: str | list[str], proxy: str | None = None, **kwargs
+) -> pd.DataFrame:
     """
     Safe yfinance download that handles proxy configuration properly.
 
@@ -425,6 +434,8 @@ def safe_yfinance_download(tickers: Union[str, List[str]],
         # Handle case where yfinance returns None (network issues, invalid ticker, etc.)
         if result is None:
             # Return empty DataFrame with standard yfinance columns
-            return pd.DataFrame(columns=['Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close'])
+            return pd.DataFrame(
+                columns=["Open", "High", "Low", "Close", "Volume", "Adj Close"]
+            )
 
         return result

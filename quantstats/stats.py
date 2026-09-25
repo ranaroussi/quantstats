@@ -29,13 +29,14 @@ The module is designed to work with pandas Series and DataFrames containing
 return data, price data, or performance metrics.
 """
 
+from math import ceil as _ceil
+from math import sqrt as _sqrt
 from warnings import warn
-from typing import Literal
-import pandas as _pd
+
 import numpy as _np
-from numpy.typing import NDArray
-from math import ceil as _ceil, sqrt as _sqrt
-from scipy.stats import norm as _norm, linregress as _linregress
+import pandas as _pd
+from scipy.stats import linregress as _linregress
+from scipy.stats import norm as _norm
 
 from . import utils as _utils
 from ._compat import safe_concat
@@ -144,6 +145,7 @@ def distribution(
         >>> dist = distribution(returns)
         >>> print(dist['Daily']['values'])
     """
+
     def get_outliers(data):
         """
         Identify outliers using the IQR method.
@@ -532,6 +534,7 @@ def win_rate(
         >>> wr = win_rate(returns)
         >>> print(f"Win rate: {wr:.2%}")
     """
+
     def _win_rate(series):
         """
         Calculate win rate for a single return series.
@@ -543,7 +546,9 @@ def win_rate(
             # Filter out zero returns (periods with no trading)
             non_zero_returns = series[series != 0]
             if len(non_zero_returns) == 0:
-                warn("No non-zero returns found for win rate calculation, returning 0.0")
+                warn(
+                    "No non-zero returns found for win rate calculation, returning 0.0"
+                )
                 return 0.0
 
             # Calculate ratio of positive returns to non-zero returns
@@ -889,8 +894,10 @@ def sharpe(
 
     # Validate parameters for risk-free rate handling
     if _utils._rf_is_nonzero(rf) and periods is None:
-        raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
-                         "This is needed to properly annualize the risk-free rate.")
+        raise ValueError(
+            "periods parameter is required when risk-free rate (rf) is non-zero. "
+            "This is needed to properly annualize the risk-free rate."
+        )
 
     # Prepare returns (subtract risk-free rate if applicable)
     returns = _utils._prepare_returns(returns, rf, periods)
@@ -1034,8 +1041,10 @@ def sortino(
 
     # Validate parameters for risk-free rate handling
     if _utils._rf_is_nonzero(rf) and periods is None:
-        raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
-                         "This is needed to properly annualize the risk-free rate.")
+        raise ValueError(
+            "periods parameter is required when risk-free rate (rf) is non-zero. "
+            "This is needed to properly annualize the risk-free rate."
+        )
 
     # Prepare returns (subtract risk-free rate if applicable)
     returns = _utils._prepare_returns(returns, rf, periods)
@@ -1445,12 +1454,16 @@ def omega(
 
     # Validate minimum data requirements
     if len(returns) < 2:
-        warn("Insufficient data for omega ratio calculation (need at least 2 returns), returning NaN")
+        warn(
+            "Insufficient data for omega ratio calculation (need at least 2 returns), returning NaN"
+        )
         return _np.nan
 
     # Validate required return parameter
     if required_return <= -1:
-        warn(f"Invalid required_return ({required_return}) for omega ratio, must be > -1, returning NaN")
+        warn(
+            f"Invalid required_return ({required_return}) for omega ratio, must be > -1, returning NaN"
+        )
         return _np.nan
 
     # Prepare returns (subtract risk-free rate if applicable)
@@ -1511,9 +1524,7 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     # for API compatibility but is deliberately not subtracted here, matching
     # long-standing behaviour.
     returns = (
-        _utils._prepare_returns(returns, rf, apply_rf=False)
-        .resample(resolution)
-        .sum()
+        _utils._prepare_returns(returns, rf, apply_rf=False).resample(resolution).sum()
     )
 
     # Calculate absolute sum of negative returns (pain)
@@ -1764,7 +1775,7 @@ def ulcer_performance_index(returns, rf=0):
     """
     # Calculate excess return divided by Ulcer Index
     ulcer = ulcer_index(returns)
-    
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(ulcer, _pd.Series):
         # DataFrame input - element-wise division with zero protection
@@ -1822,7 +1833,7 @@ def serenity_index(returns, rf=0):
 
     # Calculate pitfall measure using conditional value at risk of drawdowns
     std_returns = returns.std()
-    
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(std_returns, _pd.Series):
         # DataFrame input - element-wise operations
@@ -1838,10 +1849,14 @@ def serenity_index(returns, rf=0):
         ulcer_val = ulcer_index(returns)
 
         # Handle cases where these might return Series/array
-        if hasattr(cvar_val, '__len__') and len(cvar_val) == 1:
-            cvar_val = float(cvar_val.iloc[0] if hasattr(cvar_val, 'iloc') else cvar_val[0])
-        if hasattr(ulcer_val, '__len__') and len(ulcer_val) == 1:
-            ulcer_val = float(ulcer_val.iloc[0] if hasattr(ulcer_val, 'iloc') else ulcer_val[0])
+        if hasattr(cvar_val, "__len__") and len(cvar_val) == 1:
+            cvar_val = float(
+                cvar_val.iloc[0] if hasattr(cvar_val, "iloc") else cvar_val[0]
+            )
+        if hasattr(ulcer_val, "__len__") and len(ulcer_val) == 1:
+            ulcer_val = float(
+                ulcer_val.iloc[0] if hasattr(ulcer_val, "iloc") else ulcer_val[0]
+            )
 
         pitfall = -cvar_val / std_returns
         denominator = ulcer_val * pitfall
@@ -1994,7 +2009,9 @@ def conditional_value_at_risk(
         for col in returns.columns:
             col_returns = returns[col]
             # Calculate VaR for this specific column
-            col_var = value_at_risk(col_returns, sigma, confidence, prepare_returns=False)
+            col_var = value_at_risk(
+                col_returns, sigma, confidence, prepare_returns=False
+            )
             below_var = col_returns[col_returns < col_var]
             c_var_col = below_var.mean() if len(below_var) > 0 else _np.nan
             result[col] = c_var_col if not _np.isnan(c_var_col) else col_var
@@ -2071,14 +2088,18 @@ def tail_ratio(returns, cutoff=0.95, prepare_returns=True):
     # Calculate ratio of right tail to left tail
     upper_quantile = returns.quantile(cutoff)
     lower_quantile = returns.quantile(1 - cutoff)
-    
+
     # Handle edge cases: NaN values or zero denominator
     # Check if result is a Series (DataFrame input) or scalar (Series input)
     if isinstance(upper_quantile, _pd.Series):
         # Handle DataFrame input - apply element-wise
         result = _pd.Series(index=upper_quantile.index, dtype=float)
         for col in upper_quantile.index:
-            if _pd.isna(upper_quantile[col]) or _pd.isna(lower_quantile[col]) or lower_quantile[col] == 0:
+            if (
+                _pd.isna(upper_quantile[col])
+                or _pd.isna(lower_quantile[col])
+                or lower_quantile[col] == 0
+            ):
                 result[col] = _np.nan
             else:
                 result[col] = abs(upper_quantile[col] / lower_quantile[col])
@@ -2116,7 +2137,7 @@ def payoff_ratio(returns, prepare_returns=True):
     # Calculate ratio of average win to absolute average loss
     avg_loss_val = avg_loss(returns)
     avg_win_val = avg_win(returns)
-    
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(avg_loss_val, _pd.Series):
         # DataFrame input - element-wise division with zero protection
@@ -2233,7 +2254,7 @@ def profit_factor(returns, prepare_returns=True):
     else:
         # Handle division by zero case
         if losses_sum == 0:
-            return 0.0 if wins_sum == 0 else float('inf')
+            return 0.0 if wins_sum == 0 else float("inf")
         return wins_sum / losses_sum
 
 
@@ -2433,7 +2454,7 @@ def risk_return_ratio(returns, prepare_returns=True):
 
     # Calculate mean return divided by standard deviation
     std = returns.std()
-    
+
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(std, _pd.Series):
         # DataFrame input - element-wise division with zero protection
@@ -2879,21 +2900,29 @@ def compare(
     # Normalize timezone for returns to ensure consistent comparisons
     # Convert to UTC if timezone-aware, then make naive
     # This must happen before prepare_returns to avoid issues
-    if hasattr(returns.index, 'tz') and returns.index.tz is not None:
-        returns = returns.tz_convert('UTC').tz_localize(None)
-    
+    if hasattr(returns.index, "tz") and returns.index.tz is not None:
+        returns = returns.tz_convert("UTC").tz_localize(None)
+
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
     # Normalize benchmark timezone first if it's not a string
     if benchmark is not None and not isinstance(benchmark, str):
-        if hasattr(benchmark.index if isinstance(benchmark, _pd.Series) else benchmark[benchmark.columns[0]].index, 'tz'):
+        if hasattr(
+            benchmark.index
+            if isinstance(benchmark, _pd.Series)
+            else benchmark[benchmark.columns[0]].index,
+            "tz",
+        ):
             if isinstance(benchmark, _pd.Series) and benchmark.index.tz is not None:
-                benchmark = benchmark.tz_convert('UTC').tz_localize(None)
-            elif isinstance(benchmark, _pd.DataFrame) and benchmark[benchmark.columns[0]].index.tz is not None:
+                benchmark = benchmark.tz_convert("UTC").tz_localize(None)
+            elif (
+                isinstance(benchmark, _pd.DataFrame)
+                and benchmark[benchmark.columns[0]].index.tz is not None
+            ):
                 for col in benchmark.columns:
-                    benchmark[col] = benchmark[col].tz_convert('UTC').tz_localize(None)
-    
+                    benchmark[col] = benchmark[col].tz_convert("UTC").tz_localize(None)
+
     # Store original benchmark for proper aggregation
     # This preserves returns that may fall on non-trading days
     if isinstance(benchmark, str):
@@ -2902,11 +2931,15 @@ def compare(
         benchmark_original = benchmark[benchmark.columns[0]].copy()
     else:
         benchmark_original = benchmark.copy() if benchmark is not None else None
-    
+
     # Normalize timezone for benchmark_original as well (in case it was downloaded)
-    if benchmark_original is not None and hasattr(benchmark_original.index, 'tz') and benchmark_original.index.tz is not None:
-        benchmark_original = benchmark_original.tz_convert('UTC').tz_localize(None)
-    
+    if (
+        benchmark_original is not None
+        and hasattr(benchmark_original.index, "tz")
+        and benchmark_original.index.tz is not None
+    ):
+        benchmark_original = benchmark_original.tz_convert("UTC").tz_localize(None)
+
     # Prepare benchmark to match returns index for other calculations
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
@@ -2915,9 +2948,14 @@ def compare(
         # Aggregate returns and use original benchmark for aggregation
         # This ensures we don't lose benchmark returns on non-trading days
         if benchmark_original is not None:
-            benchmark_agg = _utils.aggregate_returns(benchmark_original, aggregate, compounded) * 100
+            benchmark_agg = (
+                _utils.aggregate_returns(benchmark_original, aggregate, compounded)
+                * 100
+            )
         else:
-            benchmark_agg = _utils.aggregate_returns(benchmark, aggregate, compounded) * 100
+            benchmark_agg = (
+                _utils.aggregate_returns(benchmark, aggregate, compounded) * 100
+            )
         returns_agg = _utils.aggregate_returns(returns, aggregate, compounded) * 100
 
         # Create comparison DataFrame
@@ -2938,16 +2976,23 @@ def compare(
         # Aggregate benchmark using original data to preserve non-trading day returns
         if benchmark_original is not None:
             bench = {
-                "Benchmark": _utils.aggregate_returns(benchmark_original, aggregate, compounded) * 100
+                "Benchmark": _utils.aggregate_returns(
+                    benchmark_original, aggregate, compounded
+                )
+                * 100
             }
         else:
             bench = {
-                "Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded) * 100
+                "Benchmark": _utils.aggregate_returns(benchmark, aggregate, compounded)
+                * 100
             }
 
         # Aggregate each strategy column
         strategy = {
-            "Returns_" + str(i): _utils.aggregate_returns(returns[col], aggregate, compounded) * 100
+            "Returns_" + str(i): _utils.aggregate_returns(
+                returns[col], aggregate, compounded
+            )
+            * 100
             for i, col in enumerate(returns.columns)
         }
 
@@ -3023,8 +3068,18 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
 
     # Ensure all months are present in the DataFrame
     for month in [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
     ]:
         if month not in returns.columns:
             returns.loc[:, month] = 0
@@ -3032,15 +3087,27 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     # Order columns by calendar month
     returns = returns[
         [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
         ]
     ]
 
     # Add end-of-year totals if requested
     if eoy:
         returns["eoy"] = _utils.group_returns(
-            original_returns, original_returns.index.year, compounded=compounded  # type: ignore
+            original_returns,
+            original_returns.index.year,
+            compounded=compounded,  # type: ignore
         ).values
 
     # Format column names to uppercase
@@ -3122,7 +3189,7 @@ def drawdown_details(drawdown):
         data = []
         for i, _ in enumerate(starts):
             # Extract drawdown for this period
-            dd = drawdown[starts[i]:ends[i]]
+            dd = drawdown[starts[i] : ends[i]]
 
             # Calculate 99% drawdown (excluding outliers)
             clean_dd = -remove_outliers(-dd, 0.99)
@@ -3130,12 +3197,12 @@ def drawdown_details(drawdown):
             # Compile statistics for this drawdown period
             data.append(
                 (
-                    starts[i],                          # Start date
-                    dd.idxmin(),                       # Valley date (max drawdown)
-                    ends[i],                           # End date
-                    (ends[i] - starts[i]).days + 1,   # Duration in days
-                    dd.min() * 100,                    # Max drawdown %
-                    clean_dd.min() * 100,              # 99% max drawdown %
+                    starts[i],  # Start date
+                    dd.idxmin(),  # Valley date (max drawdown)
+                    ends[i],  # End date
+                    (ends[i] - starts[i]).days + 1,  # Duration in days
+                    dd.min() * 100,  # Max drawdown %
+                    clean_dd.min() * 100,  # 99% max drawdown %
                 )
             )
 
