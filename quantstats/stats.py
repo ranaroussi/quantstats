@@ -1205,7 +1205,7 @@ def probabilistic_ratio(
         rf (float): Risk-free rate (annualized, default: 0.0)
         base (str): Base metric ('sharpe', 'sortino', 'adjusted_sortino')
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Has no effect, since a probability is not annualized (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1219,13 +1219,13 @@ def probabilistic_ratio(
         >>> prob_ratio = probabilistic_ratio(returns, base="sharpe")
         >>> print(f"Probabilistic Sharpe ratio: {prob_ratio:.4f}")
     """
-    # Calculate the base ratio depending on the selected metric
+    # Calculate the base ratio on excess returns, as sharpe() does with rf
     if base.lower() == "sharpe":
-        base = sharpe(series, periods=periods, annualize=False, smart=smart)
+        base = sharpe(series, rf=rf, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "sortino":
-        base = sortino(series, periods=periods, annualize=False, smart=smart)
+        base = sortino(series, rf=rf, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "adjusted_sortino":
-        base = adjusted_sortino(series, periods=periods, annualize=False, smart=smart)
+        base = adjusted_sortino(series, rf=rf, periods=periods, annualize=False, smart=smart)
     else:
         raise ValueError(
             f"Invalid metric '{base}'. Must be one of: 'sharpe', 'sortino', or 'adjusted_sortino'"
@@ -1233,25 +1233,21 @@ def probabilistic_ratio(
 
     # Calculate higher moments for adjustment
     skew_no = skew(series, prepare_returns=False)
-    kurtosis_no = kurtosis(series, prepare_returns=False)
+    # kurtosis() is excess kurtosis; the formula needs raw kurtosis (3 for normal returns)
+    kurtosis_no = kurtosis(series, prepare_returns=False) + 3
 
     n = len(series)
 
-    # Calculate standard error of the ratio incorporating higher moments
-    # Formula accounts for skewness and kurtosis effects on ratio distribution
+    # Standard error of the ratio (Bailey and Lopez de Prado, 2012), which
+    # reduces to Lo's (1 + SR^2 / 2) / (n - 1) for normal returns
     sigma_sr = _np.sqrt(
-        (1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2))
-        / (n - 1)
+        (1 - (skew_no * base) + (((kurtosis_no - 1) / 4) * base**2)) / (n - 1)
     )
 
-    # Calculate standardized ratio and convert to probability
-    ratio = (base - rf) / sigma_sr
-    psr = _norm.cdf(ratio)
+    # Probability that the true ratio exceeds zero
+    psr = _norm.cdf(base / sigma_sr)
 
-    # Annualize if requested
-    if annualize:
-        return psr * (252**0.5)
-
+    # A probability is not annualized, so annualize has no effect
     return psr
 
 
@@ -1273,7 +1269,7 @@ def probabilistic_sharpe_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Has no effect, since a probability is not annualized (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1302,7 +1298,7 @@ def probabilistic_sortino_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Has no effect, since a probability is not annualized (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1331,7 +1327,7 @@ def probabilistic_adjusted_sortino_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Has no effect, since a probability is not annualized (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:

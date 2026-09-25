@@ -271,3 +271,70 @@ class TestEdgeCases:
         result = stats.sharpe(df)
         assert isinstance(result, pd.Series)
         assert len(result) == 2
+
+
+def _series_with_moments(n, mean, std, skew, excess_kurtosis, seed=0):
+    """Monthly returns whose pandas mean, std, skew and kurtosis are exactly these."""
+    from scipy.optimize import least_squares
+
+    rng = np.random.default_rng(seed)
+    x0 = rng.normal(size=n)
+    x0[0] = -4.0 if skew < 0 else 0.0
+
+    def residuals(x):
+        s = pd.Series(x)
+        return [s.skew() - skew, s.kurt() - excess_kurtosis]
+
+    x = least_squares(residuals, x0, xtol=1e-15, ftol=1e-15, gtol=1e-15).x
+    x = (x - x.mean()) / x.std(ddof=1) * std + mean
+    return pd.Series(x, index=pd.date_range("2020-01-31", periods=n, freq="ME"))
+
+
+class TestProbabilisticSharpeRatio:
+    """Test the Probabilistic Sharpe Ratio against Bailey and Lopez de Prado (2012)."""
+
+    # The hedge fund in Lopez de Prado's Sharpe ratio slides: monthly returns with
+    # mean 3.6%, standard deviation 7.9%, skew -2.448 and raw kurtosis 10.164.
+    FUND = dict(mean=0.036, std=0.079, skew=-2.448, excess_kurtosis=10.164 - 3)
+
+    @pytest.mark.parametrize("months, published", [(24, 0.913), (36, 0.953)])
+    def test_matches_published_example(self, months, published):
+        """The published PSR of the fund against a zero benchmark."""
+        returns = _series_with_moments(months, **self.FUND)
+        psr = stats.probabilistic_sharpe_ratio(returns, periods=12)
+        assert round(psr, 3) == published
+
+    def test_normal_returns_use_lo_standard_error(self):
+        """With zero skew and zero excess kurtosis the variance term is 1 + SR^2 / 2."""
+        from scipy.stats import norm
+
+        returns = _series_with_moments(
+            36, mean=0.036, std=0.079, skew=0.0, excess_kurtosis=0.0
+        )
+        sr = returns.mean() / returns.std(ddof=1)
+        expected = norm.cdf(sr * np.sqrt(36 - 1) / np.sqrt(1 + sr**2 / 2))
+        psr = stats.probabilistic_sharpe_ratio(returns, periods=12)
+        assert psr == pytest.approx(expected, abs=1e-12)
+
+    def test_annualize_keeps_a_probability(self):
+        """A probability cannot be annualized."""
+        returns = _series_with_moments(36, **self.FUND)
+        psr = stats.probabilistic_sharpe_ratio(returns, periods=12)
+        assert (
+            stats.probabilistic_sharpe_ratio(returns, periods=12, annualize=True) == psr
+        )
+        assert 0 <= psr <= 1
+
+    def test_rf_is_an_annual_risk_free_rate(self):
+        """rf is subtracted from the returns as in sharpe(), not from the Sharpe ratio."""
+        from scipy.stats import norm
+
+        returns = _series_with_moments(36, **self.FUND)
+        rf = 0.04
+        sr = stats.sharpe(returns, rf=rf, periods=12, annualize=False)
+        g1, raw_kurtosis = returns.skew(), returns.kurt() + 3
+        expected = norm.cdf(
+            sr * np.sqrt(36 - 1) / np.sqrt(1 - g1 * sr + (raw_kurtosis - 1) / 4 * sr**2)
+        )
+        psr = stats.probabilistic_sharpe_ratio(returns, rf=rf, periods=12)
+        assert psr == pytest.approx(expected, abs=1e-12)
