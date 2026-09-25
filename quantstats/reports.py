@@ -66,6 +66,24 @@ except ImportError:
     pass  # IPython not available, display functions won't be used
 
 
+def _rf_scalar(rf):
+    """
+    Reduce a possibly time-varying risk-free rate to a single number.
+
+    Report headers and the "Risk-Free Rate %" row need one value to print.
+    When `rf` is a rate series, the average over the reported period is the
+    honest summary; scalar rates pass through unchanged.
+    """
+    if isinstance(rf, _pd.DataFrame):
+        value = _np.nanmean(rf.to_numpy(dtype=float)) if rf.size else _np.nan
+    elif isinstance(rf, _pd.Series):
+        value = rf.astype(float).mean()
+    else:
+        return float(rf)
+
+    return float(value) if _pd.notna(value) else 0.0
+
+
 def _get_trading_periods(periods_per_year=252):
     """
     Calculate trading periods for different time windows.
@@ -304,7 +322,7 @@ def html(
         if isinstance(benchmark, str):
             # Download the full benchmark data
             benchmark_original = _get_utils().download_returns(benchmark)
-            if rf != 0:
+            if _get_utils()._rf_is_nonzero(rf):
                 benchmark_original = _get_utils().to_excess_returns(
                     benchmark_original, rf, nperiods=periods_per_year
                 )
@@ -360,6 +378,10 @@ def html(
     if isinstance(returns, _pd.Series):
         returns.name = strategy_title
     elif isinstance(returns, _pd.DataFrame):
+        # `strategy_title` defaults to a plain string, which pandas rejects as
+        # a column index. Keep the frame's own column names in that case.
+        if isinstance(strategy_title, str):
+            strategy_title = list(returns.columns)
         returns.columns = strategy_title
 
     # Generate comprehensive performance metrics table
@@ -376,6 +398,7 @@ def html(
         prepare_returns=False,
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
+        match_dates=match_dates,
     )[2:]
 
     # Format metrics table for HTML display
@@ -851,9 +874,10 @@ def full(
     strategy_title = kwargs.get("strategy_title", "Strategy")
     active = kwargs.get("active_returns", False)
 
-    # Handle multiple strategy columns
+    # Handle strategy columns. A plain string is not a valid column index, so
+    # fall back to the frame's own column names for any DataFrame input.
     if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1 and isinstance(strategy_title, str):
+        if isinstance(strategy_title, str):
             strategy_title = list(returns.columns)
 
     # Set names for display purposes
@@ -903,6 +927,7 @@ def full(
                 prepare_returns=False,
                 benchmark_title=benchmark_title,
                 strategy_title=strategy_title,
+                match_dates=match_dates,
             )
         )
 
@@ -949,6 +974,7 @@ def full(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
         print("\n\n")
         print("[Worst 5 Drawdowns]\n")
@@ -1088,6 +1114,7 @@ def basic(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
     else:
@@ -1111,6 +1138,7 @@ def basic(
             prepare_returns=False,
             benchmark_title=benchmark_title,
             strategy_title=strategy_title,
+            match_dates=match_dates,
         )
 
         print("\n\n")
@@ -1215,12 +1243,13 @@ def metrics(
                 "but a multi-column DataFrame was passed"
             )
 
-    # Handle strategy column naming for multiple strategies
+    # Handle strategy column naming for multiple strategies. `blank` has to be
+    # sized for every DataFrame, not just multi-column ones: a one-column
+    # frame used to fall through here and raise UnboundLocalError later.
     if isinstance(returns, _pd.DataFrame):
-        if len(returns.columns) > 1:
-            blank = [""] * len(returns.columns)
-            if isinstance(strategy_colname, str):
-                strategy_colname = list(returns.columns)
+        blank = [""] * len(returns.columns)
+        if len(returns.columns) > 1 and isinstance(strategy_colname, str):
+            strategy_colname = list(returns.columns)
     else:
         blank = [""]
 
@@ -1266,7 +1295,7 @@ def metrics(
     if isinstance(returns, _pd.Series):
         s_start = {"returns": df["returns"].index.strftime("%Y-%m-%d")[0]}
         s_end = {"returns": df["returns"].index.strftime("%Y-%m-%d")[-1]}
-        s_rf = {"returns": rf}
+        s_rf = {"returns": _rf_scalar(rf)}
     elif isinstance(returns, _pd.DataFrame):
         df_strategy_columns = [col for col in df.columns if col != "benchmark"]
         s_start = {
@@ -1277,13 +1306,13 @@ def metrics(
             strategy_col: df[strategy_col].dropna().index.strftime("%Y-%m-%d")[-1]
             for strategy_col in df_strategy_columns
         }
-        s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
+        s_rf = {strategy_col: _rf_scalar(rf) for strategy_col in df_strategy_columns}
 
     # Add benchmark dates if present
     if "benchmark" in df:
         s_start["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[0]
         s_end["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[-1]
-        s_rf["benchmark"] = rf
+        s_rf["benchmark"] = _rf_scalar(rf)
 
     # Fill missing values with zeros for calculations
     df = df.fillna(0)
@@ -1434,14 +1463,21 @@ def metrics(
             elif isinstance(returns, _pd.DataFrame):
                 metrics["Volatility (ann.) %"] = ret_vol
 
-        # Additional risk and return metrics
-        metrics["Calmar"] = _get_stats().calmar(df, prepare_returns=False, periods=win_year)
+        # Additional risk and return metrics. Calmar and RaR are CAGR-based,
+        # so they follow the report's `compounded` setting like the annualized
+        # return rows above; otherwise metrics(compounded=False) would mix a
+        # geometric numerator into an arithmetic report.
+        metrics["Calmar"] = _get_stats().calmar(
+            df, prepare_returns=False, compounded=compounded, periods=win_year
+        )
         metrics["Skew"] = _get_stats().skew(df, prepare_returns=False)
         metrics["Kurtosis"] = _get_stats().kurtosis(df, prepare_returns=False)
 
         # Additional ratios
         metrics["Ulcer Performance Index"] = _get_stats().ulcer_performance_index(df, rf)
-        metrics["Risk-Adjusted Return %"] = _get_stats().rar(df, rf) * pct
+        metrics["Risk-Adjusted Return %"] = (
+            _get_stats().rar(df, rf, compounded=compounded) * pct
+        )
         metrics["Risk-Return Ratio"] = _get_stats().risk_return_ratio(df, prepare_returns=False)
 
         # Add separator
@@ -1555,7 +1591,9 @@ def metrics(
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
 
-    d = today - relativedelta(years=10)
+    # 119 months, not 10 years: the 3Y and 5Y windows above use months=35 and
+    # months=59, so a plain years=10 made this window one month wider.
+    d = today - relativedelta(months=119)
     metrics["10Y (ann.) %"] = (
         _get_stats().cagr(df[df.index >= d], 0.0, compounded, win_year) * pct
     )
@@ -1802,7 +1840,7 @@ def metrics(
         params_data = {
             "Parameter": ["Risk-Free Rate", "Periods/Year", "Compounded", "Match Dates"],
             "Value": [
-                f"{rf:.1%}" if rf != 0 else "0.0%",
+                f"{_rf_scalar(rf):.1%}",
                 str(periods_per_year),
                 "Yes" if compounded else "No",
                 "Yes" if match_dates else "No",
@@ -2238,6 +2276,15 @@ def _calc_dd(df, display=True, as_pct=False):
         ]
     else:
         ret_dd = dd_info
+
+    # A single strategy column that is not literally named "returns" still
+    # arrives here with a MultiIndex, e.g. ("Strategy", "max drawdown"). The
+    # single-strategy branch below indexes by "max drawdown" alone, so drop
+    # the now-redundant outer level first.
+    if isinstance(ret_dd.columns, _pd.MultiIndex):
+        strategy_levels = ret_dd.columns.get_level_values(0).unique()
+        if len(strategy_levels) == 1:
+            ret_dd = ret_dd.xs(strategy_levels[0], axis=1, level=0)
 
     # Calculate drawdown statistics based on data structure
     if (

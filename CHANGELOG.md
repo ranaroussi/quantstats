@@ -1,6 +1,94 @@
 Changelog
 ===========
 
+0.0.82
+------
+
+**Correctness fixes**
+
+- Fixed `max_drawdown()` and `to_drawdown_series()` returning drawdowns that
+  depended on the price level of the input (#541). The baseline is now taken
+  from whether the series was rebuilt from returns or was a real price series,
+  instead of guessing from magnitude thresholds. A price series scaled by any
+  constant now reports the same drawdown.
+- Fixed `_prepare_prices()` filling a missing price with `0`, which reported a
+  spurious -100% drawdown for any gapped price series (#545). Gaps now carry
+  the last known price forward.
+- Fixed weekly aggregation raising `AttributeError: 'DatetimeIndex' object has
+  no attribute 'week'` on pandas >= 2.0 (#533). `aggregate_returns()` now uses
+  `isocalendar().week` for the `"week"`, `"eow"` and `"W"` periods.
+- Fixed `cagr(compounded=False)` turning a loss worse than -100% into a
+  positive return (#548). Terminal wealth at or below zero now yields `NaN`
+  rather than a value produced by taking a root of a negative number.
+- Fixed the prepared-returns cache returning a DataFrame to a caller that
+  passed a Series (#544). Container type, column names, dtypes and the
+  risk-free flag are now part of the cache key.
+- Fixed `information_ratio()` preparing the benchmark twice, which re-ran
+  price/return detection on already-normalized data.
+- Fixed `rolling_volatility()` passing its rolling period into the risk-free
+  rate argument.
+
+**Statistical corrections**
+
+- Fixed `probabilistic_sharpe_ratio()` / `probabilistic_ratio()` (#551):
+  the raw-kurtosis formula was being fed excess kurtosis, the estimator
+  standard error now follows Bailey & Lopez de Prado, and `rf` is routed into
+  the underlying Sharpe/Sortino rather than dropped. The `annualize` argument
+  is documented as inert; it never affected the result.
+- **Behavior change:** `kelly_criterion()` now divides by the average loss,
+  giving the position size the Kelly formula actually defines. The previous
+  result was scale-invariant and therefore dimensionally wrong; returned
+  values will differ in magnitude from 0.0.81 and earlier.
+- `autocorr_penalty()` now guards against series shorter than two
+  observations and zero-variance input instead of emitting a numpy
+  `RuntimeWarning` and propagating `NaN` (#525).
+
+**API**
+
+- `calmar()` and `rar()` accept a `compounded` flag (#512), and
+  `reports.metrics()` threads its own `compounded` setting into both.
+- Report risk-free rates may now be a `pd.Series` of time-varying rates
+  (#524). Rates are aligned onto the return dates, carried forward across
+  gaps, and subtracted row-wise for DataFrame input. The reported
+  "Risk-Free Rate" row shows the average over the period.
+- `reports.html()`, `reports.full()` and `reports.basic()` now forward
+  `match_dates` to `metrics()` (#536), so the table and the plots describe
+  the same date range.
+
+**Crash fixes**
+
+- Fixed `reports.metrics()` raising `UnboundLocalError` for a single-column
+  DataFrame.
+- Fixed `reports.html()` and `reports.full()` raising `TypeError` when given a
+  DataFrame together with a string `strategy_title`.
+- Fixed a `KeyError` in the drawdown table when the metrics frame came back
+  with a single-level MultiIndex.
+- `sharpe()`, `sortino()`, `rolling_sharpe()` and `rolling_sortino()` no
+  longer raise "truth value of a Series is ambiguous" when `rf` is a Series.
+
+**Reports**
+
+- Fixed the "10Y (ann.)" column covering eleven calendar years (#523).
+
+**Internals**
+
+- `_prepare_returns()` no longer inspects the call stack (`inspect.stack()`)
+  to decide whether to apply the risk-free rate; callers pass an explicit
+  `apply_rf` argument.
+
+**CI**
+
+- Repaired the test workflow, which was disabled and pointed at
+  `test_fixes.py` and `tests/test_compatibility.py` (#540) - neither file has
+  existed for several releases. It now runs `pytest tests/` across a
+  Python 3.10-3.13 x pandas x numpy matrix, plus a latest-versions job and a
+  ruff lint job.
+- Repaired the publish workflow, which still called `python setup.py`;
+  `setup.py` was removed in 0.0.78 in favour of pyproject.toml + hatchling.
+- Bumped `actions/checkout` and `actions/setup-python` to v7 (#526, #534).
+- Removed the abandoned `.travis.yml` (Python 3.6-3.9, `nosetests`).
+- Added a regression test module covering every fix above.
+
 0.0.81
 ------
 

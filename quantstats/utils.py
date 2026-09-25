@@ -22,7 +22,6 @@ import pandas as _pd
 import numpy as _np
 from ._compat import safe_yfinance_download
 from ._compat import safe_concat, safe_resample
-import inspect
 import threading
 
 # Type alias for return data
@@ -107,7 +106,7 @@ _CACHE_MAX_SIZE = 100
 _cache_lock = threading.Lock()
 
 
-def _generate_cache_key(data, rf, nperiods):
+def _generate_cache_key(data, rf, nperiods, apply_rf=True):
     """
     Generate a cache key for the _prepare_returns function
 
@@ -119,6 +118,8 @@ def _generate_cache_key(data, rf, nperiods):
         Risk-free rate parameter
     nperiods : int
         Number of periods parameter
+    apply_rf : bool
+        Whether excess returns are computed for this call
 
     Returns
     -------
@@ -126,16 +127,27 @@ def _generate_cache_key(data, rf, nperiods):
         Cache key string or None if hashing fails
     """
     try:
-        # Create a hash from the data
+        # hash_pandas_object() hashes values only, so a Series and a
+        # one-column DataFrame holding the same numbers collide. Fold the
+        # container type, column names and dtypes into the key as well, or a
+        # cached DataFrame gets handed back to a caller that passed a Series.
         if isinstance(data, _pd.Series):
             data_hash = _pd.util.hash_pandas_object(data).sum()
+            metadata = ("Series", repr(data.name), str(data.dtype))
         elif isinstance(data, _pd.DataFrame):
             data_hash = _pd.util.hash_pandas_object(data).sum()
+            metadata = (
+                "DataFrame",
+                tuple(repr(col) for col in data.columns),
+                tuple(str(dtype) for dtype in data.dtypes),
+            )
         else:
             data_hash = hash(str(data))
+            metadata = (type(data).__name__,)
 
-        # Include parameters in the key
-        key = f"{data_hash}_{rf}_{nperiods}"
+        # apply_rf belongs in the key too: identical data/rf/nperiods can be
+        # requested both with and without the excess-return adjustment.
+        key = f"{data_hash}_{metadata}_{rf}_{nperiods}_{apply_rf}"
         return key
     except (ValueError, TypeError, AttributeError, MemoryError):
         # If hashing fails, return None to skip caching
@@ -482,12 +494,20 @@ def aggregate_returns(returns: Returns, period: str | None = None, compounded: b
         return group_returns(returns, index.year, compounded=compounded)
 
     # Group by week
+    # ``DatetimeIndex.week`` was removed in pandas 2.0; ``isocalendar().week``
+    # is the ISO week number it was an alias for.
     if "week" in period:
-        return group_returns(returns, index.week, compounded=compounded)
+        return group_returns(
+            returns, index.isocalendar().week, compounded=compounded
+        )
 
     # End of week grouping
     if "eow" in period or period == "W":
-        return group_returns(returns, [index.year, index.week], compounded=compounded)
+        return group_returns(
+            returns,
+            [index.year, index.isocalendar().week],
+            compounded=compounded,
+        )
 
     # End of month grouping
     if "eom" in period or period == "ME":
@@ -524,19 +544,57 @@ def to_excess_returns(returns: Returns, rf: float, nperiods: int | None = None) 
     if isinstance(rf, int):
         rf = float(rf)
 
-    # Align rf with returns index if rf is a series/dataframe
-    if not isinstance(rf, float):
-        rf = rf[rf.index.isin(returns.index)]  # type: ignore
+    # Align a time-varying rf onto the return dates. Reindexing (rather than
+    # filtering) means every return date carries a rate; gaps take the last
+    # published rate, which is how a rate series behaves between prints.
+    if isinstance(rf, (_pd.Series, _pd.DataFrame)):
+        rf = rf.reindex(returns.index).ffill().bfill().fillna(0.0)  # type: ignore
 
     # Deannualize rf if nperiods is provided
     if nperiods is not None:
         # deannualize
         rf = _np.power(1 + rf, 1.0 / nperiods) - 1.0
 
-    # Calculate excess returns
-    df = returns - rf
-    df = df.tz_localize(None)
+    # A Series rf has to be subtracted row-wise. A plain `-` would align it
+    # against the *columns* of a DataFrame and produce an all-NaN frame.
+    if isinstance(returns, _pd.DataFrame) and isinstance(rf, _pd.Series):
+        df = returns.sub(rf, axis=0)
+    else:
+        df = returns - rf
+
+    if hasattr(df.index, "tz") and df.index.tz is not None:
+        df = df.tz_convert("UTC").tz_localize(None)
     return df
+
+
+def _looks_like_returns(data):
+    """
+    Report whether `data` will be read as returns rather than prices.
+
+    This is the same test `_prepare_prices()` applies when deciding what to
+    convert, exposed on its own so callers can tell whether the prices they
+    got back were rebuilt from returns or were prices to begin with.
+    Drawdown needs that distinction: rebuilt prices start from a known
+    baseline, while a real price series starts at its first print.
+
+    Parameters
+    ----------
+    data : pd.Series or pd.DataFrame
+        Input data (returns or prices)
+
+    Returns
+    -------
+    bool or pd.Series
+        A bool for Series input, a per-column bool Series for DataFrame input
+    """
+    if isinstance(data, _pd.DataFrame):
+        flags = {}
+        for col in data.columns:
+            col_clean = data[col].dropna()
+            flags[col] = bool(col_clean.min() <= 0 or col_clean.max() < 1)
+        return _pd.Series(flags, dtype=bool)
+
+    return bool(data.min() < 0 or data.max() < 1)
 
 
 def _prepare_prices(data, base=1.0):
@@ -556,22 +614,22 @@ def _prepare_prices(data, base=1.0):
         Cleaned price data
     """
     data = data.copy()
+    looks_like_returns = _looks_like_returns(data)
+
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            # Cache dropna operation to avoid repeated computation
-            col_clean = data[col].dropna()
-            # Check if data looks like returns (negative values or values < 1)
-            if col_clean.min() <= 0 or col_clean.max() < 1:
+            if looks_like_returns[col]:
                 data[col] = to_prices(data[col], base)
 
-    # Check if series looks like returns data
-    # elif data.min() < 0 and data.max() < 1:
-    elif data.min() < 0 or data.max() < 1:
+    elif looks_like_returns:
         data = to_prices(data, base)
 
-    # Clean data by filling NaN and replacing infinite values
+    # These are prices, not returns, so a missing observation must not become
+    # 0: that asserts the asset was worth nothing that day and shows up as a
+    # -100% drawdown. Carry the last known price forward instead, and
+    # back-fill a leading gap so the series starts flat rather than at zero.
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
-        data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
+        data = data.replace([_np.inf, -_np.inf], float("NaN")).ffill().bfill()
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive
@@ -580,7 +638,19 @@ def _prepare_prices(data, base=1.0):
     return data
 
 
-def _prepare_returns(data, rf=0.0, nperiods=None):
+def _rf_is_nonzero(rf):
+    """
+    Whether `rf` asks for an excess-return adjustment.
+
+    A plain `rf > 0` raises "truth value of a Series is ambiguous" once rf is
+    a time-varying rate, so array-likes are reduced to a single bool first.
+    """
+    if isinstance(rf, (_pd.Series, _pd.DataFrame)):
+        return bool((rf.fillna(0) != 0).to_numpy().any())
+    return rf > 0
+
+
+def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
     """
     Convert price data into returns and perform cleanup
 
@@ -588,10 +658,18 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     ----------
     data : pd.Series or pd.DataFrame
         Input data (prices or returns)
-    rf : float, default 0.0
-        Risk-free rate
+    rf : float or pd.Series, default 0.0
+        Risk-free rate. A Series is treated as a time-varying rate and is
+        aligned to `data` by date.
     nperiods : int, optional
         Number of periods for risk-free rate conversion
+    apply_rf : bool, default True
+        Whether `rf` should be subtracted here to produce excess returns.
+        Callers that accept `rf` for some other purpose, or whose caller
+        already applied it, pass False. This used to be inferred from the
+        calling function's name through inspect.stack(), which meant the
+        result depended on who called rather than on what was asked for,
+        and could not be overridden.
 
     Returns
     -------
@@ -599,15 +677,13 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
         Cleaned returns data
     """
     # Try to get from cache first
-    cache_key = _generate_cache_key(data, rf, nperiods)
+    cache_key = _generate_cache_key(data, rf, nperiods, apply_rf)
     if cache_key:
         with _cache_lock:
             if cache_key in _PREPARE_RETURNS_CACHE:
                 return _PREPARE_RETURNS_CACHE[cache_key].copy()
 
     data = data.copy()
-    # Get calling function name for conditional processing
-    function = inspect.stack()[1][3]
 
     # Process DataFrame columns
     if isinstance(data, _pd.DataFrame):
@@ -628,24 +704,17 @@ def _prepare_returns(data, rf=0.0, nperiods=None):
     if isinstance(data, (_pd.DataFrame, _pd.Series)):
         data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
 
-    # Functions that don't need excess returns calculation
-    unnecessary_function_calls = [
-        "_prepare_benchmark",
-        "cagr",
-        "gain_to_pain_ratio",
-        "rolling_volatility",
-    ]
-
-    # Calculate excess returns if rf > 0 and function needs it
-    if function not in unnecessary_function_calls:
-        if rf > 0:
-            result = to_excess_returns(data, rf, nperiods)
-            # Cache the result
-            if cache_key:
-                _clear_cache_if_full()
-                with _cache_lock:
-                    _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
-            return result
+    # Calculate excess returns when the caller asked for them
+    if apply_rf and _rf_is_nonzero(rf):
+        result = to_excess_returns(data, rf, nperiods)
+        if hasattr(result.index, "tz") and result.index.tz is not None:
+            result = result.tz_convert("UTC").tz_localize(None)
+        # Cache the result
+        if cache_key:
+            _clear_cache_if_full()
+            with _cache_lock:
+                _PREPARE_RETURNS_CACHE[cache_key] = result.copy()
+        return result
 
     # Normalize timezone information for consistency
     # Convert to UTC if timezone-aware, then make naive
@@ -737,9 +806,11 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         benchmark = benchmark.tz_convert('UTC').tz_localize(None)
     # If already timezone-naive, no action needed
 
-    # Prepare returns or return raw data
+    # Prepare returns or return raw data. The benchmark is never converted to
+    # excess returns here: callers subtract rf from strategy and benchmark
+    # themselves where the comparison calls for it.
     if prepare_returns:
-        return _prepare_returns(benchmark.dropna(), rf=rf)
+        return _prepare_returns(benchmark.dropna(), rf=rf, apply_rf=False)
     return benchmark.dropna()
 
 

@@ -16,3 +16,6 @@ Icon
 CLAUDE.md
 .DS_Store
 .claude/settings.local.json
+
+# Environment files (may contain secrets)
+.env

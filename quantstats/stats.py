@@ -749,7 +749,11 @@ def rolling_volatility(
         >>> print(rolling_vol)
     """
     if prepare_returns:
-        returns = _utils._prepare_returns(returns, rolling_period)
+        # This used to pass `rolling_period` positionally into the `rf` slot.
+        # It was harmless only because the old inspect.stack() exclusion list
+        # stopped rf being applied for this function; spelled out, there is no
+        # risk-free adjustment here at all.
+        returns = _utils._prepare_returns(returns)
 
     # Calculate rolling standard deviation and annualize
     return returns.rolling(rolling_period).std() * _np.sqrt(periods_per_year)
@@ -820,11 +824,22 @@ def autocorr_penalty(
     if isinstance(returns, _pd.DataFrame):
         returns = returns[returns.columns[0]]
 
-    # returns.to_csv('/Users/ran/Desktop/test.csv')
     num = len(returns)
 
-    # Calculate autocorrelation coefficient between consecutive returns
-    coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
+    # corrcoef needs at least two points to be defined; below that it returns
+    # NaN with a RuntimeWarning, so fall back to the neutral penalty.
+    if num < 2:
+        return 1.0
+
+    # Calculate autocorrelation coefficient between consecutive returns.
+    # Constant (zero-variance) returns divide by a zero standard deviation
+    # here, so suppress the warning and handle the resulting NaN below.
+    with _np.errstate(invalid="ignore", divide="ignore"):
+        coef = _np.abs(_np.corrcoef(returns[:-1], returns[1:])[0, 1])
+
+    # A NaN coefficient would otherwise propagate silently through the sum.
+    if _np.isnan(coef):
+        return 1.0
 
     # Vectorized calculation instead of list comprehension
     x = _np.arange(1, num)
@@ -873,7 +888,7 @@ def sharpe(
     validate_input(returns)
 
     # Validate parameters for risk-free rate handling
-    if rf != 0 and periods is None:
+    if _utils._rf_is_nonzero(rf) and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
                          "This is needed to properly annualize the risk-free rate.")
 
@@ -963,7 +978,7 @@ def rolling_sharpe(
         >>> print(rolling_sharpe_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if rf != 0 and rolling_period is None:
+    if _utils._rf_is_nonzero(rf) and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
     if prepare_returns:
@@ -1018,7 +1033,7 @@ def sortino(
     validate_input(returns)
 
     # Validate parameters for risk-free rate handling
-    if rf != 0 and periods is None:
+    if _utils._rf_is_nonzero(rf) and periods is None:
         raise ValueError("periods parameter is required when risk-free rate (rf) is non-zero. "
                          "This is needed to properly annualize the risk-free rate.")
 
@@ -1114,7 +1129,7 @@ def rolling_sortino(
         >>> print(rolling_sortino_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if rf != 0 and rolling_period is None:
+    if _utils._rf_is_nonzero(rf) and rolling_period is None:
         raise Exception("Must provide periods if rf != 0")
 
     if kwargs.get("prepare_returns", True):
@@ -1205,7 +1220,8 @@ def probabilistic_ratio(
         rf (float): Risk-free rate (annualized, default: 0.0)
         base (str): Base metric ('sharpe', 'sortino', 'adjusted_sortino')
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Deprecated and ignored. A probability has no
+            annualized form (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1219,38 +1235,39 @@ def probabilistic_ratio(
         >>> prob_ratio = probabilistic_ratio(returns, base="sharpe")
         >>> print(f"Probabilistic Sharpe ratio: {prob_ratio:.4f}")
     """
-    # Calculate the base ratio depending on the selected metric
+    # Calculate the base ratio on excess returns, the same way sharpe() and
+    # sortino() handle rf. rf used to be ignored here and then subtracted from
+    # the finished ratio, which mixed an annualized rate into a per-period
+    # statistic.
     if base.lower() == "sharpe":
-        base = sharpe(series, periods=periods, annualize=False, smart=smart)
+        base = sharpe(series, rf=rf, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "sortino":
-        base = sortino(series, periods=periods, annualize=False, smart=smart)
+        base = sortino(series, rf=rf, periods=periods, annualize=False, smart=smart)
     elif base.lower() == "adjusted_sortino":
-        base = adjusted_sortino(series, periods=periods, annualize=False, smart=smart)
+        base = adjusted_sortino(
+            series, rf=rf, periods=periods, annualize=False, smart=smart
+        )
     else:
         raise ValueError(
             f"Invalid metric '{base}'. Must be one of: 'sharpe', 'sortino', or 'adjusted_sortino'"
         )
 
-    # Calculate higher moments for adjustment
+    # Calculate higher moments for adjustment. kurtosis() returns *excess*
+    # kurtosis; the estimator below is defined on raw kurtosis (3 under
+    # normality), so convert rather than subtracting 3 a second time.
     skew_no = skew(series, prepare_returns=False)
-    kurtosis_no = kurtosis(series, prepare_returns=False)
+    kurtosis_no = kurtosis(series, prepare_returns=False) + 3
 
     n = len(series)
 
-    # Calculate standard error of the ratio incorporating higher moments
-    # Formula accounts for skewness and kurtosis effects on ratio distribution
+    # Standard error of the ratio (Bailey & Lopez de Prado, 2012). Reduces to
+    # Lo's (1 + SR^2 / 2) / (n - 1) for normally distributed returns.
     sigma_sr = _np.sqrt(
-        (1 + (0.5 * base**2) - (skew_no * base) + (((kurtosis_no - 3) / 4) * base**2))
-        / (n - 1)
+        (1 - (skew_no * base) + (((kurtosis_no - 1) / 4) * base**2)) / (n - 1)
     )
 
-    # Calculate standardized ratio and convert to probability
-    ratio = (base - rf) / sigma_sr
-    psr = _norm.cdf(ratio)
-
-    # Annualize if requested
-    if annualize:
-        return psr * (252**0.5)
+    # Probability that the true ratio is greater than zero
+    psr = _norm.cdf(base / sigma_sr)
 
     return psr
 
@@ -1273,7 +1290,8 @@ def probabilistic_sharpe_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Deprecated and ignored. A probability has no
+            annualized form (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1302,7 +1320,8 @@ def probabilistic_sortino_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Deprecated and ignored. A probability has no
+            annualized form (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1331,7 +1350,8 @@ def probabilistic_adjusted_sortino_ratio(
         series (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
         periods (int): Periods per year for annualization (default: 252)
-        annualize (bool): Whether to annualize the result (default: False)
+        annualize (bool): Deprecated and ignored. A probability has no
+            annualized form (default: False)
         smart (bool): Whether to apply autocorrelation penalty (default: False)
 
     Returns:
@@ -1487,8 +1507,14 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     Note:
         See here for more info: https://archive.is/wip/2rwFW
     """
-    # Prepare returns and resample to specified frequency
-    returns = _utils._prepare_returns(returns, rf).resample(resolution).sum()
+    # Prepare returns and resample to specified frequency. `rf` is accepted
+    # for API compatibility but is deliberately not subtracted here, matching
+    # long-standing behaviour.
+    returns = (
+        _utils._prepare_returns(returns, rf, apply_rf=False)
+        .resample(resolution)
+        .sum()
+    )
 
     # Calculate absolute sum of negative returns (pain)
     downside = abs(returns[returns < 0].sum())
@@ -1533,8 +1559,9 @@ def cagr(
     """
     validate_input(returns)
 
-    # Prepare returns (subtract risk-free rate if applicable)
-    total = _utils._prepare_returns(returns, rf)
+    # `rf` is accepted for API compatibility but is not subtracted here,
+    # matching long-standing behaviour.
+    total = _utils._prepare_returns(returns, rf, apply_rf=False)
 
     # Calculate total return
     if compounded:
@@ -1547,8 +1574,15 @@ def cagr(
     # handle annualization in quantstats
     years = len(returns) / periods
 
-    # Calculate CAGR using geometric mean formula
-    res = abs(total + 1.0) ** (1.0 / years) - 1
+    # Geometric growth rate. Terminal wealth below zero is reachable with
+    # compounded=False once summed returns pass -100%; it has no real-valued
+    # growth rate, so report NaN. Taking abs() here used to turn a total
+    # wipeout into a positive CAGR.
+    wealth = _np.asarray(total + 1.0, dtype=float)
+    with _np.errstate(invalid="ignore"):
+        res = _np.where(wealth < 0, _np.nan, _np.abs(wealth) ** (1.0 / years) - 1)
+    if res.ndim == 0:
+        res = float(res)
 
     # Handle DataFrame input
     if isinstance(returns, _pd.DataFrame):
@@ -1558,7 +1592,7 @@ def cagr(
     return res
 
 
-def rar(returns, rf=0.0):
+def rar(returns, rf=0.0, compounded=True):
     """
     Calculate the Risk-Adjusted Return (RAR).
 
@@ -1569,6 +1603,8 @@ def rar(returns, rf=0.0):
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
+        compounded (bool): Whether to compound returns (default: True).
+            Set to False for intraday or other non-compounded return streams.
 
     Returns:
         float: Risk-adjusted return
@@ -1582,7 +1618,7 @@ def rar(returns, rf=0.0):
     returns = _utils._prepare_returns(returns, rf)
 
     # Calculate CAGR and divide by exposure time
-    return cagr(returns) / exposure(returns)
+    return cagr(returns, compounded=compounded) / exposure(returns)
 
 
 def skew(returns, prepare_returns=True):
@@ -1642,6 +1678,7 @@ def kurtosis(returns, prepare_returns=True):
 def calmar(
     returns: Returns,
     prepare_returns: bool = True,
+    compounded: bool = True,
     periods: int = 252,
 ) -> float:
     """
@@ -1654,6 +1691,8 @@ def calmar(
     Args:
         returns (pd.Series): Return series to analyze
         prepare_returns (bool): Whether to prepare returns first (default: True)
+        compounded (bool): Whether to compound returns (default: True).
+            Set to False for intraday or other non-compounded return streams.
         periods (int): Periods per year for annualization (default: 252)
 
     Returns:
@@ -1670,7 +1709,7 @@ def calmar(
         returns = _utils._prepare_returns(returns)
 
     # Calculate CAGR and maximum drawdown
-    cagr_ratio = cagr(returns, periods=periods)
+    cagr_ratio = cagr(returns, compounded=compounded, periods=periods)
     max_dd = max_drawdown(returns)
 
     # Return ratio of CAGR to absolute maximum drawdown
@@ -2406,46 +2445,42 @@ def risk_return_ratio(returns, prepare_returns=True):
         return returns.mean() / std
 
 
-def _get_baseline_value(prices):
+def _get_baseline_value(prices, from_returns):
     """
     Determine the appropriate baseline value for drawdown calculations.
 
-    This function analyzes the price series to determine the correct baseline
-    value that should represent "no drawdown" (i.e., the starting equity).
+    The baseline is the equity held immediately before the first observation,
+    so that a loss in the very first period is not hidden by treating that
+    period's close as the running peak.
+
+    Returns rebuilt by _prepare_prices() are priced as base * (1 + compsum)
+    with base 1.0, so 1.0 is exactly the equity they started from. A series
+    that was already prices carries no such earlier point: its first
+    observation *is* the start of the record, and any other baseline invents
+    a peak the portfolio never reached. The previous implementation guessed
+    from the price level (>1000 -> 1e5, >10 -> 100.0), which reported a 50%
+    drawdown for a $50 stock and 95% for a $5000 one.
 
     Args:
-        prices (pd.Series): Price series
+        prices (pd.Series | pd.DataFrame): Price series
+        from_returns (bool | pd.Series): Whether the prices were rebuilt from
+            returns; per column for DataFrame input
 
     Returns:
-        float: Baseline value for drawdown calculations
+        float | pd.Series: Baseline value(s) for drawdown calculations
     """
     if len(prices) == 0:
         return 1.0
 
-    # Handle both Series and DataFrame cases
     if isinstance(prices, _pd.DataFrame):
-        # If prices is a DataFrame, ensure it has at least one column
         if prices.shape[1] == 0:
             return 1.0  # Default baseline for empty DataFrame with no columns
-        # Get the first value of the first column
-        first_price = prices.iat[0, 0]
-    else:
-        # If prices is a Series, get the first value directly
-        first_price = prices.iloc[0]
+        # Baseline per column, since columns may be on different scales
+        converted = _pd.Series(from_returns, index=prices.columns, dtype=bool)
+        return prices.iloc[0].mask(converted, 1.0)
 
-    # If the first price is much larger than 1, it's likely from to_prices conversion
-    # The to_prices function uses base * (1 + compsum), so we determine the appropriate baseline
-    if first_price > 1000:
-        # This suggests it came from to_prices with a large base (default 1e5)
-        # However, we should use a more reasonable baseline for drawdown calculations
-        # We'll use the same scale as the prices but represent the "no loss" baseline
-        return 1e5
-    elif first_price > 10:
-        # Smaller base value scale
-        return 100.0
-    else:
-        # Normal price scale, use 1.0 as baseline
-        return 1.0
+    # For a Series, the first value is the start of the record
+    return 1.0 if bool(from_returns) else prices.iloc[0]
 
 
 def max_drawdown(prices: Returns) -> float:
@@ -2469,6 +2504,10 @@ def max_drawdown(prices: Returns) -> float:
     """
     validate_input(prices)
 
+    # Record whether these were returns *before* the conversion, so the
+    # baseline below knows if there is a known starting equity
+    from_returns = _utils._looks_like_returns(prices)
+
     # Prepare prices (convert from returns if needed)
     prices = _utils._prepare_prices(prices)
 
@@ -2485,7 +2524,7 @@ def max_drawdown(prices: Returns) -> float:
     phantom_date = prices.index[0] - time_delta
 
     # Determine appropriate baseline value
-    baseline_value = _get_baseline_value(prices)
+    baseline_value = _get_baseline_value(prices, from_returns)
 
     # Create extended series with phantom baseline
     extended_prices = prices.copy()
@@ -2517,6 +2556,9 @@ def to_drawdown_series(returns):
     """
     validate_input(returns)
 
+    # Record whether these were returns *before* the conversion
+    from_returns = _utils._looks_like_returns(returns)
+
     # Convert returns to prices
     prices = _utils._prepare_prices(returns)
 
@@ -2533,7 +2575,7 @@ def to_drawdown_series(returns):
     phantom_date = prices.index[0] - time_delta
 
     # Determine appropriate baseline value
-    baseline_value = _get_baseline_value(prices)
+    baseline_value = _get_baseline_value(prices, from_returns)
 
     # Create extended series with phantom baseline
     extended_prices = prices.copy()
@@ -2555,24 +2597,41 @@ def kelly_criterion(returns, prepare_returns=True):
     Calculates the recommended maximum amount of capital that
     should be allocated to the given strategy, based on the
     Kelly Criterion (http://en.wikipedia.org/wiki/Kelly_criterion)
+
+    For a two-outcome return series the growth-optimal fraction is
+    f* = win_prob / |avg_loss| - lose_prob / avg_win, which factors into
+    (win_prob - lose_prob / win_loss_ratio) / |avg_loss|.
+
+    The trailing division by the average-loss magnitude is what converts the
+    (scale-invariant) win/loss ratio into an actual capital fraction. Without
+    it the result is the fixed-odds formula, off by a factor of |avg_loss|,
+    and does not change when the return series is rescaled.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     win_loss_ratio = payoff_ratio(returns)
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
+    avg_loss_val = avg_loss(returns)
 
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(win_loss_ratio, _pd.Series):
         # DataFrame input - element-wise operations with zero/nan protection
         # Replace 0 and NaN values with NaN to avoid division issues
         win_loss_ratio_safe = win_loss_ratio.replace(0, _np.nan)
-        return ((win_loss_ratio_safe * win_prob) - lose_prob) / win_loss_ratio_safe
+        avg_loss_safe = abs(avg_loss_val).replace(0, _np.nan)
+        kelly_fraction = (
+            (win_loss_ratio_safe * win_prob) - lose_prob
+        ) / win_loss_ratio_safe
+        return kelly_fraction / avg_loss_safe
     else:
         # Series input - scalar operations
         if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
             return _np.nan
-        return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
+        if avg_loss_val == 0 or _pd.isna(avg_loss_val):
+            return _np.nan
+        kelly_fraction = ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
+        return kelly_fraction / abs(avg_loss_val)
 
 
 # ==== VS. BENCHMARK ====
@@ -2661,15 +2720,17 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     # Prepare benchmark to match returns index
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
-    # Calculate active returns (returns - benchmark)
-    diff_rets = returns - _utils._prepare_benchmark(benchmark, returns.index)
+    # Calculate active returns (returns - benchmark). The already-prepared
+    # benchmark is used directly; preparing it a second time here re-ran the
+    # price/return detection on data that had just been normalized.
+    diff_rets = returns - benchmark
 
     # Calculate tracking error (standard deviation of active returns)
     std = diff_rets.std()
 
     # Return Information Ratio (active return / tracking error)
     if std != 0:
-        return diff_rets.mean() / diff_rets.std()
+        return diff_rets.mean() / std
     return 0
 
 
