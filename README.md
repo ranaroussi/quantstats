@@ -227,9 +227,12 @@ help(qs.stats.conditional_value_at_risk)
 ```
 Help on function conditional_value_at_risk in module quantstats.stats:
 
-conditional_value_at_risk(returns, sigma=1, confidence=0.99)
-    calculates the conditional daily value-at-risk (aka expected shortfall)
-    quantifies the amount of tail risk an investment
+conditional_value_at_risk(returns, sigma=1, confidence=0.95, prepare_returns=True, method='parametric')
+    Calculate the Conditional Value at Risk (CVaR), also known as Expected Shortfall.
+
+    CVaR measures the expected loss given that a loss exceeds the VaR threshold.
+    It quantifies the amount of tail risk an investment faces, providing a more
+    comprehensive risk measure than VaR alone.
 ```
 
 ## Installation

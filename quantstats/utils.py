@@ -708,11 +708,13 @@ def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
         data = data.pct_change(fill_method=None)
 
     # cleanup data - replace infinite values with NaN
+    #
+    # Missing observations stay NaN from here on. Filling them with 0 asserts
+    # the strategy was flat on a day it has no data for, which understates
+    # volatility, softens drawdowns and inflates every ratio built on them.
+    # pandas aggregations skip NaN, so statistics are computed on observed
+    # data; helpers that build a cumulative series fill locally instead.
     data = data.replace([_np.inf, -_np.inf], float("NaN"))
-
-    # Fill NaN values with 0 and replace infinite values
-    if isinstance(data, (_pd.DataFrame, _pd.Series)):
-        data = data.fillna(0).replace([_np.inf, -_np.inf], float("NaN"))
 
     # Calculate excess returns when the caller asked for them
     if apply_rf and _rf_is_nonzero(rf):

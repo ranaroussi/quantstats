@@ -1,6 +1,47 @@
 Changelog
 ===========
 
+0.0.83
+------
+
+**Statistical corrections** - these change reported numbers.
+
+- Fixed `rolling_sharpe()` and `rolling_sortino()` de-annualizing the
+  risk-free rate over the rolling window instead of the year (#549). They
+  passed `rolling_period` where `_prepare_returns()` expects
+  `periods_per_year`, so at the defaults they subtracted **exactly twice**
+  the correct risk-free rate. Any call with a non-zero `rf` was affected.
+- **Missing observations are no longer treated as 0.0 returns** (#546).
+  `_prepare_returns()` filled gaps with zero, asserting the strategy was flat
+  on days it had no data for, which understated volatility, softened
+  drawdowns and inflated every ratio built on them. Gaps now stay `NaN` and
+  are skipped by the statistics; equity curves still carry through a gap as
+  flat, because a curve has to have a value there.
+
+  Metrics that counted periods were corrected to count *observed* periods:
+  `cagr()`, `win_rate()`, `sortino()`, `ghpr()`, `exposure()`,
+  `risk_of_ruin()` and `autocorr_penalty()`. `win_rate()` was the worst of
+  these, since `NaN != 0` is true and gaps were landing in its denominator.
+- Fixed `conditional_value_at_risk()` mixing estimators (#547). It took a
+  *parametric* VaR threshold and then averaged the observations below it, and
+  returned the VaR itself when none fell below - which overstates CVaR, since
+  CVaR is by definition at least as severe as VaR. Small samples also emitted
+  `RuntimeWarning: Mean of empty slice`.
+
+  The default is now the closed-form normal expected shortfall, consistent
+  with `value_at_risk()`. Pass `method="historical"` for the empirical tail,
+  which captures fat tails but needs enough data to mean anything. An
+  undefined tail returns `NaN` rather than the VaR.
+
+**Documentation**
+
+- The trade-derived metrics (`win_rate`, `payoff_ratio`, `profit_factor`,
+  `consecutive_wins`/`losses`, `common_sense_ratio`, `cpc_index`,
+  `gain_to_pain_ratio`, `outliers` and friends) now carry the period-based
+  caveat in their docstrings, so it is visible from `help()` and in editors
+  rather than only in the README (#493).
+- Corrected the stale `help()` example in the README.
+
 0.0.82
 ------
 

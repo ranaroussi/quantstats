@@ -536,3 +536,153 @@ class TestFrequencyAliasCompatibility:
 
     def test_gain_to_pain_ratio_accepts_a_resolution(self, daily_returns):
         assert stats.gain_to_pain_ratio(daily_returns, resolution="ME") is not None
+
+
+class TestRollingRiskFreeDeannualization:
+    """
+    rolling_sharpe/rolling_sortino passed rolling_period where
+    _prepare_returns expects periods_per_year, so rf was de-annualized over
+    the window instead of the year - exactly 2x too much at the defaults.
+    """
+
+    def test_rolling_sharpe_uses_periods_per_year_for_rf(self, daily_returns):
+        expected_input = utils._prepare_returns(daily_returns, 0.05, 252)
+        expected = (
+            expected_input.rolling(126).mean()
+            / expected_input.rolling(126).std()
+            * np.sqrt(252)
+        )
+
+        result = stats.rolling_sharpe(daily_returns, rf=0.05, rolling_period=126)
+
+        pd.testing.assert_series_equal(
+            result.dropna(), expected.dropna(), check_names=False
+        )
+
+    def test_window_length_does_not_change_the_rf_charged(self, daily_returns):
+        # Two windows must agree on the rf they subtract, so a short window
+        # cannot be penalised for being short.
+        a = stats.rolling_sharpe(daily_returns, rf=0.05, rolling_period=60)
+        b = stats.rolling_sharpe(daily_returns, rf=0.05, rolling_period=120)
+
+        assert not a.dropna().empty and not b.dropna().empty
+        # Same underlying excess returns => same value where windows coincide
+        ref = utils._prepare_returns(daily_returns, 0.05, 252)
+        for period, series in ((60, a), (120, b)):
+            expected = (
+                ref.rolling(period).mean() / ref.rolling(period).std() * np.sqrt(252)
+            )
+            pd.testing.assert_series_equal(
+                series.dropna(), expected.dropna(), check_names=False
+            )
+
+    def test_rolling_sortino_uses_periods_per_year_for_rf(self, daily_returns):
+        result = stats.rolling_sortino(daily_returns, rf=0.05, rolling_period=126)
+
+        assert not result.dropna().empty
+        assert np.isfinite(result.dropna()).all()
+
+
+class TestMissingObservationsAreNotZeroReturns:
+    """
+    _prepare_returns filled gaps with 0.0, asserting the strategy was flat on
+    days it had no data for. That understates volatility and drawdown and
+    inflates every ratio built on them.
+    """
+
+    @staticmethod
+    def _gapped(daily_returns):
+        gapped = daily_returns.copy()
+        gapped.iloc[50:90] = np.nan
+        return gapped, daily_returns.drop(daily_returns.index[50:90])
+
+    def test_gaps_are_not_turned_into_zeros(self, daily_returns):
+        gapped, _ = self._gapped(daily_returns)
+
+        prepared = utils._prepare_returns(gapped, apply_rf=False)
+
+        assert prepared.isna().sum() == 40
+        assert (prepared == 0).sum() == 0
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            "volatility",
+            "sharpe",
+            "sortino",
+            "cagr",
+            "win_rate",
+            "max_drawdown",
+            "kelly_criterion",
+            "ghpr",
+            "exposure",
+        ],
+    )
+    def test_metric_matches_dropping_the_gap(self, metric, daily_returns):
+        gapped, baseline = self._gapped(daily_returns)
+
+        fn = getattr(stats, metric)
+
+        assert float(fn(gapped)) == pytest.approx(float(fn(baseline)), rel=1e-9)
+
+    def test_volatility_is_not_understated_by_gaps(self, daily_returns):
+        gapped, baseline = self._gapped(daily_returns)
+
+        # Filling with zeros used to drag volatility down toward zero.
+        filled = stats.volatility(gapped.fillna(0), prepare_returns=False)
+
+        assert stats.volatility(gapped) > filled
+
+    def test_equity_curve_carries_through_a_gap(self, daily_returns):
+        gapped, _ = self._gapped(daily_returns)
+
+        curve = stats.compsum(utils._prepare_returns(gapped, apply_rf=False))
+
+        assert not curve.isna().any()
+
+
+class TestConditionalValueAtRisk:
+    """
+    CVaR took a parametric VaR threshold and averaged the observations below
+    it, mixing two estimators, and returned the VaR itself when no observation
+    fell below - which overstates CVaR, since CVaR is at least as severe.
+    """
+
+    def test_cvar_is_never_milder_than_var(self, daily_returns):
+        var = stats.value_at_risk(daily_returns)
+        cvar = stats.conditional_value_at_risk(daily_returns)
+
+        assert cvar <= var
+
+    @pytest.mark.parametrize("n", [3, 5, 8, 20])
+    def test_small_samples_do_not_fall_back_to_var(self, n):
+        series = pd.Series(np.linspace(0.001, 0.002, n))
+
+        var = stats.value_at_risk(series, prepare_returns=False)
+        cvar = stats.conditional_value_at_risk(series, prepare_returns=False)
+
+        assert cvar < var
+
+    def test_no_empty_slice_warning(self):
+        series = pd.Series(np.linspace(0.001, 0.002, 4))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            stats.conditional_value_at_risk(series, prepare_returns=False)
+
+    def test_historical_method_is_available(self, daily_returns):
+        historical = stats.conditional_value_at_risk(daily_returns, method="historical")
+
+        assert historical <= stats.value_at_risk(daily_returns)
+
+    def test_unknown_method_is_rejected(self, daily_returns):
+        with pytest.raises(ValueError, match="parametric"):
+            stats.conditional_value_at_risk(daily_returns, method="nope")
+
+    def test_dataframe_returns_one_value_per_column(self, daily_returns):
+        frame = pd.DataFrame({"a": daily_returns, "b": daily_returns * 2})
+
+        result = stats.conditional_value_at_risk(frame)
+
+        assert list(result.index) == ["a", "b"]
+        assert result["b"] == pytest.approx(result["a"] * 2, rel=1e-9)

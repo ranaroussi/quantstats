@@ -93,8 +93,11 @@ def compsum(returns: Returns) -> Returns:
         >>> cumulative = compsum(returns)
         >>> print(cumulative)
     """
-    # Add 1 to convert returns to growth factors, then cumulative product
-    return returns.add(1).cumprod(axis=0) - 1
+    # Add 1 to convert returns to growth factors, then cumulative product.
+    # Gaps are treated as flat here: an equity curve has to carry a value
+    # through a missing observation, even though the statistics built on the
+    # raw returns exclude it.
+    return returns.fillna(0).add(1).cumprod(axis=0) - 1
 
 
 def comp(returns: Returns) -> _pd.Series | float:
@@ -234,7 +237,11 @@ def expected_return(
     returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
     # Calculate geometric mean: (product of (1 + returns))^(1/n) - 1
-    return _np.prod(1 + returns, axis=0) ** (1 / len(returns)) - 1
+    # Missing observations are excluded rather than counted as 1.0 growth:
+    # np.prod would return NaN for the whole series, and len() would stretch
+    # the exponent over periods that were never observed.
+    observed = returns.count()
+    return _np.nanprod(1 + returns, axis=0) ** (1 / observed) - 1
 
 
 def geometric_mean(
@@ -298,6 +305,13 @@ def outliers(returns: Returns, quantile: float = 0.95) -> Returns:
         >>> returns = pd.Series([0.01, 0.02, 0.05, -0.01, 0.10])
         >>> outlier_returns = outliers(returns, quantile=0.90)
         >>> print(outlier_returns)
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     # Filter returns above the specified quantile and remove NaN values
     return returns[returns > returns.quantile(quantile)].dropna(how="all")
@@ -417,6 +431,13 @@ def consecutive_wins(
         >>> returns = pd.Series([0.01, 0.02, 0.03, -0.01, 0.02])
         >>> max_wins = consecutive_wins(returns)
         >>> print(f"Max consecutive wins: {max_wins}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -453,6 +474,13 @@ def consecutive_losses(
         >>> returns = pd.Series([0.01, -0.02, -0.01, -0.01, 0.02])
         >>> max_losses = consecutive_losses(returns)
         >>> print(f"Max consecutive losses: {max_losses}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -497,7 +525,10 @@ def exposure(
         Rounds up to nearest percent to avoid zero exposure from rounding.
         """
         # Count non-NaN and non-zero returns
-        ex = len(ret[(~_np.isnan(ret)) & (ret != 0)]) / len(ret)
+        observed = int((~_np.isnan(ret)).sum())
+        if observed == 0:
+            return 0.0
+        ex = len(ret[(~_np.isnan(ret)) & (ret != 0)]) / observed
         # Round up to nearest percent
         return _ceil(ex * 100) / 100
 
@@ -536,6 +567,13 @@ def win_rate(
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> wr = win_rate(returns)
         >>> print(f"Win rate: {wr:.2%}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
 
     def _win_rate(series):
@@ -546,6 +584,9 @@ def win_rate(
         error handling for calculation issues.
         """
         try:
+            # Drop gaps first: NaN != 0 evaluates True, so missing
+            # observations would otherwise sit in the denominator.
+            series = series.dropna()
             # Filter out zero returns (periods with no trading)
             non_zero_returns = series[series != 0]
             if len(non_zero_returns) == 0:
@@ -832,6 +873,10 @@ def autocorr_penalty(
     if isinstance(returns, _pd.DataFrame):
         returns = returns[returns.columns[0]]
 
+    # Gaps carry no autocorrelation information, and corrcoef propagates
+    # any NaN straight through.
+    returns = returns.dropna()
+
     num = len(returns)
 
     # corrcoef needs at least two points to be defined; below that it returns
@@ -980,7 +1025,7 @@ def rolling_sharpe(
         pd.Series: Rolling Sharpe ratio series
 
     Raises:
-        Exception: If rf != 0 and rolling_period is None
+        Exception: If rf != 0 and periods_per_year is None
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
@@ -988,11 +1033,15 @@ def rolling_sharpe(
         >>> print(rolling_sharpe_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if _utils._rf_is_nonzero(rf) and rolling_period is None:
-        raise Exception("Must provide periods if rf != 0")
+    if _utils._rf_is_nonzero(rf) and periods_per_year is None:
+        raise Exception("Must provide periods_per_year if rf != 0")
 
     if prepare_returns:
-        returns = _utils._prepare_returns(returns, rf, rolling_period)
+        # The third argument is the number of periods per year used to
+        # de-annualize rf, not the window length. Passing rolling_period here
+        # subtracted a rate de-annualized over the window instead of the year,
+        # which at the defaults overcharged rf by exactly 2x.
+        returns = _utils._prepare_returns(returns, rf, periods_per_year)
 
     # Calculate rolling mean and standard deviation
     res = returns.rolling(rolling_period).mean() / returns.rolling(rolling_period).std()
@@ -1053,7 +1102,7 @@ def sortino(
     returns = _utils._prepare_returns(returns, rf, periods)
 
     # Calculate downside deviation (only negative returns)
-    downside = _np.sqrt((returns[returns < 0] ** 2).sum() / len(returns))
+    downside = _np.sqrt((returns[returns < 0] ** 2).sum() / returns.count())
 
     # Apply autocorrelation penalty if smart mode enabled
     if smart:
@@ -1133,7 +1182,7 @@ def rolling_sortino(
         pd.Series: Rolling Sortino ratio series
 
     Raises:
-        Exception: If rf != 0 and rolling_period is None
+        Exception: If rf != 0 and periods_per_year is None
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
@@ -1141,11 +1190,15 @@ def rolling_sortino(
         >>> print(rolling_sortino_ratio)
     """
     # Validate parameters for risk-free rate handling
-    if _utils._rf_is_nonzero(rf) and rolling_period is None:
-        raise Exception("Must provide periods if rf != 0")
+    if _utils._rf_is_nonzero(rf) and periods_per_year is None:
+        raise Exception("Must provide periods_per_year if rf != 0")
 
     if kwargs.get("prepare_returns", True):
-        returns = _utils._prepare_returns(returns, rf, rolling_period)
+        # The third argument is the number of periods per year used to
+        # de-annualize rf, not the window length. Passing rolling_period here
+        # subtracted a rate de-annualized over the window instead of the year,
+        # which at the defaults overcharged rf by exactly 2x.
+        returns = _utils._prepare_returns(returns, rf, periods_per_year)
 
     # Optimized downside calculation using vectorized operations
     def calc_downside(x):
@@ -1522,6 +1575,13 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
 
     Note:
         See here for more info: https://archive.is/wip/2rwFW
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     # Prepare returns and resample to specified frequency. `rf` is accepted
     # for API compatibility but is deliberately not subtracted here, matching
@@ -1586,7 +1646,7 @@ def cagr(
     # Calculate time period in years using trading periods
     # This is consistent with how Sharpe, Sortino, and other metrics
     # handle annualization in quantstats
-    years = len(returns) / periods
+    years = returns.count() / periods
 
     # Geometric growth rate. Terminal wealth below zero is reachable with
     # compounded=False once summed returns pass -100%; it has no real-valued
@@ -1896,7 +1956,7 @@ def risk_of_ruin(returns, prepare_returns=True):
     wins = win_rate(returns)
 
     # Calculate risk of ruin using gambler's ruin formula
-    return ((1 - wins) / (1 + wins)) ** len(returns)
+    return ((1 - wins) / (1 + wins)) ** returns.count()
 
 
 def ror(returns):
@@ -1975,11 +2035,24 @@ def var(returns, sigma=1, confidence=0.95, prepare_returns=True):
     return value_at_risk(returns, sigma, confidence, prepare_returns)
 
 
+def _gaussian_expected_shortfall(mu: float, sd: float, alpha: float) -> float:
+    """
+    Closed-form expected shortfall of a normal distribution.
+
+    Returns E[X | X <= VaR_alpha] for X ~ N(mu, sd), which is the estimator
+    that belongs with value_at_risk()'s variance-covariance method.
+    """
+    if sd == 0 or _np.isnan(sd):
+        return mu
+    return mu - sd * _norm.pdf(_norm.ppf(alpha)) / alpha
+
+
 def conditional_value_at_risk(
     returns: Returns,
     sigma: float = 1,
     confidence: float = 0.95,
     prepare_returns: bool = True,
+    method: str = "parametric",
 ) -> float | _pd.Series:
     """
     Calculate the Conditional Value at Risk (CVaR), also known as Expected Shortfall.
@@ -1993,41 +2066,53 @@ def conditional_value_at_risk(
         sigma (float): Volatility multiplier (default: 1)
         confidence (float): Confidence level (0.95 = 95%, default: 0.95)
         prepare_returns (bool): Whether to prepare returns first (default: True)
+        method (str): "parametric" (default) matches value_at_risk() and uses
+            the closed-form normal expected shortfall. "historical" averages
+            the observations at or below the empirical quantile, which
+            captures fat tails but needs enough data to be meaningful.
 
     Returns:
         float: Conditional Value at Risk (expected loss beyond VaR)
+
+    Note:
+        Before 0.0.83 this took the threshold from the *parametric* VaR and
+        then averaged the observations below it, mixing two estimators. When
+        no observation fell below the threshold it returned the VaR itself,
+        which overstates CVaR, since CVaR is by definition at least as severe
+        as VaR. Both modes here are internally consistent, and an undefined
+        tail now returns NaN rather than the VaR.
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> cvar_value = conditional_value_at_risk(returns, confidence=0.95)
         >>> print(f"95% CVaR: {cvar_value:.4f}")
     """
+    if method not in ("parametric", "historical"):
+        raise ValueError(f"method must be 'parametric' or 'historical', got {method!r}")
+
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    # Handle both Series and DataFrame inputs
+    # Accept a confidence given as a percentage, matching value_at_risk()
+    if confidence > 1:
+        confidence = confidence / 100
+    alpha = 1 - confidence
+
+    def _cvar_of(series):
+        series = series.dropna()
+        if len(series) == 0:
+            return _np.nan
+        if method == "historical":
+            tail = series[series <= series.quantile(alpha)]
+            return tail.mean() if len(tail) > 0 else _np.nan
+        return _gaussian_expected_shortfall(series.mean(), sigma * series.std(), alpha)
+
     if isinstance(returns, _pd.DataFrame):
-        # For DataFrame, calculate CVaR for each column separately
-        result = {}
-        for col in returns.columns:
-            col_returns = returns[col]
-            # Calculate VaR for this specific column
-            col_var = value_at_risk(
-                col_returns, sigma, confidence, prepare_returns=False
-            )
-            below_var = col_returns[col_returns < col_var]
-            c_var_col = below_var.mean() if len(below_var) > 0 else _np.nan
-            result[col] = c_var_col if not _np.isnan(c_var_col) else col_var
-        return _pd.Series(result)
-    else:
-        # For Series, calculate VaR threshold
-        var = value_at_risk(returns, sigma, confidence)
-        c_var = returns[returns < var].values.mean()
-        # Return CVaR if valid, otherwise return VaR
-        return c_var if ~_np.isnan(c_var) else var
+        return _pd.Series({col: _cvar_of(returns[col]) for col in returns.columns})
+    return _cvar_of(returns)
 
 
-def cvar(returns, sigma=1, confidence=0.95, prepare_returns=True):
+def cvar(returns, sigma=1, confidence=0.95, prepare_returns=True, method="parametric"):
     """
     Calculate the Conditional Value at Risk (CVaR).
 
@@ -2039,14 +2124,17 @@ def cvar(returns, sigma=1, confidence=0.95, prepare_returns=True):
         sigma (float): Volatility multiplier (default: 1)
         confidence (float): Confidence level (0.95 = 95%, default: 0.95)
         prepare_returns (bool): Whether to prepare returns first (default: True)
+        method (str): "parametric" (default) or "historical"
 
     Returns:
         float: Conditional Value at Risk
     """
-    return conditional_value_at_risk(returns, sigma, confidence, prepare_returns)
+    return conditional_value_at_risk(
+        returns, sigma, confidence, prepare_returns, method
+    )
 
 
-def expected_shortfall(returns, sigma=1, confidence=0.95):
+def expected_shortfall(returns, sigma=1, confidence=0.95, method="parametric"):
     """
     Calculate the Expected Shortfall (ES), also known as CVaR.
 
@@ -2057,11 +2145,12 @@ def expected_shortfall(returns, sigma=1, confidence=0.95):
         returns (pd.Series): Return series to analyze
         sigma (float): Volatility multiplier (default: 1)
         confidence (float): Confidence level (0.95 = 95%, default: 0.95)
+        method (str): "parametric" (default) or "historical"
 
     Returns:
         float: Expected Shortfall
     """
-    return conditional_value_at_risk(returns, sigma, confidence)
+    return conditional_value_at_risk(returns, sigma, confidence, method=method)
 
 
 def tail_ratio(returns, cutoff=0.95, prepare_returns=True):
@@ -2133,6 +2222,13 @@ def payoff_ratio(returns, prepare_returns=True):
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> payoff_r = payoff_ratio(returns)
         >>> print(f"Payoff ratio: {payoff_r:.4f}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -2166,6 +2262,13 @@ def win_loss_ratio(returns, prepare_returns=True):
 
     Returns:
         float: Win-loss ratio
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     return payoff_ratio(returns, prepare_returns)
 
@@ -2188,6 +2291,13 @@ def profit_ratio(returns, prepare_returns=True):
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> profit_r = profit_ratio(returns)
         >>> print(f"Profit ratio: {profit_r:.4f}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -2240,6 +2350,13 @@ def profit_factor(returns, prepare_returns=True):
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> pf = profit_factor(returns)
         >>> print(f"Profit factor: {pf:.4f}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -2280,6 +2397,13 @@ def cpc_index(returns, prepare_returns=True):
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> cpc = cpc_index(returns)
         >>> print(f"CPC Index: {cpc:.4f}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
@@ -2306,6 +2430,13 @@ def common_sense_ratio(returns, prepare_returns=True):
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
         >>> csr = common_sense_ratio(returns)
         >>> print(f"Common Sense Ratio: {csr:.4f}")
+    Note:
+        Computed from the return series, not from discrete trades. A single
+        multi-day trade spanning three up days and two down days counts as
+        three wins and two losses here. This is well defined and useful for
+        systematic strategies with regular rebalancing, but it will not match
+        trade-level statistics from a discretionary trading journal. See
+        "Period-Based vs Trade-Based Metrics" in the README.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
