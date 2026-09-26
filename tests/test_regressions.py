@@ -213,6 +213,22 @@ class TestPrepareReturnsCache:
         assert list(first.columns) == ["a"]
         assert list(second.columns) == ["b"]
 
+    def test_rate_series_differing_mid_sample_do_not_collide(self):
+        idx = pd.date_range("2024-01-01", periods=100)
+        series = pd.Series(np.full(100, 0.001), index=idx, name="S")
+        low = pd.Series(0.01, index=idx)
+        high = low.copy()
+        high.iloc[10:-10] = 0.05  # same first and last rows as `low`
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        expected = utils._prepare_returns(series, rf=high, nperiods=252)
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        utils._prepare_returns(series, rf=low, nperiods=252)
+        result = utils._prepare_returns(series, rf=high, nperiods=252)
+
+        np.testing.assert_allclose(result.values, expected.values)
+
 
 class TestPrepareReturnsNoStackInspection:
     """rf handling is an argument now, not a guess about the caller."""

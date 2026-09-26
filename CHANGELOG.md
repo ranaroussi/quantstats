@@ -1,6 +1,16 @@
 Changelog
 ===========
 
+0.0.86
+------
+
+- Fixed a time-varying `rf` Series colliding in the `_prepare_returns()`
+  cache. The key formatted `rf` with its repr, which pandas truncates to
+  the first and last rows, so two rate series of the same length that
+  differed only in between shared an entry and the second call got the
+  first call's excess returns back. A Series `rf` is now hashed like the
+  data.
+
 0.0.85
 ------
 
