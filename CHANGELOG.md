@@ -1,6 +1,23 @@
 Changelog
 ===========
 
+0.0.85
+------
+
+- Fixed `rar()` charging the **annual** risk-free rate once per period
+  (#552). It passed `rf` to `_prepare_returns()` without `periods`, so at a
+  daily frequency a 5% rate was subtracted from every single day: the series
+  was wiped out and the Risk-Adjusted Return pinned to -100% for any
+  non-zero `rf`. `rar()` now takes a `periods` argument (default 252) and
+  de-annualizes the rate, and `reports.metrics()` passes the report's own
+  `periods_per_year` through.
+
+  This was the second half of #552, which 0.0.84 did not address. 0.0.81
+  reported a plausible number here only because `metrics()` never passed
+  `rf` into `rar()` at all; the standalone `stats.rar(returns, rf=0.05)`
+  call has been wrong in every release that had it. On a sample series the
+  row now reads 0.37 against 0.44 gross, where 0.0.82-0.0.84 read -1.00.
+
 0.0.84
 ------
 

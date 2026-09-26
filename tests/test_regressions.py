@@ -385,6 +385,45 @@ class TestBenchmarkGaps:
         assert treynor_gap != 0.0
 
 
+class TestRiskFreeDeannualization:
+    """An annual rf must never be charged once per period (#552).
+
+    rar() passed rf to _prepare_returns() without `periods`, so a 5% annual
+    rate was subtracted from every daily return. The series was wiped out and
+    the reported Risk-Adjusted Return pinned to -100% for any non-zero rf.
+    """
+
+    def test_rar_with_rf_is_not_a_wipeout(self, daily_returns):
+        value = stats.rar(daily_returns, rf=0.05)
+
+        assert value > -1.0
+        assert np.isfinite(value)
+
+    def test_rar_rf_costs_roughly_the_annual_rate(self, daily_returns):
+        # Exposure is 1.0 here, so RaR is just the excess CAGR: charging a 5%
+        # annual rate should cost about 5 points of CAGR, not everything.
+        gross = stats.rar(daily_returns, rf=0.0)
+        net = stats.rar(daily_returns, rf=0.05)
+
+        assert gross - net == pytest.approx(0.05, abs=0.02)
+
+    def test_metrics_risk_adjusted_return_survives_rf(self, daily_returns):
+        table = reports.metrics(
+            daily_returns, rf=0.05, display=False, mode="full", prepare_returns=False
+        )
+        value = float(table.loc["Risk-Adjusted Return", "Strategy"])
+
+        # 0.0.82 through 0.0.84 reported -1.0 here for any non-zero rf.
+        assert value > -1.0
+
+    def test_no_rf_metric_collapses_to_total_loss(self, daily_returns):
+        # Guards the whole class rather than the one function: a 5% annual
+        # rate must not push any rf-aware metric to -100%.
+        for name in ("rar", "sharpe", "sortino", "omega", "adjusted_sortino"):
+            value = getattr(stats, name)(daily_returns, rf=0.05)
+            assert value > -1.0, f"{name} collapsed with a 5% risk-free rate"
+
+
 class TestAutocorrPenalty:
     """corrcoef is undefined for <2 points or constant input."""
 

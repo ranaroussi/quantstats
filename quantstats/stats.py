@@ -1685,7 +1685,7 @@ def cagr(
     return res
 
 
-def rar(returns, rf=0.0, compounded=True):
+def rar(returns, rf=0.0, periods=252, compounded=True):
     """
     Calculate the Risk-Adjusted Return (RAR).
 
@@ -1696,6 +1696,8 @@ def rar(returns, rf=0.0, compounded=True):
     Args:
         returns (pd.Series): Return series to analyze
         rf (float): Risk-free rate (annualized, default: 0.0)
+        periods (int): Periods per year, used to de-annualize `rf`
+            (default: 252)
         compounded (bool): Whether to compound returns (default: True).
             Set to False for intraday or other non-compounded return streams.
 
@@ -1707,8 +1709,13 @@ def rar(returns, rf=0.0, compounded=True):
         >>> rar_value = rar(returns)
         >>> print(f"Risk-adjusted return: {rar_value:.4f}")
     """
-    # Prepare returns (subtract risk-free rate if applicable)
-    returns = _utils._prepare_returns(returns, rf)
+    # Prepare returns (subtract risk-free rate if applicable).
+    #
+    # `periods` has to reach _prepare_returns: without it the *annual* rf is
+    # subtracted from every single period, so at a daily frequency a 5% rate
+    # removes 5% per day and the series is wiped out. That reported a
+    # risk-adjusted return of -100% for any call with a non-zero rf.
+    returns = _utils._prepare_returns(returns, rf, periods)
 
     # Calculate CAGR and divide by exposure time
     return cagr(returns, compounded=compounded) / exposure(returns)
