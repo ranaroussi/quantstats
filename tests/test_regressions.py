@@ -350,7 +350,8 @@ class TestTenYearWindow:
     """10Y used years=10 while 3Y/5Y used months=35/59."""
 
     def test_matches_the_other_windows_on_a_short_history(self):
-        dates = pd.date_range("2016-01-31", periods=121, freq="ME")
+        # "ME" only exists in pandas 2.2+; translate for older versions.
+        dates = pd.date_range("2016-01-31", periods=121, freq=get_frequency_alias("ME"))
         returns = pd.Series(0.01, index=dates, name="Strategy")
         returns.iloc[0] = -0.50
 
