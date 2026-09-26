@@ -273,23 +273,29 @@ class TestProbabilisticRatio:
 
 
 class TestKellyCriterion:
-    """Kelly returned the fixed-odds fraction, independent of loss size."""
+    """Kelly must return the classic fixed-odds fraction p - q/b.
 
-    def test_scales_inversely_with_loss_magnitude(self):
+    0.0.82-0.0.83 divided it by the average-loss magnitude, turning a
+    capital fraction into a per-period leverage: reports showed figures like
+    3716% where this reads 21% (issue #552). Reverted in 0.0.84.
+    """
+
+    def test_scale_invariant_by_construction(self):
         small = pd.Series([0.02, -0.01] * 30)
         doubled = pd.Series([0.04, -0.02] * 30)
 
+        # The fixed-odds fraction depends only on the odds ratio, so
+        # doubling the magnitude of every return must not move it.
         assert stats.kelly_criterion(small) == pytest.approx(
-            2 * stats.kelly_criterion(doubled)
+            stats.kelly_criterion(doubled)
         )
 
     def test_matches_closed_form(self):
         returns = pd.Series([0.02, -0.01, 0.02, -0.01, 0.02, -0.01] * 10)
 
         win_prob = stats.win_rate(returns)
-        avg_win = stats.avg_win(returns)
-        avg_loss = abs(stats.avg_loss(returns))
-        expected = win_prob / avg_loss - (1 - win_prob) / avg_win
+        payoff = stats.payoff_ratio(returns)
+        expected = win_prob - (1 - win_prob) / payoff
 
         assert stats.kelly_criterion(returns) == pytest.approx(expected)
 
@@ -297,6 +303,86 @@ class TestKellyCriterion:
         returns = pd.Series([0.01, 0.02, 0.03, 0.04])
 
         assert np.isnan(stats.kelly_criterion(returns))
+
+
+class TestBenchmarkGaps:
+    """A gap must not destroy joint estimators (#553, PR by WatchTree-19).
+
+    0.0.83 stopped filling gaps with 0, which let NaN propagate through
+    np.cov/linregress: a single missing day reduced beta and alpha to 0 and
+    R-squared to NaN. Fixed in 0.0.84 by estimating over the dates on which
+    both series were observed.
+    """
+
+    @staticmethod
+    def _data():
+        rng = np.random.default_rng(7)
+        idx = pd.bdate_range("2020-01-01", periods=756)
+        bench = pd.Series(rng.normal(0.0003, 0.01, 756), index=idx)
+        strat = 0.8 * bench + rng.normal(0, 0.006, 756)
+        gapped = strat.copy()
+        gapped.iloc[[100, 200, 300]] = np.nan
+        return strat, gapped, bench
+
+    def test_greeks_survive_gaps(self):
+        strat, gapped, bench = self._data()
+
+        beta_gap = stats.greeks(gapped, bench)["beta"]
+        beta_full = stats.greeks(strat, bench)["beta"]
+
+        assert beta_gap == pytest.approx(beta_full, abs=5e-3)
+
+    def test_greeks_match_hand_computed_pairwise_estimate(self):
+        _, gapped, bench = self._data()
+
+        paired = pd.DataFrame({"r": gapped, "b": bench}).dropna()
+        matrix = np.cov(paired["r"], paired["b"])
+        expected_beta = matrix[0, 1] / matrix[1, 1]
+
+        result = stats.greeks(gapped, bench)
+
+        assert result["beta"] == pytest.approx(expected_beta)
+        assert result["alpha"] == pytest.approx(
+            (paired["r"].mean() - expected_beta * paired["b"].mean()) * 252
+        )
+
+    def test_nan_gap_and_absent_date_are_different_questions(self):
+        # Dropping the dates instead of leaving them NaN makes the strategy
+        # look like an irregular-frequency series, so _prepare_benchmark
+        # compounds the benchmark across each missing day to match. Leaving
+        # them NaN keeps a daily series with three unobserved days, and the
+        # benchmark's own move on those days is simply discarded. Both are
+        # defensible; they are not the same estimate, and that is deliberate.
+        _, gapped, bench = self._data()
+
+        assert stats.greeks(gapped, bench)["beta"] != pytest.approx(
+            stats.greeks(gapped.dropna(), bench)["beta"]
+        )
+
+    def test_r_squared_survives_gaps(self):
+        strat, gapped, bench = self._data()
+
+        r2_gap = stats.r_squared(gapped, bench)
+
+        assert np.isfinite(r2_gap)
+        assert r2_gap == pytest.approx(stats.r_squared(strat, bench), abs=0.05)
+
+    def test_r_squared_matches_hand_computed_pairwise_estimate(self):
+        _, gapped, bench = self._data()
+
+        paired = pd.DataFrame({"r": gapped, "b": bench}).dropna()
+        expected = paired["r"].corr(paired["b"]) ** 2
+
+        assert stats.r_squared(gapped, bench) == pytest.approx(expected)
+
+    def test_treynor_survives_gaps(self):
+        _, gapped, bench = self._data()
+
+        treynor_gap = stats.treynor_ratio(gapped, bench)
+
+        assert np.isfinite(treynor_gap)
+        # 0.0.83 returned the beta-is-zero fallback here.
+        assert treynor_gap != 0.0
 
 
 class TestAutocorrPenalty:

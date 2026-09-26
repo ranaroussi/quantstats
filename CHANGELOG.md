@@ -1,6 +1,32 @@
 Changelog
 ===========
 
+0.0.84
+------
+
+**Fixes a regression introduced in 0.0.83.**
+
+- Fixed `greeks()`, `r_squared()`/`r2()` and `treynor_ratio()` collapsing to
+  zero or `NaN` when the strategy or benchmark had even one missing
+  observation (#553, reported with a fix by @WatchTree-19). 0.0.83 stopped
+  filling gaps with 0, and `np.cov`/`linregress` propagate `NaN` through the
+  whole estimate, so a single absent day reduced beta and alpha to 0 and
+  R-squared to `NaN` — and `greeks()` reported that zero without complaint.
+  These are now estimated over the dates on which both series were observed.
+  `reports.metrics()` was not affected, as it fills the frame beforehand.
+
+**Reverted**
+
+- `kelly_criterion()` returns the classic fixed-odds fraction `p - q/b`
+  again, as it did up to 0.0.81 (#552). 0.0.82 divided it by the average-loss
+  magnitude, on the argument that a fraction which does not move when the
+  series is rescaled must be wrong. That quantity is the growth-optimal
+  *leverage* for a per-period P&L, not the Kelly fraction: on daily returns
+  it reaches double and triple digits, and reports showed figures like
+  10792% where the fraction reads 21%. The fixed-odds fraction depends only
+  on the odds by construction, so its scale-invariance is a property rather
+  than a defect.
+
 0.0.83
 ------
 

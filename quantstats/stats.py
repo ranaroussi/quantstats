@@ -100,6 +100,25 @@ def compsum(returns: Returns) -> Returns:
     return returns.fillna(0).add(1).cumprod(axis=0) - 1
 
 
+def _paired_observations(returns, benchmark):
+    """
+    Restrict a strategy and its benchmark to the dates both were observed.
+
+    Joint estimators (covariance, regression) need matched pairs. numpy and
+    scipy propagate NaN through the whole calculation, so one missing day on
+    either side is enough to make beta, alpha or R-squared undefined.
+
+    Args:
+        returns: Strategy return series
+        benchmark: Benchmark return series
+
+    Returns:
+        tuple: (returns, benchmark) covering only the shared observations
+    """
+    paired = _pd.DataFrame({"returns": returns, "benchmark": benchmark}).dropna()
+    return paired["returns"], paired["benchmark"]
+
+
 def comp(returns: Returns) -> _pd.Series | float:
     """
     Calculate total compounded returns (final cumulative return).
@@ -2753,40 +2772,37 @@ def kelly_criterion(returns, prepare_returns=True):
     should be allocated to the given strategy, based on the
     Kelly Criterion (http://en.wikipedia.org/wiki/Kelly_criterion)
 
-    For a two-outcome return series the growth-optimal fraction is
-    f* = win_prob / |avg_loss| - lose_prob / avg_win, which factors into
-    (win_prob - lose_prob / win_loss_ratio) / |avg_loss|.
+    Returns the classic fixed-odds fraction f* = p - q/b, where p is the
+    win rate, q = 1 - p, and b the payoff ratio (average win / average loss).
+    The result is a fraction of capital, in a range a reader can act on.
 
-    The trailing division by the average-loss magnitude is what converts the
-    (scale-invariant) win/loss ratio into an actual capital fraction. Without
-    it the result is the fixed-odds formula, off by a factor of |avg_loss|,
-    and does not change when the return series is rescaled.
+    Note:
+        0.0.82 to 0.0.83 divided this by the average-loss magnitude on the
+        argument that a fraction which does not move when the return series
+        is rescaled must be wrong. That quantity is the growth-optimal
+        *leverage* for a per-period P&L, not the Kelly fraction: on daily
+        returns it reaches double and triple digits, and reports showed
+        figures like 3716% where this formula reads 21% (issue #552). The
+        fixed-odds fraction depends only on the odds by construction, so
+        its scale-invariance is a property, not a defect. Reverted in 0.0.84.
     """
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     win_loss_ratio = payoff_ratio(returns)
     win_prob = win_rate(returns)
     lose_prob = 1 - win_prob
-    avg_loss_val = avg_loss(returns)
 
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(win_loss_ratio, _pd.Series):
         # DataFrame input - element-wise operations with zero/nan protection
         # Replace 0 and NaN values with NaN to avoid division issues
         win_loss_ratio_safe = win_loss_ratio.replace(0, _np.nan)
-        avg_loss_safe = abs(avg_loss_val).replace(0, _np.nan)
-        kelly_fraction = (
-            (win_loss_ratio_safe * win_prob) - lose_prob
-        ) / win_loss_ratio_safe
-        return kelly_fraction / avg_loss_safe
+        return ((win_loss_ratio_safe * win_prob) - lose_prob) / win_loss_ratio_safe
     else:
         # Series input - scalar operations
         if win_loss_ratio == 0 or _pd.isna(win_loss_ratio):
             return _np.nan
-        if avg_loss_val == 0 or _pd.isna(avg_loss_val):
-            return _np.nan
-        kelly_fraction = ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
-        return kelly_fraction / abs(avg_loss_val)
+        return ((win_loss_ratio * win_prob) - lose_prob) / win_loss_ratio
 
 
 # ==== VS. BENCHMARK ====
@@ -2820,10 +2836,12 @@ def r_squared(returns, benchmark, prepare_returns=True):
     # Prepare benchmark to match returns index
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
 
+    # Estimate over the dates on which both series were observed; linregress
+    # returns NaN for the whole fit if either input contains a gap.
+    paired_returns, paired_benchmark = _paired_observations(returns, benchmark)
+
     # Perform linear regression and extract correlation coefficient
-    _, _, r_val, _, _ = _linregress(
-        returns, _utils._prepare_benchmark(benchmark, returns.index)
-    )
+    _, _, r_val, _, _ = _linregress(paired_returns, paired_benchmark)
 
     # Square the correlation coefficient to get R-squared
     return r_val**2
@@ -2918,6 +2936,12 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
         returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
     # ----------------------------
+
+    # Estimate over the dates on which both series were observed. np.cov
+    # propagates NaN, so a single gap on either side would otherwise reduce
+    # beta and alpha to NaN, which the .fillna(0) below turns into a
+    # confident-looking zero.
+    returns, benchmark = _paired_observations(returns, benchmark)
 
     # Calculate covariance matrix between returns and benchmark
     matrix = _np.cov(returns, benchmark)
