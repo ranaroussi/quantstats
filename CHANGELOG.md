@@ -22,6 +22,12 @@ Changelog
   `cagr()`, `win_rate()`, `sortino()`, `ghpr()`, `exposure()`,
   `risk_of_ruin()` and `autocorr_penalty()`. `win_rate()` was the worst of
   these, since `NaN != 0` is true and gaps were landing in its denominator.
+- Fixed `greeks()`, `r_squared()` and `treynor_ratio()` breaking on any gap
+  once gaps stay `NaN`. A single missing return made `np.cov` and
+  `linregress` return `NaN` for the whole series, so `greeks()` reported beta
+  and alpha as `0`, `r_squared()` returned `NaN`, and `treynor_ratio()` fell
+  back to `0` with a "beta is zero" warning. They now estimate over the dates
+  on which both the strategy and the benchmark have an observation.
 - Fixed `conditional_value_at_risk()` mixing estimators (#547). It took a
   *parametric* VaR threshold and then averaged the observations below it, and
   returned the VaR itself when none fell below - which overstates CVaR, since

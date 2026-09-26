@@ -686,3 +686,55 @@ class TestConditionalValueAtRisk:
 
         assert list(result.index) == ["a", "b"]
         assert result["b"] == pytest.approx(result["a"] * 2, rel=1e-9)
+
+
+class TestBenchmarkMetricsSkipGaps:
+    """
+    Once gaps stay NaN, a single missing return made np.cov and linregress
+    return NaN for the whole series: greeks() then reported beta and alpha
+    as 0 through its fillna(0), r_squared() returned NaN, and
+    treynor_ratio() fell back to 0 with a "beta is zero" warning.
+    """
+
+    @staticmethod
+    def _pair(daily_returns):
+        rng = np.random.RandomState(11)
+        benchmark = pd.Series(
+            rng.normal(0.0003, 0.01, len(daily_returns)),
+            index=daily_returns.index,
+            name="Benchmark",
+        )
+        strategy = 0.8 * benchmark + daily_returns * 0.5
+        gapped = strategy.copy()
+        gapped.iloc[[60, 150, 240]] = np.nan
+        observed = gapped.notna()
+        return gapped, benchmark, gapped[observed], benchmark[observed]
+
+    def test_greeks_match_the_observed_dates(self, daily_returns):
+        gapped, benchmark, strategy_obs, benchmark_obs = self._pair(daily_returns)
+
+        result = stats.greeks(gapped, benchmark)
+        expected = stats.greeks(strategy_obs, benchmark_obs)
+
+        assert result["beta"] == pytest.approx(expected["beta"], rel=1e-9)
+        assert result["alpha"] == pytest.approx(expected["alpha"], rel=1e-9)
+        assert result["beta"] > 0.5
+
+    def test_r_squared_matches_the_observed_dates(self, daily_returns):
+        gapped, benchmark, strategy_obs, benchmark_obs = self._pair(daily_returns)
+
+        result = stats.r_squared(gapped, benchmark)
+
+        assert not np.isnan(result)
+        assert result == pytest.approx(
+            stats.r_squared(strategy_obs, benchmark_obs), rel=1e-9
+        )
+
+    def test_treynor_ratio_does_not_fall_back_to_zero(self, daily_returns):
+        gapped, benchmark, _, _ = self._pair(daily_returns)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = stats.treynor_ratio(gapped, benchmark)
+
+        assert result != 0

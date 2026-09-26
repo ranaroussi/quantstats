@@ -2792,6 +2792,22 @@ def kelly_criterion(returns, prepare_returns=True):
 # ==== VS. BENCHMARK ====
 
 
+def _paired_observations(returns, benchmark):
+    """
+    Keep only the dates on which both series have an observation.
+
+    Since 0.0.83 a missing return stays NaN instead of becoming 0.0, and a
+    single NaN makes np.cov and linregress return NaN for the whole series.
+    A date missing from either side says nothing about how the two move
+    together, so the co-movement estimates are taken over the dates both
+    series observed.
+    """
+    if not isinstance(returns, _pd.Series) or not isinstance(benchmark, _pd.Series):
+        return returns, benchmark
+    paired = _pd.concat([returns, benchmark], axis=1, join="inner").dropna()
+    return paired.iloc[:, 0], paired.iloc[:, 1]
+
+
 def r_squared(returns, benchmark, prepare_returns=True):
     """
     Calculate the R-squared (coefficient of determination) versus benchmark.
@@ -2819,11 +2835,10 @@ def r_squared(returns, benchmark, prepare_returns=True):
 
     # Prepare benchmark to match returns index
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    returns, benchmark = _paired_observations(returns, benchmark)
 
     # Perform linear regression and extract correlation coefficient
-    _, _, r_val, _, _ = _linregress(
-        returns, _utils._prepare_benchmark(benchmark, returns.index)
-    )
+    _, _, r_val, _, _ = _linregress(returns, benchmark)
 
     # Square the correlation coefficient to get R-squared
     return r_val**2
@@ -2917,6 +2932,7 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
     benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    returns, benchmark = _paired_observations(returns, benchmark)
     # ----------------------------
 
     # Calculate covariance matrix between returns and benchmark
