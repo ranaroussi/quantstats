@@ -3019,8 +3019,12 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     # Calculate rolling beta (protect against division by zero)
     beta = corr * std["returns"] / std["benchmark"].replace(0, _np.nan)
 
-    # Calculate rolling alpha (not annualized for rolling version)
-    alpha = df["returns"].mean() - beta * df["benchmark"].mean()
+    # Calculate rolling alpha (not annualized for rolling version). The
+    # intercept of each window's regression uses that window's means; the
+    # full-sample means gave every window the same baseline, so alpha only
+    # moved when beta did.
+    means = df.rolling(int(periods)).mean()
+    alpha = means["returns"] - beta * means["benchmark"]
 
     # Return DataFrame with rolling Greeks
     return _pd.DataFrame(index=returns.index, data={"beta": beta, "alpha": alpha})

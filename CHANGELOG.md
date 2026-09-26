@@ -1,6 +1,15 @@
 Changelog
 ===========
 
+0.0.86
+------
+
+- Fixed `rolling_greeks()` computing alpha from the full-sample means of
+  the strategy and benchmark instead of each window's own means. Every
+  window shared one baseline, so rolling alpha only moved when rolling beta
+  did and did not match a regression on the window. Rolling beta, and the
+  beta-only rolling plots, are unchanged.
+
 0.0.85
 ------
 

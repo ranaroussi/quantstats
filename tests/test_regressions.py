@@ -511,6 +511,29 @@ class TestInformationRatio:
         assert result == pytest.approx(diff.mean() / diff.std())
 
 
+class TestRollingGreeksAlpha:
+    """Rolling alpha used full-sample means instead of the window's."""
+
+    def test_each_window_matches_a_regression_on_that_window(self):
+        rng = np.random.RandomState(11)
+        idx = pd.date_range("2020-01-01", periods=300, freq="D")
+        bench = pd.Series(rng.normal(0.0003, 0.01, 300), index=idx)
+        strat = 0.7 * bench + rng.normal(0.0002, 0.006, 300)
+        strat.iloc[150:] += 0.002  # alpha changes half way through
+
+        window = 60
+        rolling = stats.rolling_greeks(
+            strat, bench, periods=window, prepare_returns=False
+        )
+
+        for end in (window, 150, 300):
+            beta, alpha = np.polyfit(
+                bench.iloc[end - window : end], strat.iloc[end - window : end], 1
+            )
+            assert rolling["beta"].iloc[end - 1] == pytest.approx(beta)
+            assert rolling["alpha"].iloc[end - 1] == pytest.approx(alpha)
+
+
 class TestSeriesRiskFreeRate:
     """A time-varying rf used to raise 'truth value is ambiguous'."""
 
