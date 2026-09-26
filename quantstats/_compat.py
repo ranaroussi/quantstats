@@ -23,11 +23,21 @@ NUMPY_VERSION = version.parse(np.__version__)
 # Frequency alias mapping for pandas compatibility
 # Starting from pandas 2.2.0, frequency aliases changed to be more explicit
 # M -> ME (Month End), Q -> QE (Quarter End), A/Y -> YE (Year End)
+_HAS_EXPLICIT_ALIASES = version.parse("2.2.0") <= PANDAS_VERSION
+
 FREQUENCY_ALIASES = {
-    "M": "ME" if version.parse("2.2.0") <= PANDAS_VERSION else "M",
-    "Q": "QE" if version.parse("2.2.0") <= PANDAS_VERSION else "Q",
-    "A": "YE" if version.parse("2.2.0") <= PANDAS_VERSION else "A",
-    "Y": "YE" if version.parse("2.2.0") <= PANDAS_VERSION else "Y",
+    "M": "ME" if _HAS_EXPLICIT_ALIASES else "M",
+    "Q": "QE" if _HAS_EXPLICIT_ALIASES else "Q",
+    "A": "YE" if _HAS_EXPLICIT_ALIASES else "A",
+    "Y": "YE" if _HAS_EXPLICIT_ALIASES else "Y",
+    "SM": "SME" if _HAS_EXPLICIT_ALIASES else "SM",
+    # The mapping also has to work in the other direction. Most of the
+    # codebase spells these the pandas 2.2 way already, and passing "ME" to a
+    # pandas older than 2.2 raises "Invalid frequency: ME".
+    "ME": "ME" if _HAS_EXPLICIT_ALIASES else "M",
+    "QE": "QE" if _HAS_EXPLICIT_ALIASES else "Q",
+    "YE": "YE" if _HAS_EXPLICIT_ALIASES else "Y",
+    "SME": "SME" if _HAS_EXPLICIT_ALIASES else "SM",
 }
 
 

@@ -39,7 +39,7 @@ from scipy.stats import linregress as _linregress
 from scipy.stats import norm as _norm
 
 from . import utils as _utils
-from ._compat import safe_concat
+from ._compat import safe_concat, safe_resample
 from .utils import validate_input
 
 # Type aliases for common types (Python 3.10+ syntax)
@@ -190,10 +190,13 @@ def distribution(
     # Calculate distributions for different time periods
     return {
         "Daily": get_outliers(daily),
-        "Weekly": get_outliers(daily.resample("W-MON").apply(apply_fnc)),
-        "Monthly": get_outliers(daily.resample("ME").apply(apply_fnc)),
-        "Quarterly": get_outliers(daily.resample("QE").apply(apply_fnc)),
-        "Yearly": get_outliers(daily.resample("YE").apply(apply_fnc)),
+        # safe_resample() translates the frequency alias; "ME"/"QE"/"YE" only
+        # exist in pandas 2.2+, so resampling on them directly breaks older
+        # supported versions.
+        "Weekly": get_outliers(safe_resample(daily, "W-MON", apply_fnc)),
+        "Monthly": get_outliers(safe_resample(daily, "ME", apply_fnc)),
+        "Quarterly": get_outliers(safe_resample(daily, "QE", apply_fnc)),
+        "Yearly": get_outliers(safe_resample(daily, "YE", apply_fnc)),
     }
 
 
@@ -1523,8 +1526,8 @@ def gain_to_pain_ratio(returns, rf=0, resolution="D"):
     # Prepare returns and resample to specified frequency. `rf` is accepted
     # for API compatibility but is deliberately not subtracted here, matching
     # long-standing behaviour.
-    returns = (
-        _utils._prepare_returns(returns, rf, apply_rf=False).resample(resolution).sum()
+    returns = safe_resample(
+        _utils._prepare_returns(returns, rf, apply_rf=False), resolution, "sum"
     )
 
     # Calculate absolute sum of negative returns (pain)

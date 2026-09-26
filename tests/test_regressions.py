@@ -15,6 +15,7 @@ import pytest
 
 import quantstats as qs
 from quantstats import reports, stats, utils
+from quantstats._compat import get_frequency_alias, safe_resample
 
 
 @pytest.fixture
@@ -500,3 +501,37 @@ class TestExtendPandasStillWorks:
         assert daily_returns.kelly_criterion() == pytest.approx(
             stats.kelly_criterion(daily_returns)
         )
+
+
+class TestFrequencyAliasCompatibility:
+    """
+    The codebase spells frequencies the pandas 2.2 way ("ME"/"QE"/"YE").
+    Those spellings do not exist in pandas 2.0/2.1, where passing them to
+    resample() raises "Invalid frequency: ME". The compatibility layer has to
+    translate in both directions, so assert against the installed pandas
+    rather than against a hardcoded expectation.
+    """
+
+    @pytest.mark.parametrize("freq", ["M", "Q", "Y", "ME", "QE", "YE"])
+    def test_alias_is_accepted_by_installed_pandas(self, freq, daily_returns):
+        alias = get_frequency_alias(freq)
+
+        # Raises ValueError if the alias is wrong for this pandas version.
+        result = daily_returns.resample(alias).sum()
+
+        assert len(result) > 0
+
+    def test_safe_resample_accepts_new_style_aliases(self, daily_returns):
+        monthly = safe_resample(daily_returns, "ME", "sum")
+
+        assert len(monthly) < len(daily_returns)
+
+    def test_outliers_distribution_builds(self, daily_returns):
+        # Resampled internally on "ME"/"QE"/"YE" without going through the
+        # compatibility layer before 0.0.82.
+        dist = stats.distribution(daily_returns)
+
+        assert set(dist) == {"Daily", "Weekly", "Monthly", "Quarterly", "Yearly"}
+
+    def test_gain_to_pain_ratio_accepts_a_resolution(self, daily_returns):
+        assert stats.gain_to_pain_ratio(daily_returns, resolution="ME") is not None

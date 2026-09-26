@@ -66,6 +66,16 @@ Changelog
 - `sharpe()`, `sortino()`, `rolling_sharpe()` and `rolling_sortino()` no
   longer raise "truth value of a Series is ambiguous" when `rf` is a Series.
 
+**Compatibility**
+
+- Fixed `ValueError: Invalid frequency: ME` on pandas 2.0 and 2.1. The
+  codebase spells frequencies the pandas 2.2 way (`ME`/`QE`/`YE`), which
+  older versions reject; the compatibility layer now translates aliases in
+  both directions. Reports and plots were unusable on those versions.
+- Raised the declared pandas floor from `>=1.5.0` to `>=2.0.0` to match what
+  is actually supported and tested. pandas 1.5 never worked with recent
+  releases.
+
 **Reports**
 
 - Fixed the "10Y (ann.)" column covering eleven calendar years (#523).
