@@ -1,6 +1,36 @@
 Changelog
 ===========
 
+0.0.86
+------
+
+**Statistical corrections** - these change reported numbers.
+
+- Fixed trade statistics on a DataFrame depending on the *other* columns in
+  the frame (#556). `avg_return()`, `avg_win()` and `avg_loss()` masked the
+  unselected cells to `NaN` and then called `.dropna()`, which drops whole
+  **rows** on a DataFrame. Each column's average was therefore computed only
+  over rows where every other column also qualified, so a strategy's average
+  win was measured only on days the benchmark also rose. Anyone calling
+  `reports.metrics()` with a benchmark on a DataFrame got affected figures
+  for Average Win/Loss, Payoff Ratio, Win/Loss Ratio, CPC Index and Kelly
+  Criterion. `.mean()` already skips `NaN` column-wise, so the `.dropna()`
+  is gone.
+- Fixed `rolling_greeks()` computing alpha from the full-sample means rather
+  than each window's own means (#554, reported with a fix by @WatchTree-19).
+  Every window shared one baseline, so rolling alpha only moved when rolling
+  beta did: on a strategy that starts earning an extra 10bp a day halfway
+  through, alpha read 0.00057 before and 0.00056 after, where a regression
+  on those windows gives 0.00035 and 0.00198. Rolling beta, and the
+  beta-only rolling plots, are unchanged.
+- Fixed a time-varying `rf` Series colliding in the `_prepare_returns()`
+  cache (#555, reported with a fix by @WatchTree-19). The key formatted `rf`
+  with its repr, which pandas truncates to the first and last few rows, so
+  two rate series of the same length differing only in between shared an
+  entry and the second caller was handed the first one's excess returns.
+  The result depended on call order. A Series `rf` is now hashed like the
+  data.
+
 0.0.85
 ------
 

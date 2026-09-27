@@ -670,8 +670,14 @@ def avg_return(
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
-    # Calculate mean of non-zero returns
-    return returns[returns != 0].dropna().mean()
+    # Calculate mean of non-zero returns.
+    #
+    # No .dropna() here: on a DataFrame the mask above turns unselected cells
+    # into NaN, and .dropna() drops the whole *row* if any column is NaN. That
+    # made each column's average depend on the other columns in the frame, so
+    # a strategy's figure changed when a benchmark column sat beside it.
+    # .mean() already skips NaN column-wise.
+    return returns[returns != 0].mean()
 
 
 def avg_win(
@@ -707,8 +713,10 @@ def avg_win(
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
-    # Calculate mean of positive returns only
-    return returns[returns > 0].dropna().mean()
+    # Calculate mean of positive returns only.
+    # See avg_return(): .dropna() would drop whole rows on a DataFrame and
+    # make this column's average depend on its neighbours.
+    return returns[returns > 0].mean()
 
 
 def avg_loss(
@@ -744,8 +752,10 @@ def avg_loss(
     if aggregate:
         returns = _utils.aggregate_returns(returns, aggregate, compounded)
 
-    # Calculate mean of negative returns only
-    return returns[returns < 0].dropna().mean()
+    # Calculate mean of negative returns only.
+    # See avg_return(): .dropna() would drop whole rows on a DataFrame and
+    # make this column's average depend on its neighbours.
+    return returns[returns < 0].mean()
 
 
 def volatility(
@@ -3019,8 +3029,14 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     # Calculate rolling beta (protect against division by zero)
     beta = corr * std["returns"] / std["benchmark"].replace(0, _np.nan)
 
-    # Calculate rolling alpha (not annualized for rolling version)
-    alpha = df["returns"].mean() - beta * df["benchmark"].mean()
+    # Calculate rolling alpha (not annualized for rolling version).
+    #
+    # The intercept of a window's regression uses that window's own means.
+    # Using the full-sample means gave every row the same baseline, so
+    # rolling alpha only moved when rolling beta did and did not match a
+    # regression fitted on the window.
+    means = df.rolling(int(periods)).mean()
+    alpha = means["returns"] - beta * means["benchmark"]
 
     # Return DataFrame with rolling Greeks
     return _pd.DataFrame(index=returns.index, data={"beta": beta, "alpha": alpha})

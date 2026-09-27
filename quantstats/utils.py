@@ -146,9 +146,22 @@ def _generate_cache_key(data, rf, nperiods, apply_rf=True):
             data_hash = hash(str(data))
             metadata = (type(data).__name__,)
 
+        # A time-varying rf has to be hashed like the data. Formatting it into
+        # the key used its repr, which pandas truncates to the first and last
+        # few rows, so two rate series differing only in between shared a key
+        # and the second caller was handed the first one's excess returns.
+        if isinstance(rf, (_pd.Series, _pd.DataFrame)):
+            rf_key = (
+                type(rf).__name__,
+                int(_pd.util.hash_pandas_object(rf).sum()),
+                len(rf),
+            )
+        else:
+            rf_key = repr(rf)
+
         # apply_rf belongs in the key too: identical data/rf/nperiods can be
         # requested both with and without the excess-return adjustment.
-        key = f"{data_hash}_{metadata}_{rf}_{nperiods}_{apply_rf}"
+        key = f"{data_hash}_{metadata}_{rf_key}_{nperiods}_{apply_rf}"
         return key
     except (ValueError, TypeError, AttributeError, MemoryError):
         # If hashing fails, return None to skip caching

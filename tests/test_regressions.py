@@ -213,6 +213,27 @@ class TestPrepareReturnsCache:
         assert list(first.columns) == ["a"]
         assert list(second.columns) == ["b"]
 
+    def test_rf_series_differing_mid_sample_do_not_collide(self):
+        # The key formatted rf with its repr, which pandas truncates to the
+        # first and last rows, so two rate series differing only in between
+        # shared an entry and the result depended on call order (#555).
+        idx = pd.date_range("2024-01-01", periods=100)
+        series = pd.Series(np.full(100, 0.001), index=idx, name="S")
+        low = pd.Series(0.01, index=idx)
+        high = low.copy()
+        high.iloc[10:-10] = 0.05  # same first and last rows as `low`
+
+        assert str(low) == str(high)  # the collision a repr-based key cannot see
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        expected = utils._prepare_returns(series, rf=high, nperiods=252)
+
+        utils._PREPARE_RETURNS_CACHE.clear()
+        utils._prepare_returns(series, rf=low, nperiods=252)
+        result = utils._prepare_returns(series, rf=high, nperiods=252)
+
+        np.testing.assert_allclose(result.values, expected.values)
+
 
 class TestPrepareReturnsNoStackInspection:
     """rf handling is an argument now, not a guess about the caller."""
@@ -422,6 +443,104 @@ class TestRiskFreeDeannualization:
         for name in ("rar", "sharpe", "sortino", "omega", "adjusted_sortino"):
             value = getattr(stats, name)(daily_returns, rf=0.05)
             assert value > -1.0, f"{name} collapsed with a 5% risk-free rate"
+
+
+class TestNoCrossColumnContamination:
+    """A column's statistic must not depend on its neighbours (#556).
+
+    avg_return/avg_win/avg_loss masked the unselected cells to NaN and then
+    called .dropna(), which drops whole *rows* on a DataFrame. Each column's
+    average was therefore computed only over rows where every other column
+    also qualified, so a strategy's Kelly, payoff ratio and average win
+    changed the moment a benchmark column sat beside it in reports.metrics().
+    """
+
+    @staticmethod
+    def _frames():
+        rng = np.random.default_rng(3)
+        idx = pd.bdate_range("2021-01-01", periods=400)
+        strat = pd.Series(rng.normal(0.0006, 0.009, 400), index=idx)
+        bench = pd.Series(rng.normal(0.0004, 0.011, 400), index=idx)
+        # Zeros matter: avg_return masks on `!= 0`, so the bug only shows
+        # there when some row is zero in one column but not the other.
+        strat.iloc[:8] = 0.0
+        bench.iloc[3:11] = 0.0
+        alone = pd.DataFrame({"returns_1": strat})
+        with_bench = pd.DataFrame({"returns_1": strat, "benchmark": bench})
+        return alone, with_bench
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "avg_return",
+            "avg_win",
+            "avg_loss",
+            "payoff_ratio",
+            "win_loss_ratio",
+            "kelly_criterion",
+            "cpc_index",
+        ],
+    )
+    def test_second_column_does_not_change_the_first(self, name):
+        alone, with_bench = self._frames()
+        fn = getattr(stats, name)
+
+        expected = fn(alone, prepare_returns=False)["returns_1"]
+        result = fn(with_bench, prepare_returns=False)["returns_1"]
+
+        assert result == pytest.approx(expected)
+
+    def test_metrics_table_matches_the_standalone_call(self):
+        alone, with_bench = self._frames()
+        strategy = alone[["returns_1"]]
+        benchmark = with_bench["benchmark"]
+
+        table = reports.metrics(
+            strategy, benchmark, display=False, mode="full", prepare_returns=False
+        )
+        shown = float(table.loc["Kelly Criterion", "Strategy"])
+        standalone = float(stats.kelly_criterion(strategy)["returns_1"])
+
+        # The table rounds to 2dp, so compare at that resolution.
+        assert shown == pytest.approx(round(standalone, 2), abs=0.01)
+
+
+class TestRollingGreeksAlpha:
+    """Rolling alpha used full-sample means instead of each window's (#554)."""
+
+    def test_each_window_matches_a_regression_on_that_window(self):
+        rng = np.random.RandomState(11)
+        idx = pd.date_range("2020-01-01", periods=300, freq="D")
+        bench = pd.Series(rng.normal(0.0003, 0.01, 300), index=idx)
+        strat = 0.7 * bench + rng.normal(0.0002, 0.006, 300)
+        strat.iloc[150:] += 0.002  # alpha genuinely changes half way through
+
+        window = 60
+        rolling = stats.rolling_greeks(
+            strat, bench, periods=window, prepare_returns=False
+        )
+
+        for end in (window, 150, 300):
+            beta, alpha = np.polyfit(
+                bench.iloc[end - window : end], strat.iloc[end - window : end], 1
+            )
+            assert rolling["beta"].iloc[end - 1] == pytest.approx(beta)
+            assert rolling["alpha"].iloc[end - 1] == pytest.approx(alpha)
+
+    def test_alpha_responds_to_a_regime_change(self):
+        rng = np.random.default_rng(7)
+        idx = pd.bdate_range("2020-01-01", periods=504)
+        bench = pd.Series(rng.normal(0.0003, 0.01, 504), index=idx)
+        strat = 0.8 * bench + rng.normal(0.0, 0.006, 504)
+        strat.iloc[252:] += 0.001
+
+        rolling = stats.rolling_greeks(strat, bench, periods=126, prepare_returns=False)
+
+        before = rolling["alpha"].iloc[251]
+        after = rolling["alpha"].iloc[503]
+
+        # Previously both read ~0.00057 regardless of the added 10bp/day.
+        assert after > before + 0.0005
 
 
 class TestAutocorrPenalty:
