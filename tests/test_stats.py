@@ -225,6 +225,25 @@ class TestDrawdown:
         assert "max drawdown" in result.columns
 
 
+    def test_ulcer_index_is_root_mean_square_drawdown(self):
+        """Ulcer index matches Martin's definition and R PerformanceAnalytics.
+
+        Bacon (2008) example portfolio; PerformanceAnalytics 2.1.0
+        UlcerIndex() gives 0.0611842872618962.
+        """
+        returns = pd.Series(
+            [0.003, 0.026, 0.011, -0.010, 0.015, 0.025, 0.016, 0.067,
+             -0.014, 0.040, -0.005, 0.081, 0.040, -0.037, -0.061, 0.017,
+             -0.049, -0.022, 0.070, 0.058, -0.065, 0.024, -0.005, -0.009],
+            index=pd.date_range("2000-01-31", periods=24, freq="ME"),
+        )
+        dd = stats.to_drawdown_series(returns)
+        assert stats.ulcer_index(returns) == pytest.approx(
+            np.sqrt((dd**2).mean()), rel=1e-12
+        )
+        assert stats.ulcer_index(returns) == pytest.approx(0.0611842872618962, rel=1e-10)
+
+
 class TestConsecutive:
     """Test consecutive wins/losses functions."""
 

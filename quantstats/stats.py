@@ -1848,8 +1848,9 @@ def ulcer_index(returns):
     # Convert returns to drawdown series
     dd = to_drawdown_series(returns)
 
-    # Calculate root mean square of drawdowns
-    return _np.sqrt(_np.divide((dd**2).sum(), returns.shape[0] - 1))
+    # Calculate root mean square of drawdowns: Martin's definition divides
+    # by the number of periods, not the number minus one
+    return _np.sqrt((dd**2).mean())
 
 
 def ulcer_performance_index(returns, rf=0):
