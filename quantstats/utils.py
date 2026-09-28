@@ -819,7 +819,9 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
         benchmark_prices = to_prices(benchmark, base=1)
         new_index = _pd.date_range(start=period[0], end=period[-1], freq="D")
         benchmark = (
-            benchmark_prices.reindex(new_index, method="bfill")
+            # Carry prices forward so a later benchmark return cannot appear
+            # on an earlier strategy date.
+            benchmark_prices.reindex(new_index, method="ffill")
             .reindex(period)
             .pct_change(fill_method=None)
             .fillna(0)

@@ -406,6 +406,103 @@ class TestBenchmarkGaps:
         assert treynor_gap != 0.0
 
 
+class TestCausalBenchmarkAlignment:
+    """A benchmark observation must not move to an earlier strategy date."""
+
+    @staticmethod
+    def _weekend_gap():
+        """Model a daily strategy spanning a business-day benchmark gap."""
+        period = pd.date_range("2024-01-05", "2024-01-08", freq="D")
+        benchmark = pd.Series(
+            [0.0, 0.10],
+            index=pd.to_datetime(["2024-01-05", "2024-01-08"]),
+            name="Benchmark",
+        )
+        expected = pd.Series([0.0, 0.0, 0.0, 0.10], index=period, name="Benchmark")
+        return period, benchmark, expected
+
+    def test_sparse_return_stays_on_its_observation_date(self):
+        period, benchmark, expected = self._weekend_gap()
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        # Fill direction is independent of return sign.
+        negative_benchmark = benchmark.copy()
+        negative_benchmark.iloc[-1] = -0.10
+        negative_expected = expected.copy()
+        negative_expected.iloc[-1] = -0.10
+        pd.testing.assert_series_equal(
+            utils._prepare_benchmark(negative_benchmark, period, prepare_returns=False),
+            negative_expected,
+            rtol=1e-12,
+            atol=1e-12,
+        )
+        # An already aligned benchmark bypasses calendar reconstruction.
+        pd.testing.assert_series_equal(
+            utils._prepare_benchmark(benchmark, benchmark.index, prepare_returns=False),
+            benchmark,
+        )
+
+    def test_leading_dates_stay_flat_until_the_next_observed_return(self):
+        period = pd.date_range("2024-01-03", "2024-01-09", freq="D")
+        benchmark = pd.Series(
+            [0.10, 0.20],
+            index=pd.to_datetime(["2024-01-05", "2024-01-08"]),
+            name="Benchmark",
+        )
+        # The initial 10% has no preceding price from which to reconstruct a
+        # return; the later 20% must remain on January 8, with trailing dates flat.
+        expected = pd.Series(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.20, 0.0],
+            index=period,
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_irregular_period_compounds_intervening_benchmark_returns(self):
+        period = pd.to_datetime(["2024-01-01", "2024-01-03"])
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-01-01", periods=3, freq="D"),
+            name="Benchmark",
+        )
+        # The two intervening returns compound: 1.10 * 1.20 - 1 == 0.32.
+        expected = pd.Series([0.0, 0.32], index=period, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_timezone_dataframe_alignment_preserves_the_input(self):
+        period, benchmark, expected = self._weekend_gap()
+        period = period.tz_localize("US/Eastern")
+        benchmark = benchmark.tz_localize("US/Eastern").to_frame()
+        original = benchmark.copy(deep=True)
+        # Preserve the established contract: Eastern midnight becomes 05:00
+        # after conversion to UTC and removal of timezone metadata.
+        expected.index = period.tz_convert("UTC").tz_localize(None)
+        expected.index.freq = None
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_frame_equal(benchmark, original)
+
+    def test_information_ratio_matches_the_causal_benchmark(self):
+        period, benchmark, expected_benchmark = self._weekend_gap()
+        returns = pd.Series([0.01, 0.02, -0.01, 0.03], index=period)
+        active_returns = returns - expected_benchmark
+        expected = active_returns.mean() / active_returns.std()
+
+        result = stats.information_ratio(returns, benchmark, prepare_returns=False)
+
+        assert result == pytest.approx(expected)
+
+
 class TestRiskFreeDeannualization:
     """An annual rf must never be charged once per period (#552).
 
