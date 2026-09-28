@@ -271,3 +271,128 @@ class TestEdgeCases:
         result = stats.sharpe(df)
         assert isinstance(result, pd.Series)
         assert len(result) == 2
+
+
+class TestDeflatedSharpe:
+    """Deflated Sharpe ratio, expected maximum Sharpe and minimum track record
+    length. Reference values come from the worked example in Bailey and
+    Lopez de Prado (2014) and from R PerformanceAnalytics 2.1.0."""
+
+    @pytest.fixture
+    def fat_tailed(self):
+        rng = np.random.default_rng(2014)
+        return pd.Series(
+            (0.0008 + 0.01 * rng.standard_t(5, 1000) / np.sqrt(5 / 3)).round(12)
+        )
+
+    def test_published_example(self):
+        # Bailey & Lopez de Prado (2014), "The Deflated Sharpe Ratio",
+        # numerical example: 100 trials, variance of annualized Sharpe ratios
+        # 1/2, 250 periods a year, so the hurdle is 0.1132 per period; an
+        # annualized Sharpe of 2.5 over 1250 days with skewness -3 and
+        # kurtosis 10 gives DSR = 0.9004.
+        hurdle = stats.expected_maximum_sharpe(100, 0.5, periods=250) / np.sqrt(250)
+        assert hurdle == pytest.approx(0.1132, abs=5e-5)
+        dsr = stats._psr(2.5 / np.sqrt(250), hurdle, -3.0, 10.0, 1250)
+        assert dsr == pytest.approx(0.9004, abs=5e-5)
+
+    def test_matches_performanceanalytics(self, fat_tailed):
+        # R PerformanceAnalytics 2.1.0 given the same per-period Sharpe,
+        # skewness, raw kurtosis and n:
+        #   ProbSharpeRatio(refSR=b, n=, sr=, sk=, kr=, ignore_kurtosis=FALSE)
+        #   MinTrackRecord(refSR=, p=, n=, sr=, sk=, kr=, ignore_kurtosis=FALSE)
+        # with b = expected_maximum_sharpe(10, 0.1) / sqrt(252).
+        assert stats.deflated_sharpe_ratio(
+            fat_tailed, trials=10, sharpe_variance=0.1
+        ) == pytest.approx(0.96442661396513096, rel=1e-10)
+        assert stats.minimum_track_record_length(fat_tailed) == pytest.approx(
+            348.08827539284715, rel=1e-10
+        )
+        assert stats.minimum_track_record_length(
+            fat_tailed, confidence=0.99
+        ) == pytest.approx(695.28014613457481, rel=1e-10)
+        hurdle = stats.expected_maximum_sharpe(10, 0.1)
+        assert stats.minimum_track_record_length(
+            fat_tailed, benchmark_sharpe=hurdle
+        ) == pytest.approx(831.0174331664241, rel=1e-10)
+
+    def test_one_trial_is_the_probabilistic_sharpe_ratio(self, fat_tailed):
+        assert stats.expected_maximum_sharpe(1, 0.3) == 0.0
+        assert stats.deflated_sharpe_ratio(fat_tailed, trials=1) == pytest.approx(
+            stats.probabilistic_sharpe_ratio(fat_tailed), rel=1e-12
+        )
+
+    def test_more_trials_deflate_more(self, fat_tailed):
+        values = [
+            stats.deflated_sharpe_ratio(fat_tailed, trials=k, sharpe_variance=0.2)
+            for k in (1, 2, 10, 100, 1000)
+        ]
+        assert np.all(np.diff(values) < 0)
+
+    def test_dataframe_of_trials(self, fat_tailed):
+        rng = np.random.default_rng(3)
+        trials = pd.DataFrame(rng.normal(0.0002, 0.01, (1000, 20)))
+        trials[0] = fat_tailed
+        sharpes = trials.mean() / trials.std(ddof=1) * np.sqrt(252)
+        expected = stats.deflated_sharpe_ratio(
+            fat_tailed, trials=20, sharpe_variance=sharpes.var(ddof=1)
+        )
+        assert stats.deflated_sharpe_ratio(fat_tailed, trials=trials) == pytest.approx(
+            expected, rel=1e-12
+        )
+
+    def test_number_of_trials_needs_a_variance(self, fat_tailed):
+        with pytest.raises(ValueError):
+            stats.deflated_sharpe_ratio(fat_tailed, trials=10)
+
+    def test_expected_maximum_matches_simulation(self):
+        # The best of 100 skill-less strategies (true Sharpe 0) averages the
+        # hurdle the theorem predicts.
+        rng = np.random.default_rng(7)
+        best, variance = [], []
+        for _ in range(100):
+            x = rng.normal(0, 0.01, (1000, 100))
+            s = x.mean(0) / x.std(0, ddof=1) * np.sqrt(252)
+            best.append(s.max())
+            variance.append(s.var(ddof=1))
+        predicted = stats.expected_maximum_sharpe(100, np.mean(variance))
+        assert np.mean(best) == pytest.approx(predicted, rel=0.03)
+
+    def test_selected_noise_is_not_evidence(self):
+        # Pick the best of 30 strategies that have no skill. The probabilistic
+        # Sharpe ratio calls most of them significant at 95%; the deflated one
+        # should do so at most 5% of the time.
+        rng = np.random.default_rng(11)
+        psr, dsr = [], []
+        for _ in range(60):
+            x = pd.DataFrame(rng.normal(0, 0.01, (504, 30)))
+            best = x[(x.mean() / x.std()).idxmax()]
+            psr.append(stats.probabilistic_sharpe_ratio(best))
+            dsr.append(stats.deflated_sharpe_ratio(best, trials=x))
+        assert np.mean(np.array(psr) > 0.95) > 0.5
+        assert np.mean(np.array(dsr) > 0.95) <= 0.05
+
+    def test_minimum_track_record_is_the_inverse_of_psr(self, fat_tailed):
+        # At exactly MinTRL observations, the PSR against the same benchmark
+        # equals the requested confidence.
+        sr, skew_value, raw_kurtosis, _ = stats._moments_for_psr(fat_tailed, 0.0, 252)
+        for confidence in (0.9, 0.95, 0.99):
+            n = stats.minimum_track_record_length(fat_tailed, confidence=confidence)
+            assert stats._psr(sr, 0.0, skew_value, raw_kurtosis, n) == pytest.approx(
+                confidence, rel=1e-12
+            )
+
+    def test_minimum_track_record_unreachable(self, fat_tailed):
+        assert stats.minimum_track_record_length(
+            fat_tailed, benchmark_sharpe=10.0
+        ) == float("inf")
+
+    def test_missing_values_are_not_observations(self, fat_tailed):
+        gapped = fat_tailed.copy()
+        gapped.iloc[::7] = np.nan
+        for fn in (
+            stats.probabilistic_sharpe_ratio,
+            stats.minimum_track_record_length,
+            lambda r: stats.deflated_sharpe_ratio(r, trials=10, sharpe_variance=0.1),
+        ):
+            assert fn(gapped) == pytest.approx(fn(gapped.dropna()), rel=1e-12)

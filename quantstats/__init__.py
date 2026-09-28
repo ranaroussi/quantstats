@@ -104,6 +104,8 @@ def extend_pandas():
     _po.probabilistic_adjusted_sortino_ratio = (  # type: ignore[attr-defined]
         stats.probabilistic_adjusted_sortino_ratio
     )
+    _po.deflated_sharpe_ratio = stats.deflated_sharpe_ratio  # type: ignore[attr-defined]
+    _po.minimum_track_record_length = stats.minimum_track_record_length  # type: ignore[attr-defined]
 
     # Monte Carlo simulation
     _po.montecarlo = stats.montecarlo  # type: ignore[attr-defined]
