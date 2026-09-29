@@ -274,10 +274,6 @@ def html(
     FileNotFoundError
         If custom template_path doesn't exist
     """
-    # Clean returns data by removing NaN values if date matching is enabled
-    if match_dates:
-        returns = returns.dropna()
-
     # Get trading periods for calculations
     win_year, win_half_year = _get_trading_periods(periods_per_year)
 
@@ -299,9 +295,6 @@ def html(
     # Read template securely with UTF-8 encoding
     tpl = template_path.read_text(encoding="utf-8")
 
-    # prepare timeseries
-    if match_dates:
-        returns = returns.dropna()
     # Clean and prepare returns data for analysis
     returns = _get_utils()._prepare_returns(returns)
 
@@ -881,9 +874,6 @@ def full(
     >>> full(returns, benchmark='^GSPC', rf=0.02)
     >>> full(returns, figsize=(10, 6), grayscale=True)
     """
-    # prepare timeseries
-    if match_dates:
-        returns = returns.dropna()
     # Clean and prepare returns data
     returns = _get_utils()._prepare_returns(returns)
 
@@ -1047,6 +1037,7 @@ def full(
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
         active=active,
+        match_dates=match_dates,
     )
 
 
@@ -1105,9 +1096,6 @@ def basic(
     >>> basic(returns, benchmark='^GSPC')
     >>> basic(returns, figsize=(10, 6), display=False)
     """
-    # prepare timeseries
-    if match_dates:
-        returns = returns.dropna()
     # Clean and prepare returns data
     returns = _get_utils()._prepare_returns(returns)
 
@@ -1187,6 +1175,7 @@ def basic(
         benchmark_title=benchmark_title,
         strategy_title=strategy_title,
         active=active,
+        match_dates=match_dates,
     )
 
 
@@ -1250,9 +1239,9 @@ def metrics(
     >>> metrics_df = metrics(returns, benchmark='^GSPC', display=False)
     >>> metrics(returns, mode="full", rf=0.02)
     """
-    # Clean returns data if date matching is enabled
-    if match_dates:
-        returns = returns.dropna()
+    # Preserve caller-owned index metadata when preparation is skipped.
+    returns = returns.copy()
+
     # Remove timezone information from index for consistent processing
     returns.index = returns.index.tz_localize(None)
 
@@ -1323,7 +1312,7 @@ def metrics(
 
     # Calculate start and end dates for each series
     if isinstance(returns, _pd.Series):
-        s_start = {"returns": df["returns"].index.strftime("%Y-%m-%d")[0]}
+        s_start = {"returns": df["returns"].dropna().index.strftime("%Y-%m-%d")[0]}
         s_end = {"returns": df["returns"].index.strftime("%Y-%m-%d")[-1]}
         s_rf = {"returns": _rf_scalar(rf)}
     elif isinstance(returns, _pd.DataFrame):
@@ -1343,9 +1332,6 @@ def metrics(
         s_start["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[0]
         s_end["benchmark"] = df["benchmark"].index.strftime("%Y-%m-%d")[-1]
         s_rf["benchmark"] = _rf_scalar(rf)
-
-    # Fill missing values with zeros for calculations
-    df = df.fillna(0)
 
     # Determine percentage multiplier for display
     # pct multiplier
@@ -1991,6 +1977,9 @@ def plots(
     >>> plots(returns, benchmark='^GSPC', mode="full")
     >>> plots(returns, grayscale=True, figsize=(10, 6))
     """
+    # Preserve caller-owned names and column labels when preparation is skipped.
+    returns = returns.copy()
+
     # Extract title parameters from kwargs
     benchmark_colname = kwargs.get("benchmark_title", "Benchmark")
     strategy_colname = kwargs.get("strategy_title", "Strategy")
@@ -2004,10 +1993,6 @@ def plots(
 
     # Get trading periods for rolling window calculations
     win_year, win_half_year = _get_trading_periods(periods_per_year)
-
-    # Clean returns data if date matching is enabled
-    if match_dates is True:
-        returns = returns.dropna()
 
     # Prepare returns data if requested
     if prepare_returns:

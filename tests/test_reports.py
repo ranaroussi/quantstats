@@ -4,12 +4,41 @@ Tests for quantstats.reports module
 
 import os
 import tempfile
+from html.parser import HTMLParser
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from quantstats import reports
+
+
+class _ReportTableParser(HTMLParser):
+    """Collect table rows without depending on an optional HTML parser."""
+
+    def __init__(self):
+        super().__init__()
+        self.rows = []
+        self._row = None
+        self._cell = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "tr":
+            self._row = []
+        elif tag in {"td", "th"} and self._row is not None:
+            self._cell = []
+
+    def handle_data(self, data):
+        if self._cell is not None:
+            self._cell.append(data)
+
+    def handle_endtag(self, tag):
+        if tag in {"td", "th"} and self._cell is not None:
+            self._row.append("".join(self._cell).strip())
+            self._cell = None
+        elif tag == "tr" and self._row is not None:
+            self.rows.append(self._row)
+            self._row = None
 
 
 @pytest.fixture
@@ -140,6 +169,34 @@ class TestHTMLReport:
             if os.path.exists(output_path):
                 os.remove(output_path)
 
+    def test_html_metrics_preserve_each_strategy_gap(self, tmp_path):
+        """The rendered metrics row must retain each column's observations."""
+        # Keep every report section valid while isolated gaps exercise
+        # preprocessing against deterministic history.
+        index = pd.date_range("2024-01-01", periods=400, freq="D")
+        returns = pd.DataFrame(
+            {
+                "Strategy A": np.tile([0.01, 0.02, -0.01, 0.005], 100),
+                "Strategy B": np.tile([0.02, -0.01, 0.01, 0.003], 100),
+            },
+            index=index,
+        )
+        returns.loc[index[40], "Strategy A"] = np.nan
+        returns.loc[index[80], "Strategy B"] = np.nan
+        output_path = tmp_path / "multi-strategy.html"
+
+        reports.html(returns, output=output_path)
+
+        parser = _ReportTableParser()
+        parser.feed(output_path.read_text(encoding="utf-8"))
+        cumulative_row = next(
+            row for row in parser.rows if row and row[0] == "Cumulative Return"
+        )
+        for position, column in enumerate(returns, start=1):
+            actual = float(cumulative_row[position].replace(",", "").rstrip("%"))
+            expected = round(float((1 + returns[column]).prod() - 1) * 100, 2)
+            assert actual == pytest.approx(expected, abs=0.005)
+
 
 class TestMetrics:
     """Test metrics function."""
@@ -173,6 +230,45 @@ class TestMetrics:
         result_with_rf = reports.metrics(sample_returns, rf=0.02, display=False)
         # Results should be different
         assert not result_no_rf.equals(result_with_rf)
+
+
+class TestMultiStrategyGapDelegation:
+    """Top-level reports must pass each strategy's observations downstream."""
+
+    @pytest.mark.parametrize("report", [reports.basic, reports.full])
+    def test_report_preserves_gaps_and_match_dates_setting(
+        self, report, monkeypatch, capsys
+    ):
+        index = pd.date_range("2024-01-01", periods=6, freq="D")
+        returns = pd.DataFrame(
+            {
+                "Strategy A": [0.01, 0.50, np.nan, -0.02, 0.03, 0.01],
+                "Strategy B": [0.02, np.nan, 0.01, 0.03, -0.01, 0.02],
+            },
+            index=index,
+        )
+        original = returns.copy(deep=True)
+        delegated = {}
+
+        # Capture both report boundaries without rendering so assertions see
+        # the exact prepared frame and forwarded options.
+        def capture_metrics(returns, **kwargs):
+            delegated["metrics"] = (returns.copy(deep=True), kwargs)
+
+        def capture_plots(returns, **kwargs):
+            delegated["plots"] = (returns.copy(deep=True), kwargs)
+
+        monkeypatch.setattr(reports, "metrics", capture_metrics)
+        monkeypatch.setattr(reports, "plots", capture_plots)
+        monkeypatch.setattr(reports._get_utils(), "_in_notebook", lambda: False)
+
+        report(returns, display=False, match_dates=False)
+        capsys.readouterr()
+
+        for delegated_returns, kwargs in delegated.values():
+            pd.testing.assert_frame_equal(delegated_returns, original)
+            assert kwargs["match_dates"] is False
+        pd.testing.assert_frame_equal(returns, original)
 
 
 class TestMatchDates:

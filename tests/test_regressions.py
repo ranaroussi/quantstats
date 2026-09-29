@@ -885,6 +885,129 @@ class TestMissingObservationsAreNotZeroReturns:
         assert not curve.isna().any()
 
 
+class TestReportColumnGapIsolation:
+    """Report preparation must not couple unrelated strategy observations."""
+
+    @staticmethod
+    def _inputs():
+        index = pd.date_range("2024-01-01", periods=6, freq="D")
+        # A's 50% return lands on B's gap, making row-wise deletion obvious.
+        strategies = pd.DataFrame(
+            {
+                "Strategy A": [0.01, 0.50, np.nan, -0.02, 0.03, 0.01],
+                "Strategy B": [0.02, np.nan, 0.01, 0.03, -0.01, 0.02],
+            },
+            index=index,
+        )
+        benchmark = pd.Series(
+            [0.01, 0.02, -0.01, np.nan, 0.01, 0.02],
+            index=index,
+            name="Benchmark",
+        )
+        return strategies, benchmark
+
+    @staticmethod
+    def _wide_inputs():
+        index = pd.date_range("2024-01-01", periods=400, freq="D")
+        rng = np.random.default_rng(27)
+        strategies = pd.DataFrame(
+            {
+                "Strategy A": rng.normal(0.0007, 0.01, len(index)),
+                "Strategy B": rng.normal(0.0004, 0.013, len(index)),
+            },
+            index=index,
+        )
+        benchmark = pd.Series(
+            rng.normal(0.0003, 0.011, len(index)),
+            index=index,
+            name="Benchmark",
+        )
+        # Cover leading, disjoint interior, all-strategy, and benchmark-only
+        # gaps as separate alignment axes.
+        strategies.loc[index[40:55], "Strategy A"] = np.nan
+        strategies.loc[index[120:138], "Strategy B"] = np.nan
+        strategies.loc[index[:5], "Strategy A"] = np.nan
+        strategies.loc[index[200], :] = np.nan
+        benchmark.loc[index[220:231]] = np.nan
+        return strategies, benchmark
+
+    @pytest.mark.parametrize("mode", ["basic", "full"])
+    @pytest.mark.parametrize("match_dates", [False, True])
+    def test_each_cumulative_return_uses_its_own_observations(self, mode, match_dates):
+        strategies, benchmark = self._inputs()
+        original_strategies = strategies.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+
+        table = reports.metrics(
+            strategies,
+            benchmark=benchmark,
+            display=False,
+            mode=mode,
+            prepare_returns=False,
+            match_dates=match_dates,
+        )
+
+        for column in strategies:
+            # The product of one strategy's observed returns is independent of
+            # gaps in its neighbour and supplies a report-independent oracle.
+            expected = round(float(stats.comp(strategies[column])), 2)
+            actual = float(table.loc["Cumulative Return", column])
+            assert actual == pytest.approx(expected, abs=0.005)
+
+        pd.testing.assert_frame_equal(strategies, original_strategies)
+        pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    def test_full_metrics_do_not_treat_a_gap_as_a_zero_return(self):
+        strategies, _ = self._inputs()
+
+        table = reports.metrics(
+            strategies,
+            display=False,
+            mode="full",
+            prepare_returns=False,
+            match_dates=False,
+        )
+
+        for column in strategies:
+            expected = round(
+                float(stats.volatility(strategies[column], prepare_returns=False)), 2
+            )
+            actual = float(table.loc["Volatility (ann.)", column])
+            assert actual == pytest.approx(expected, abs=0.005)
+
+    @pytest.mark.parametrize("match_dates", [False, True])
+    def test_full_table_matches_each_strategy_run_alone(self, match_dates):
+        strategies, benchmark = self._wide_inputs()
+        combined = reports.metrics(
+            strategies,
+            benchmark=benchmark,
+            display=False,
+            mode="full",
+            prepare_returns=False,
+            match_dates=match_dates,
+        )
+
+        for column in strategies:
+            alone = reports.metrics(
+                strategies[column],
+                benchmark=benchmark,
+                display=False,
+                mode="full",
+                prepare_returns=False,
+                match_dates=match_dates,
+            )
+            # Smart ratios have a separate metric-level column-isolation
+            # contract; this regression covers report preprocessing only.
+            report_rows = combined.index.difference(
+                ["Smart Sharpe", "Smart Sortino", "Smart Sortino/√2"], sort=False
+            )
+            pd.testing.assert_series_equal(
+                combined.loc[report_rows, column],
+                alone.loc[report_rows, "Strategy"],
+                check_names=False,
+            )
+
+
 class TestConditionalValueAtRisk:
     """
     CVaR took a parametric VaR threshold and averaged the observations below
