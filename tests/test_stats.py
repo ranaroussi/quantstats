@@ -197,6 +197,56 @@ class TestBenchmarkComparison:
         result = stats.information_ratio(sample_returns, sample_benchmark)
         assert np.isfinite(result)
 
+    @pytest.mark.parametrize(
+        "periods, annualize, compounded, expected",
+        [
+            (252, True, True, 11.475124869746283),
+            (4, True, True, 0.7588770044358986),
+            (4, False, True, 0.37676642725870957),
+            (252, True, False, 6.148170459575759),
+            (4, True, False, 0.7745966692414834),
+            (4, False, False, 0.3872983346207417),
+        ],
+    )
+    def test_information_ratio_hand_computed(
+        self, periods, annualize, compounded, expected
+    ):
+        """Compare annual and per-period ratios with independent calculations."""
+        dates = pd.date_range("2020-01-01", periods=4)
+        returns = pd.Series([0.02, -0.01, 0.03, -0.02], index=dates)
+        benchmark = pd.Series([0.01, 0.00, 0.01, -0.02], index=dates)
+        # Active returns: [0.01, -0.01, 0.02, 0], mean = 0.005.
+        # Sample variance = 0.0005 / 3; terminal wealth is
+        # 1.02 * 0.99 * 1.03 * 0.98 = 1.01929212;
+        # 1.01 * 1 * 1.01 * 0.98 = 0.999698.
+        # Geometric numerator = strategy_wealth**(periods/4)
+        # minus benchmark_wealth**(periods/4), using periods=1
+        # when not annualized. Divide by sqrt(0.0005/3 * periods).
+        result = stats.information_ratio(
+            returns, benchmark, periods, annualize, compounded
+        )
+        assert result == pytest.approx(expected)
+        if periods == 252 and annualize and compounded:
+            assert stats.information_ratio(returns, benchmark) == pytest.approx(
+                expected
+            )
+
+    def test_information_ratio_maintainer_example(self):
+        returns = pd.Series([-0.0048, 0.0002, 0.0052])
+        benchmark = pd.Series([0.0, 0.0, 0.0])
+        # Mean = 0.0002, sample standard deviation = 0.005.
+        # Per-period IR = 0.04; annual IR = 0.04 * sqrt(252).
+        assert stats.information_ratio(
+            returns, benchmark, annualize=False, compounded=False
+        ) == pytest.approx(0.04)
+        assert stats.information_ratio(
+            returns, benchmark, compounded=False
+        ) == pytest.approx(0.6349803146555018)
+
+    def test_information_ratio_zero_tracking_error(self):
+        returns = pd.Series([0.01, -0.01, 0.02])
+        assert stats.information_ratio(returns, returns) == 0
+
     def test_treynor_ratio(self, sample_returns, sample_benchmark):
         """Test Treynor Ratio calculation."""
         result = stats.treynor_ratio(sample_returns, sample_benchmark)
