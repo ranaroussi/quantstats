@@ -275,10 +275,19 @@ def plot_returns_bars(
     # Reduce label density for long time series
     if len(years) > 10:
         mod = int(len(years) / 10)
-        _plt.xticks(
-            _np.arange(len(years)),
-            [str(year) if not i % mod else "" for i, year in enumerate(years)],
-        )
+        # pandas places bar-plot ticks at the bar positions, which for a
+        # DatetimeIndex are matplotlib date units (year - 1970) rather
+        # than 0..n-1. Resetting the ticks to 0..n-1 detaches the year
+        # labels from the bars, so keep the tick positions and thin the
+        # labels through the formatter instead (pos is the tick index).
+        inner_formatter = ax.xaxis.get_major_formatter()
+
+        def sparse_year_label(value, pos, _inner=inner_formatter, _mod=mod):
+            if pos is not None and pos % _mod:
+                return ""
+            return _inner(value, pos)
+
+        ax.xaxis.set_major_formatter(_FuncFormatter(sparse_year_label))
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
