@@ -5,6 +5,7 @@ Tests for quantstats.plots module
 import os
 import tempfile
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -53,6 +54,33 @@ class TestPlotFunctions:
         """Test yearly returns bar chart."""
         fig = plots.yearly_returns(sample_returns, show=False)
         assert fig is not None
+
+    @pytest.mark.parametrize("year_count", [10, 11, 15, 19, 21])
+    @pytest.mark.parametrize("with_benchmark", [False, True])
+    def test_yearly_returns_tick_labels(self, year_count, with_benchmark):
+        """Year labels stay on their bar groups when long ranges are thinned."""
+        dates = pd.date_range("2010-01-01", f"{2009 + year_count}-06-30", freq="D")
+        returns = pd.Series(0.0002, index=dates, name="Strategy")
+        benchmark = (
+            pd.Series(0.0001, index=dates, name="Benchmark") if with_benchmark else None
+        )
+        fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+        try:
+            ax = fig.axes[0]
+            centers = np.mean(
+                [
+                    [bar.get_x() + bar.get_width() / 2 for bar in group]
+                    for group in ax.containers
+                ],
+                axis=0,
+            )
+            np.testing.assert_allclose(ax.get_xticks(), centers)
+            step = (year_count + 9) // 10
+            assert [tick.get_text() for tick in ax.get_xticklabels()] == [
+                str(2010 + i) if i % step == 0 else "" for i in range(year_count)
+            ]
+        finally:
+            plt.close(fig)
 
     def test_histogram(self, sample_returns, sample_benchmark):
         """Test histogram plot."""
