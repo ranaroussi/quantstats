@@ -1471,7 +1471,11 @@ def metrics(
                     df["returns"], df["benchmark"], prepare_returns=False
                 )
                 metrics["Information Ratio"] = _get_stats().information_ratio(
-                    df["returns"], df["benchmark"], prepare_returns=False
+                    df["returns"],
+                    df["benchmark"],
+                    periods=win_year,
+                    compounded=compounded,
+                    prepare_returns=False,
                 )
             elif isinstance(returns, _pd.DataFrame):
                 metrics["R^2"] = (
@@ -1488,7 +1492,11 @@ def metrics(
                     [
                         _get_stats()
                         .information_ratio(
-                            df[strategy_col], df["benchmark"], prepare_returns=False
+                            df[strategy_col],
+                            df["benchmark"],
+                            periods=win_year,
+                            compounded=compounded,
+                            prepare_returns=False,
                         )
                         .round(2)
                         for strategy_col in df_strategy_columns

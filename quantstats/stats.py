@@ -1638,6 +1638,8 @@ def cagr(
     rf: float = 0.0,
     compounded: bool = True,
     periods: int = 252,
+    *,
+    prepare_returns: bool = True,
 ) -> float | _pd.Series:
     """
     Calculate the Compound Annual Growth Rate (CAGR) of excess returns.
@@ -1650,6 +1652,7 @@ def cagr(
         rf (float): Risk-free rate (annualized, default: 0.0)
         compounded (bool): Whether to compound returns (default: True)
         periods (int): Periods per year for annualization (default: 252)
+        prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
         float or pd.Series: CAGR percentage
@@ -1664,7 +1667,11 @@ def cagr(
 
     # `rf` is accepted for API compatibility but is not subtracted here,
     # matching long-standing behaviour.
-    total = _utils._prepare_returns(returns, rf, apply_rf=False)
+    total = (
+        _utils._prepare_returns(returns, rf, apply_rf=False)
+        if prepare_returns
+        else returns
+    )
 
     # Calculate total return
     if compounded:
@@ -2881,18 +2888,31 @@ def r2(returns, benchmark):
     return r_squared(returns, benchmark)
 
 
-def information_ratio(returns, benchmark, prepare_returns=True):
+def information_ratio(
+    returns,
+    benchmark,
+    periods=252,
+    annualize=True,
+    compounded=True,
+    prepare_returns=True,
+):
     """
     Calculate the Information Ratio.
 
     The Information Ratio measures the risk-adjusted excess return of a
     portfolio relative to a benchmark. It's calculated as the active return
-    (return - benchmark) divided by the tracking error (standard deviation
-    of active returns).
+    divided by the tracking error (standard deviation of active returns).
+    By default, active return is the difference between the strategy and
+    benchmark CAGRs, and tracking error is annualized. Set annualize=False
+    for per-period growth and tracking error.
 
     Args:
         returns (pd.Series): Return series to analyze
         benchmark (pd.Series): Benchmark return series for comparison
+        periods (int): Periods per year for annualization (default: 252)
+        annualize (bool): Whether to annualize the ratio (default: True)
+        compounded (bool): Whether to compound returns (default: True).
+            Set to False for arithmetic active returns.
         prepare_returns (bool): Whether to prepare returns first (default: True)
 
     Returns:
@@ -2918,10 +2938,21 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     # Calculate tracking error (standard deviation of active returns)
     std = diff_rets.std()
 
-    # Return Information Ratio (active return / tracking error)
-    if std != 0:
-        return diff_rets.mean() / std
-    return 0
+    if std == 0:
+        return 0
+
+    growth_periods = periods if annualize else 1
+    if compounded:
+        # Both series are already normalized; do not detect prices again.
+        active_return = cagr(
+            returns, periods=growth_periods, prepare_returns=False
+        ) - cagr(benchmark, periods=growth_periods, prepare_returns=False)
+    else:
+        active_return = diff_rets.mean() * growth_periods
+
+    if annualize:
+        std *= _np.sqrt(periods)
+    return active_return / std
 
 
 def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
