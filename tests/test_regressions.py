@@ -663,6 +663,94 @@ class TestSeriesRiskFreeRate:
         assert not result.isna().any().any()
         np.testing.assert_allclose(result["a"].values, frame["a"].values - rf.values)
 
+    @pytest.mark.parametrize(
+        ("returns_kind", "rf_kind"),
+        [("series", "series"), ("dataframe", "series"), ("dataframe", "dataframe")],
+    )
+    @pytest.mark.parametrize("nperiods", [None, 252])
+    def test_excess_returns_carry_forward_off_grid_rf(
+        self, returns_kind, rf_kind, nperiods
+    ):
+        returns_index = pd.to_datetime(["2024-01-02", "2024-01-04"])
+        rf_index = pd.to_datetime(["2024-01-01", "2024-01-03"])
+
+        if returns_kind == "series":
+            returns = pd.Series([0.02, 0.03], index=returns_index)
+        else:
+            returns = pd.DataFrame(
+                {"a": [0.02, 0.03], "b": [0.04, 0.05]}, index=returns_index
+            )
+
+        if rf_kind == "series":
+            rf = pd.Series([0.001, 0.002], index=rf_index)
+            expected_rf = pd.Series([0.001, 0.002], index=returns_index)
+        else:
+            rf = pd.DataFrame(
+                {"a": [0.001, 0.003], "b": [0.002, 0.004]}, index=rf_index
+            )
+            expected_rf = pd.DataFrame(
+                {"a": [0.001, 0.003], "b": [0.002, 0.004]},
+                index=returns_index,
+            )
+
+        if nperiods is not None:
+            expected_rf = np.power(1 + expected_rf, 1.0 / nperiods) - 1.0
+
+        if isinstance(returns, pd.DataFrame) and isinstance(expected_rf, pd.Series):
+            expected = returns.sub(expected_rf, axis=0)
+        else:
+            expected = returns - expected_rf
+
+        result = utils.to_excess_returns(returns, rf, nperiods=nperiods)
+
+        if isinstance(expected, pd.Series):
+            pd.testing.assert_series_equal(result, expected)
+        else:
+            pd.testing.assert_frame_equal(result, expected)
+
+    def test_excess_returns_preserve_leading_backfill_and_empty_rf(self):
+        returns_index = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-04"])
+        returns = pd.Series([0.02, 0.03, 0.04], index=returns_index)
+        rf_index = pd.to_datetime(["2024-01-02", "2024-01-03"])
+        rf = pd.Series([0.001, 0.002], index=rf_index)
+        empty_rf = pd.Series(dtype=float, index=pd.DatetimeIndex([]))
+
+        result = utils.to_excess_returns(returns, rf)
+        empty_result = utils.to_excess_returns(returns, empty_rf)
+
+        pd.testing.assert_series_equal(
+            result,
+            pd.Series([0.019, 0.029, 0.038], index=returns_index),
+        )
+        pd.testing.assert_series_equal(empty_result, returns)
+
+    def test_excess_returns_ffill_nan_at_matching_rate_date(self):
+        index = pd.date_range("2024-01-01", periods=3)
+        returns = pd.Series([0.02, 0.03, 0.04], index=index)
+        rf = pd.Series([0.001, np.nan, 0.002], index=index)
+
+        result = utils.to_excess_returns(returns, rf)
+
+        expected = pd.Series([0.019, 0.029, 0.038], index=index)
+        pd.testing.assert_series_equal(result, expected)
+
+    def test_excess_returns_ffill_off_grid_nan_in_rf_history(self):
+        returns_index = pd.to_datetime(["2024-01-02", "2024-01-04"])
+        returns = pd.Series([0.02, 0.03], index=returns_index)
+        rf_index = pd.DatetimeIndex(
+            [
+                pd.Timestamp("2024-01-01"),
+                pd.Timestamp("2024-01-03"),
+                pd.Timestamp("2024-01-03 12:00"),
+            ]
+        )
+        rf = pd.Series([0.001, 0.002, np.nan], index=rf_index)
+
+        result = utils.to_excess_returns(returns, rf)
+
+        expected = pd.Series([0.019, 0.028], index=returns_index)
+        pd.testing.assert_series_equal(result, expected)
+
     def test_rf_is_nonzero_handles_series(self):
         idx = pd.date_range("2024-01-01", periods=3)
 
