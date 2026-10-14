@@ -2705,25 +2705,15 @@ def max_drawdown(prices: Returns) -> float:
     if len(prices) == 0:
         return 0.0
 
-    # Handle edge case: if first value represents a loss from baseline
-    # Add a phantom baseline value to ensure proper drawdown calculation
-    try:
-        time_delta = prices.index.freq or _pd.Timedelta(days=1)
-    except Exception:
-        time_delta = _pd.Timedelta(days=1)
-
-    phantom_date = prices.index[0] - time_delta
-
-    # Determine appropriate baseline value
+    prices = prices.sort_index()
+    # Include the starting equity as a possible peak without inventing an index value.
     baseline_value = _get_baseline_value(prices, from_returns)
-
-    # Create extended series with phantom baseline
-    extended_prices = prices.copy()
-    extended_prices.loc[phantom_date] = baseline_value
-    extended_prices = extended_prices.sort_index()
-
-    # Calculate drawdown with phantom baseline
-    return (extended_prices / extended_prices.expanding(min_periods=0).max()).min() - 1
+    peak = prices.cummax()
+    if isinstance(peak, _pd.DataFrame):
+        peak = peak.clip(lower=baseline_value, axis=1)
+    else:
+        peak = peak.clip(lower=baseline_value)
+    return (prices / peak).min() - 1
 
 
 def to_drawdown_series(returns):
@@ -2756,28 +2746,15 @@ def to_drawdown_series(returns):
     if len(prices) == 0:
         return _pd.Series([], dtype=float, index=returns.index)
 
-    # Handle edge case: if first value represents a loss from baseline
-    # Add a phantom baseline value to ensure proper drawdown calculation
-    try:
-        time_delta = prices.index.freq or _pd.Timedelta(days=1)
-    except Exception:
-        time_delta = _pd.Timedelta(days=1)
-
-    phantom_date = prices.index[0] - time_delta
-
-    # Determine appropriate baseline value
+    prices = prices.sort_index()
+    # Include the starting equity as a possible peak without inventing an index value.
     baseline_value = _get_baseline_value(prices, from_returns)
-
-    # Create extended series with phantom baseline
-    extended_prices = prices.copy()
-    extended_prices.loc[phantom_date] = baseline_value
-    extended_prices = extended_prices.sort_index()
-
-    # Calculate drawdown series with phantom baseline
-    dd = extended_prices / _np.maximum.accumulate(extended_prices) - 1.0
-
-    # Remove phantom point and return original time series
-    dd = dd.drop(phantom_date)
+    peak = prices.cummax()
+    if isinstance(peak, _pd.DataFrame):
+        peak = peak.clip(lower=baseline_value, axis=1)
+    else:
+        peak = peak.clip(lower=baseline_value)
+    dd = prices / peak - 1.0
 
     # Clean up infinite and zero values
     return dd.replace([_np.inf, -_np.inf, -0], 0)  # type: ignore[attr-defined]

@@ -177,6 +177,19 @@ class TestDrawdownBaseline:
         assert stats.max_drawdown(returns) <= -0.10 + 1e-12
         assert stats.to_drawdown_series(returns).iloc[0] == pytest.approx(-0.10)
 
+    def test_drawdown_accepts_range_index(self):
+        index = pd.RangeIndex(3)
+        returns = pd.Series([-0.10, 0.20, -0.05], index=index)
+
+        assert stats.max_drawdown(returns) == pytest.approx(-0.10)
+        pd.testing.assert_series_equal(
+            stats.to_drawdown_series(returns),
+            pd.Series([-0.10, 0.0, -0.05], index=index),
+        )
+
+        prices = pd.Series([100.0, 90.0, 110.0], index=index)
+        assert stats.max_drawdown(prices) == pytest.approx(-0.10)
+
 
 class TestPrepareReturnsCache:
     """Equivalent Series and DataFrames used to share a cache entry."""
