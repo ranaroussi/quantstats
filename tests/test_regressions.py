@@ -190,6 +190,33 @@ class TestDrawdownBaseline:
         prices = pd.Series([100.0, 90.0, 110.0], index=index)
         assert stats.max_drawdown(prices) == pytest.approx(-0.10)
 
+    def test_range_index_dataframe_uses_per_column_baselines(self):
+        index = pd.RangeIndex(3)
+        frame = pd.DataFrame(
+            {"returns": [-0.10, 0.20, -0.05], "prices": [100.0, 90.0, 110.0]},
+            index=index,
+        )
+        expected = pd.DataFrame(
+            {"returns": [-0.10, 0.0, -0.05], "prices": [0.0, -0.10, 0.0]},
+            index=index,
+        )
+
+        pd.testing.assert_frame_equal(stats.to_drawdown_series(frame), expected)
+        pd.testing.assert_series_equal(stats.max_drawdown(frame), expected.min())
+
+    def test_unsorted_price_index_starts_at_first_chronological_price(self):
+        prices = pd.Series(
+            [110.0, 100.0, 90.0],
+            index=pd.to_datetime(["2020-01-03", "2020-01-01", "2020-01-02"]),
+        )
+        expected = pd.Series(
+            [0.0, -0.10, 0.0],
+            index=pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"]),
+        )
+
+        pd.testing.assert_series_equal(stats.to_drawdown_series(prices), expected)
+        assert stats.max_drawdown(prices) == pytest.approx(-0.10)
+
 
 class TestPrepareReturnsCache:
     """Equivalent Series and DataFrames used to share a cache entry."""
