@@ -932,6 +932,8 @@ def yearly_returns(
     Notes
     -----
     Aggregates returns by year and displays as bars. Shows mean return as horizontal line.
+    Partial years aggregate the supplied observations. Year-end resampling retains
+    intervening years with no observations as zero returns.
     """
     # Set plot title
     title = "EOY Returns"

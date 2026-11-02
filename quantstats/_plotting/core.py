@@ -255,7 +255,9 @@ def plot_returns_bars(
     # Adjust colors if no benchmark
     if benchmark is None:
         colors = colors[1:]
-    df.plot(kind="bar", ax=ax, color=colors)
+    # Treat annual periods as categories so pandas does not install date locators
+    # that may change the bar tick positions after labels are assigned.
+    df.set_axis(df.index.astype(str)).plot(kind="bar", ax=ax, color=colors)
 
     # Set background colors
     fig.set_facecolor("white")

@@ -4,6 +4,7 @@ Tests for quantstats.plots module
 
 import os
 import tempfile
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -53,6 +54,72 @@ class TestPlotFunctions:
         """Test yearly returns bar chart."""
         fig = plots.yearly_returns(sample_returns, show=False)
         assert fig is not None
+
+    def test_yearly_returns_uses_fixed_year_labels(self):
+        returns = pd.Series(
+            [0.1, -0.05], index=pd.date_range("2025", periods=2, freq="YE")
+        )
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", message="set_ticklabels.*fixed number of ticks"
+            )
+            fig = plots.yearly_returns(returns, show=False)
+
+        assert [tick.get_text() for tick in fig.axes[0].get_xticklabels()] == [
+            "2025",
+            "2026",
+        ]
+
+    @pytest.mark.parametrize("with_benchmark", [False, True])
+    def test_yearly_returns_thins_long_year_labels(self, with_benchmark):
+        returns = pd.Series(
+            [0.01, -0.005] * 12 + [0.01],
+            index=pd.date_range("2000", periods=25, freq="YE"),
+        )
+        benchmark = returns / 2 if with_benchmark else None
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", message="set_ticklabels.*fixed number of ticks"
+            )
+            fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+
+        ax = fig.axes[0]
+        assert [tick.get_text() for tick in ax.get_xticklabels()] == [
+            str(year) if i % 2 == 0 else "" for i, year in enumerate(range(2000, 2025))
+        ]
+        np.testing.assert_array_equal(ax.get_xticks(), np.arange(25))
+
+    @pytest.mark.parametrize("with_benchmark", [False, True])
+    @pytest.mark.parametrize("compounded", [False, True])
+    def test_yearly_returns_partial_year_and_gap(self, with_benchmark, compounded):
+        returns = pd.Series(
+            [0.1, 0.05, 0.2, -0.1],
+            index=pd.to_datetime(
+                ["2019-07-01", "2019-12-01", "2021-02-01", "2021-10-01"]
+            ),
+            name="Strategy",
+        )
+        benchmark = (returns / 2).rename("Benchmark") if with_benchmark else None
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", message="set_ticklabels.*fixed number of ticks"
+            )
+            fig = plots.yearly_returns(
+                returns, benchmark=benchmark, compounded=compounded, show=False
+            )
+
+        ax = fig.axes[0]
+        assert [tick.get_text() for tick in ax.get_xticklabels()] == [
+            "2019",
+            "2020",
+            "2021",
+        ]
+        np.testing.assert_array_equal(ax.get_xticks(), [0, 1, 2])
+        expected = [0.155, 0, 0.08] if compounded else [0.15, 0, 0.1]
+        np.testing.assert_allclose(ax.containers[-1].datavalues, expected)
+        if with_benchmark:
+            np.testing.assert_allclose(ax.containers[0].datavalues, [0.07625, 0, 0.045])
 
     def test_histogram(self, sample_returns, sample_benchmark):
         """Test histogram plot."""
