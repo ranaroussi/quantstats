@@ -406,6 +406,920 @@ class TestBenchmarkGaps:
         assert treynor_gap != 0.0
 
 
+class TestCausalBenchmarkAlignment:
+    """A benchmark observation must not move to an earlier strategy date."""
+
+    @staticmethod
+    def _weekend_gap():
+        """Model a daily strategy spanning a business-day benchmark gap."""
+        period = pd.date_range("2024-01-05", "2024-01-08", freq="D")
+        benchmark = pd.Series(
+            [0.0, 0.10],
+            index=pd.to_datetime(["2024-01-05", "2024-01-08"]),
+            name="Benchmark",
+        )
+        expected = pd.Series([0.0, 0.0, 0.0, 0.10], index=period, name="Benchmark")
+        return period, benchmark, expected
+
+    def test_sparse_return_stays_on_its_observation_date(self):
+        period, benchmark, expected = self._weekend_gap()
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        # Fill direction is independent of return sign.
+        negative_benchmark = benchmark.copy()
+        negative_benchmark.iloc[-1] = -0.10
+        negative_expected = expected.copy()
+        negative_expected.iloc[-1] = -0.10
+        pd.testing.assert_series_equal(
+            utils._prepare_benchmark(negative_benchmark, period, prepare_returns=False),
+            negative_expected,
+            rtol=1e-12,
+            atol=1e-12,
+        )
+        # An already aligned benchmark bypasses calendar reconstruction.
+        pd.testing.assert_series_equal(
+            utils._prepare_benchmark(benchmark, benchmark.index, prepare_returns=False),
+            benchmark,
+        )
+
+    def test_leading_dates_stay_flat_until_the_next_observed_return(self):
+        period = pd.date_range("2024-01-03", "2024-01-09", freq="D")
+        benchmark = pd.Series(
+            [0.10, 0.20],
+            index=pd.to_datetime(["2024-01-05", "2024-01-08"]),
+            name="Benchmark",
+        )
+        # The initial 10% has no preceding price from which to reconstruct a
+        # return; the later 20% must remain on January 8, with trailing dates flat.
+        expected = pd.Series(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.20, 0.0],
+            index=period,
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_irregular_period_compounds_intervening_benchmark_returns(self):
+        period = pd.to_datetime(["2024-01-01", "2024-01-03"])
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-01-01", periods=3, freq="D"),
+            name="Benchmark",
+        )
+        # The two intervening returns compound: 1.10 * 1.20 - 1 == 0.32.
+        expected = pd.Series([0.0, 0.32], index=period, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_timezone_dataframe_alignment_preserves_the_input(self):
+        period, benchmark, expected = self._weekend_gap()
+        period = period.tz_localize("US/Eastern")
+        benchmark = benchmark.tz_localize("US/Eastern").to_frame()
+        original = benchmark.copy(deep=True)
+        # Preserve the established contract: Eastern midnight becomes 05:00
+        # after conversion to UTC and removal of timezone metadata.
+        expected.index = period.tz_convert("UTC").tz_localize(None)
+        expected.index.freq = None
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_frame_equal(benchmark, original)
+
+    def test_information_ratio_matches_the_causal_benchmark(self):
+        period, benchmark, expected_benchmark = self._weekend_gap()
+        returns = pd.Series([0.01, 0.02, -0.01, 0.03], index=period)
+        active_returns = returns - expected_benchmark
+        expected = active_returns.mean() / active_returns.std()
+
+        result = stats.information_ratio(returns, benchmark, prepare_returns=False)
+
+        assert result == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        ("strategy_hour", "benchmark_hour", "strategy_tz", "benchmark_tz"),
+        [
+            (0, 5, None, None),
+            (5, 0, None, None),
+            (0, 0, "UTC", "US/Eastern"),
+            (0, 0, "US/Eastern", "UTC"),
+        ],
+    )
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_daily_offsets_preserve_same_date_returns(
+        self, strategy_hour, benchmark_hour, strategy_tz, benchmark_tz, as_frame
+    ):
+        period = pd.date_range("2024-01-02", periods=4, freq="D", tz=strategy_tz)
+        period += pd.Timedelta(hours=strategy_hour)
+        benchmark_index = pd.date_range(
+            "2024-01-02", periods=4, freq="D", tz=benchmark_tz
+        ) + pd.Timedelta(hours=benchmark_hour)
+        benchmark = pd.Series(
+            [0.01, 0.02, 0.03, 0.04], index=benchmark_index, name="Benchmark"
+        )
+        if as_frame:
+            benchmark = benchmark.to_frame()
+        original = benchmark.copy(deep=True)
+        output_index = period
+        if period.tz is not None:
+            output_index = period.tz_convert("UTC").tz_localize(None)
+        # Reconstructing from prices retains the initial zero; each later
+        # observation belongs to its own day, regardless of the label's hour.
+        expected = pd.Series(
+            [0.0, 0.02, 0.03, 0.04], index=output_index, name="Benchmark"
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        returns = pd.Series([0.0, 0.03, 0.04, 0.05], index=period)
+        original_returns = returns.copy(deep=True)
+        # Active returns [0, .01, .01, .01] have mean .0075 and sample
+        # standard deviation .005, independently giving an information ratio 1.5.
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(1.5)
+        pd.testing.assert_series_equal(returns, original_returns)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original)
+        else:
+            pd.testing.assert_series_equal(benchmark, original)
+
+    @pytest.mark.parametrize(("strategy_hour", "benchmark_hour"), [(0, 5), (5, 0)])
+    def test_offset_weekend_gap_keeps_the_return_on_monday(
+        self, strategy_hour, benchmark_hour
+    ):
+        period, benchmark, expected = self._weekend_gap()
+        period += pd.Timedelta(hours=strategy_hour)
+        benchmark.index += pd.Timedelta(hours=benchmark_hour)
+        expected.index = period
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    @pytest.mark.parametrize(("strategy_hour", "benchmark_hour"), [(0, 5), (5, 0)])
+    def test_offset_period_compounds_intervening_returns(
+        self, strategy_hour, benchmark_hour
+    ):
+        period = pd.to_datetime(["2024-01-01", "2024-01-03"])
+        period += pd.Timedelta(hours=strategy_hour)
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-01-01", periods=3, freq="D")
+            + pd.Timedelta(hours=benchmark_hour),
+            name="Benchmark",
+        )
+        # January 3 includes both intervening returns: 1.10 * 1.20 - 1.
+        expected = pd.Series([0.0, 0.32], index=period, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_daily_labels_use_the_existing_utc_timezone_basis(self):
+        period = pd.date_range("2024-01-03", periods=3, freq="D", tz="UTC")
+        benchmark = pd.Series(
+            [0.01, 0.02, 0.03],
+            index=pd.date_range(
+                "2024-01-02 23:00", periods=3, freq="D", tz="US/Eastern"
+            ),
+            name="Benchmark",
+        )
+        original = benchmark.copy(deep=True)
+        # Eastern 23:00 belongs to the following UTC day. Matching local
+        # calendar dates would move these observations to the preceding day.
+        expected = pd.Series(
+            [0.0, 0.02, 0.03],
+            index=period.tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_series_equal(benchmark, original)
+
+    @pytest.mark.parametrize("timezone", ["Europe/London", "Asia/Tokyo"])
+    @pytest.mark.parametrize(("strategy_hour", "benchmark_hour"), [(16.5, 0), (0, 5)])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_positive_offset_daily_labels_preserve_the_calendar_day(
+        self, timezone, strategy_hour, benchmark_hour, as_frame
+    ):
+        period = pd.date_range("2024-07-01", periods=3, freq="D", tz=timezone)
+        period += pd.Timedelta(hours=strategy_hour)
+        benchmark = pd.Series(
+            [0.01, 0.02, 0.03],
+            index=pd.date_range("2024-07-01", periods=3, freq="D", tz=timezone)
+            + pd.Timedelta(hours=benchmark_hour),
+            name="Benchmark",
+        )
+        if as_frame:
+            benchmark = benchmark.to_frame()
+        original = benchmark.copy(deep=True)
+        expected = pd.Series(
+            [0.0, 0.02, 0.03],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        returns = pd.Series([0.0, 0.03, 0.04], index=period)
+        original_returns = returns.copy(deep=True)
+        # Active returns [0, .01, .01] have mean 1/150 and sample standard
+        # deviation .01 / sqrt(3), giving an independent IR of 2 / sqrt(3).
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(
+            2 / np.sqrt(3)
+        )
+        pd.testing.assert_series_equal(returns, original_returns)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original)
+        else:
+            pd.testing.assert_series_equal(benchmark, original)
+        # A future day's changed return must not affect the preceding days.
+        future_changed = benchmark.copy(deep=True)
+        future_changed.iloc[-1] = 0.90
+        future_result = utils._prepare_benchmark(
+            future_changed, period, prepare_returns=False
+        )
+        pd.testing.assert_series_equal(
+            future_result.iloc[:-1], expected.iloc[:-1], rtol=1e-12, atol=1e-12
+        )
+
+    @pytest.mark.parametrize("timezone", ["Europe/London", "Asia/Tokyo"])
+    def test_positive_offset_weekend_gap_keeps_the_return_on_monday(self, timezone):
+        period = pd.date_range("2024-07-05 16:30", periods=4, freq="D", tz=timezone)
+        benchmark = pd.Series(
+            [0.0, 0.10],
+            index=pd.to_datetime(["2024-07-05", "2024-07-08"]).tz_localize(timezone),
+            name="Benchmark",
+        )
+        expected = pd.Series(
+            [0.0, 0.0, 0.0, 0.10],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_positive_offset_daily_alignment_across_dst(self):
+        period = pd.date_range(
+            "2024-03-30 16:30", periods=4, freq="D", tz="Europe/London"
+        )
+        benchmark = pd.Series(
+            [0.01, 0.02, 0.03, 0.04],
+            index=pd.date_range("2024-03-30", periods=4, freq="D", tz="Europe/London"),
+            name="Benchmark",
+        )
+        # Consecutive local midnights can share a UTC date across spring DST.
+        # The public caller also removes the strategy timezone before alignment.
+        expected = pd.Series(
+            [0.0, 0.02, 0.03, 0.04],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        for strategy_index in (period, expected.index):
+            result = utils._prepare_benchmark(
+                benchmark, strategy_index, prepare_returns=False
+            )
+            pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        returns = pd.Series([0.0, 0.03, 0.04, 0.05], index=period)
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(1.5)
+
+    @pytest.mark.parametrize("timezone", ["Europe/London", "Asia/Tokyo"])
+    def test_positive_offset_irregular_period_compounds_returns(self, timezone):
+        period = pd.to_datetime(["2024-07-01 16:30", "2024-07-03 16:30"])
+        period = period.tz_localize(timezone)
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-07-01", periods=3, freq="D", tz=timezone),
+            name="Benchmark",
+        )
+        # The two intervening local-day returns compound: 1.10 * 1.20 - 1.
+        expected = pd.Series(
+            [0.0, 0.32],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    @pytest.mark.parametrize(
+        ("start", "expected_returns"),
+        [("2024-07-01", [0.0, 0.32, 0.82]), ("2024-03-30", [0.0, 0.32, 0.30])],
+    )
+    def test_positive_offset_intraday_benchmark_keeps_timestamp_alignment(
+        self, start, expected_returns
+    ):
+        period = pd.date_range(start, periods=3, freq="D", tz="Europe/London")
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20, 0.30, 0.40],
+            index=pd.date_range(start, periods=5, freq="12h", tz="Europe/London"),
+            name="Benchmark",
+        )
+        # Multiple local observations must bypass the daily calendar guard.
+        # The last observation falls after the final midnight across spring DST,
+        # so only 1.10 * 1.20 and then 1.30 are observed on the sampling grid.
+        expected = pd.Series(
+            expected_returns,
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_positive_offset_intraday_strategy_keeps_timestamp_alignment(self):
+        period = pd.date_range("2024-03-30", periods=5, freq="12h", tz="Europe/London")
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-03-30", periods=3, freq="D", tz="Europe/London"),
+            name="Benchmark",
+        )
+        # Multiple strategy observations must bypass the daily calendar guard.
+        # The established daily grid leaves intervening observations missing,
+        # so pct_change(fill_method=None) cannot reconstruct these returns.
+        expected = pd.Series(
+            0.0, index=period.tz_convert("UTC").tz_localize(None), name="Benchmark"
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    @pytest.mark.parametrize(
+        ("timezone", "expected_returns"),
+        [(None, [0.0, 0.32, 0.82]), ("US/Eastern", [0.0, 0.32, 0.30])],
+    )
+    def test_intraday_benchmark_observations_keep_timestamp_alignment(
+        self, timezone, expected_returns
+    ):
+        period = pd.date_range("2024-03-09", periods=3, freq="D", tz=timezone)
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20, 0.30, 0.40],
+            index=pd.date_range("2024-03-09", periods=5, freq="12h", tz=timezone),
+            name="Benchmark",
+        )
+        # Keep distinct observations within a day. Midnight prices include
+        # 1.10 * 1.20. Across Eastern DST, the last 12-hour observation falls
+        # after midnight, so only 1.30 is observed at the final strategy label.
+        output_index = period
+        if timezone is not None:
+            output_index = period.tz_convert("UTC").tz_localize(None)
+        expected = pd.Series(expected_returns, index=output_index, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    @pytest.mark.parametrize("timezone", ["Europe/London", "Asia/Tokyo"])
+    @pytest.mark.parametrize("intraday_owner", ["strategy", "benchmark"])
+    @pytest.mark.parametrize("prepared", [False, True])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_native_intraday_observations_keep_timestamp_sampling(
+        self, timezone, intraday_owner, prepared, as_frame
+    ):
+        if intraday_owner == "strategy":
+            period = pd.DatetimeIndex(
+                ["2024-07-01 00:00", "2024-07-01 12:00"]
+            ).tz_localize(timezone)
+            benchmark_index = pd.date_range("2024-07-01", periods=2, tz=timezone)
+            # Both strategy rows precede the second benchmark observation.
+            # The daily sampling grid omits noon, retaining its existing zero.
+            expected_returns = [0.0, 0.0]
+        else:
+            period = pd.date_range("2024-07-01 09:00", periods=2, tz=timezone)
+            benchmark_index = pd.DatetimeIndex(
+                ["2024-07-01 00:00", "2024-07-01 12:00"]
+            ).tz_localize(timezone)
+            # At 09:00 only the midnight price is observed; the noon gain is
+            # included at the following day's 09:00 sampling point.
+            expected_returns = [0.0, 0.10]
+        benchmark = pd.Series([0.0, 0.10], index=benchmark_index, name="Benchmark")
+        if as_frame:
+            benchmark = benchmark.to_frame()
+        original_benchmark = benchmark.copy(deep=True)
+        output_index = period.tz_convert("UTC").tz_localize(None)
+        expected = pd.Series(expected_returns, index=output_index, name="Benchmark")
+
+        result = utils._prepare_benchmark(
+            benchmark,
+            output_index if prepared else period,
+            prepare_returns=False,
+            strategy_tz=period.tz if prepared else None,
+        )
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        changed = benchmark.copy(deep=True)
+        changed.iloc[-1] = 0.90
+        changed_result = utils._prepare_benchmark(
+            changed,
+            output_index if prepared else period,
+            prepare_returns=False,
+            strategy_tz=period.tz if prepared else None,
+        )
+        # The later benchmark observation remains invisible before its sample.
+        pd.testing.assert_series_equal(changed_result.iloc[:1], expected.iloc[:1])
+        assert changed_result.iloc[-1] == pytest.approx(
+            0.0 if intraday_owner == "strategy" else 0.90
+        )
+        returns = pd.Series([0.02, 0.04], index=period, name="Strategy")
+        original_returns = returns.copy(deep=True)
+        active = np.array([0.02, 0.04]) - np.array(expected_returns)
+        expected_ir = active.mean() / active.std(ddof=1)
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(expected_ir)
+        qs.extend_pandas()
+        assert returns.information_ratio(benchmark) == pytest.approx(expected_ir)
+        pd.testing.assert_series_equal(returns, original_returns)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original_benchmark)
+        else:
+            pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    @pytest.mark.parametrize(
+        ("timezone", "start"),
+        [("America/Sao_Paulo", "2018-11-03"), ("America/Havana", "2024-11-02")],
+    )
+    @pytest.mark.parametrize("prepared", [False, True])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_daily_alignment_does_not_construct_local_dst_midnight(
+        self, timezone, start, prepared, as_frame
+    ):
+        benchmark_index = pd.date_range(start + " 12:00", periods=3, tz=timezone)
+        period = benchmark_index + pd.Timedelta(hours=4)
+        benchmark = pd.Series(
+            [0.0, 0.02, 0.03], index=benchmark_index, name="Benchmark"
+        )
+        if as_frame:
+            benchmark = benchmark.to_frame()
+        original_benchmark = benchmark.copy(deep=True)
+        output_index = period.tz_convert("UTC").tz_localize(None)
+        # Noon observations are valid and have distinct local dates even when
+        # midnight on the intervening DST transition is nonexistent or ambiguous.
+        expected = pd.Series([0.0, 0.02, 0.03], index=output_index, name="Benchmark")
+
+        result = utils._prepare_benchmark(
+            benchmark,
+            output_index if prepared else period,
+            prepare_returns=False,
+            strategy_tz=period.tz if prepared else None,
+        )
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        returns = pd.Series([0.0, 0.03, 0.04], index=period, name="Strategy")
+        original_returns = returns.copy(deep=True)
+        # Active returns [0, .01, .01] give mean / sample deviation 2/sqrt(3).
+        expected_ir = 2 / np.sqrt(3)
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(expected_ir)
+        qs.extend_pandas()
+        assert returns.information_ratio(benchmark) == pytest.approx(expected_ir)
+        pd.testing.assert_series_equal(returns, original_returns)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original_benchmark)
+        else:
+            pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    def test_daily_alignment_preserves_strategy_labels_across_dst(self):
+        period = pd.date_range("2024-03-08", periods=5, freq="D", tz="US/Eastern")
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.to_datetime(
+                ["2024-03-08", "2024-03-11", "2024-03-12"]
+            ).tz_localize("UTC"),
+            name="Benchmark",
+        )
+        # Eastern midnight moves from 05:00 to 04:00 UTC. The working day
+        # keys must not discard the last observation or replace those labels.
+        expected = pd.Series(
+            [0.0, 0.0, 0.0, 0.10, 0.20],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    def test_intraday_strategy_labels_keep_the_existing_sampling_behavior(self):
+        period = pd.date_range("2024-01-01", periods=5, freq="12h")
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20],
+            index=pd.date_range("2024-01-01", periods=3, freq="D"),
+            name="Benchmark",
+        )
+        # The existing daily grid leaves the intervening half-days missing;
+        # pct_change(fill_method=None) cannot reconstruct returns across them.
+        # This daily-label fix does not introduce an intraday resampling policy.
+        expected = pd.Series(0.0, index=period, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+
+    @staticmethod
+    def _cross_timezone_case(strategy_time="16:00", as_frame=False):
+        period = pd.date_range(
+            "2024-07-01 " + strategy_time,
+            periods=3,
+            freq="D",
+            tz="America/New_York",
+        )
+        benchmark = pd.Series(
+            [0.01, 0.02, 0.03],
+            index=pd.date_range(
+                "2024-07-01 15:00", periods=3, freq="D", tz="Asia/Tokyo"
+            ),
+            name="Benchmark",
+        )
+        return period, benchmark.to_frame() if as_frame else benchmark
+
+    @pytest.mark.parametrize("strategy_time", ["10:59", "11:00", "16:00"])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("prepared", [False, True])
+    def test_cross_timezone_daily_alignment_keeps_available_observations(
+        self, strategy_time, as_frame, prepared
+    ):
+        period, benchmark = self._cross_timezone_case(strategy_time, as_frame)
+        original = benchmark.copy(deep=True)
+        output_index = period.tz_convert("UTC").tz_localize(None)
+        if prepared:
+            period = output_index
+        # Crossing Tokyo midnight at NY 11:00 does not make another benchmark
+        # observation available. All three strategy hours must use the same bars.
+        expected = pd.Series([0.0, 0.02, 0.03], index=output_index, name="Benchmark")
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original)
+        else:
+            pd.testing.assert_series_equal(benchmark, original)
+
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("prepared", [False, True])
+    def test_future_cross_timezone_return_cannot_change_an_earlier_row(
+        self, as_frame, prepared
+    ):
+        period, benchmark = self._cross_timezone_case(as_frame=as_frame)
+        if prepared:
+            period = period.tz_convert("UTC").tz_localize(None)
+        baseline = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+        changed = benchmark.copy(deep=True)
+        changed.iloc[-1] = 0.90
+
+        result = utils._prepare_benchmark(changed, period, prepare_returns=False)
+
+        # Tokyo July 3 at 06:00 UTC follows NY July 2 at 20:00 UTC by ten hours.
+        pd.testing.assert_series_equal(
+            result.iloc[:-1], baseline.iloc[:-1], rtol=1e-12, atol=1e-12
+        )
+        assert result.iloc[-1] == pytest.approx(0.90)
+
+    @pytest.mark.parametrize(
+        ("start", "end"),
+        [("2024-07-05", "2024-07-08"), ("2024-03-08", "2024-03-11")],
+    )
+    def test_cross_timezone_weekend_return_stays_on_monday(self, start, end):
+        period = pd.date_range(
+            start + " 16:00", periods=4, freq="D", tz="America/New_York"
+        )
+        benchmark = pd.Series(
+            [0.01, 0.10],
+            index=pd.to_datetime([start + " 15:00", end + " 15:00"]).tz_localize(
+                "Asia/Tokyo"
+            ),
+            name="Benchmark",
+        )
+        expected = pd.Series(
+            [0.0, 0.0, 0.0, 0.10],
+            index=period.tz_convert("UTC").tz_localize(None),
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(benchmark, period, prepare_returns=False)
+        changed = benchmark.copy(deep=True)
+        changed.iloc[-1] = 0.90
+        changed_result = utils._prepare_benchmark(
+            changed, period, prepare_returns=False
+        )
+
+        # Tokyo's Monday return is unavailable on the NY weekend, including DST.
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_series_equal(changed_result.iloc[:-1], result.iloc[:-1])
+        assert changed_result.iloc[-1] == pytest.approx(0.90)
+
+    @pytest.mark.parametrize(
+        ("timezone", "start"),
+        [("Europe/London", "2024-03-30"), ("US/Eastern", "2024-03-09")],
+    )
+    @pytest.mark.parametrize("intraday_owner", ["benchmark", "strategy"])
+    def test_strategy_calendar_context_preserves_prepared_intraday_sampling(
+        self, timezone, start, intraday_owner
+    ):
+        period = pd.date_range(
+            start,
+            periods=3 if intraday_owner == "benchmark" else 5,
+            freq="D" if intraday_owner == "benchmark" else "12h",
+            tz=timezone,
+        )
+        output_index = period.tz_convert("UTC").tz_localize(None)
+        benchmark = pd.Series(
+            [0.0, 0.10, 0.20, 0.30, 0.40]
+            if intraday_owner == "benchmark"
+            else [0.0, 0.10, 0.20],
+            index=pd.date_range(
+                start,
+                periods=5 if intraday_owner == "benchmark" else 3,
+                freq="12h" if intraday_owner == "benchmark" else "D",
+                tz=timezone,
+            ),
+            name="Benchmark",
+        )
+        original = benchmark.copy(deep=True)
+        # An already-prepared UTC grid keeps its 24-hour steps across DST.
+        # Calendar context must not restore the different native-midnight grid.
+        expected = pd.Series(
+            [0.0, 0.32, 0.0] if intraday_owner == "benchmark" else [0.0] * 5,
+            index=output_index,
+            name="Benchmark",
+        )
+
+        result = utils._prepare_benchmark(
+            benchmark,
+            output_index,
+            prepare_returns=False,
+            strategy_tz=period.tz,
+        )
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_series_equal(benchmark, original)
+
+    @pytest.mark.parametrize(
+        "metric", ["information_ratio", "r_squared", "greeks", "rolling_greeks"]
+    )
+    @pytest.mark.parametrize("calendar", ["cross_timezone", "shared_calendar"])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_public_statistics_preserve_the_strategy_calendar(
+        self, metric, calendar, as_frame
+    ):
+        if calendar == "cross_timezone":
+            period, benchmark = self._cross_timezone_case(as_frame=as_frame)
+        else:
+            period = pd.date_range(
+                "2024-07-01", periods=3, freq="D", tz="Europe/London"
+            )
+            benchmark = pd.Series(
+                [0.01, 0.02, 0.03],
+                index=period + pd.Timedelta(hours=5),
+                name="Benchmark",
+            )
+            if as_frame:
+                benchmark = benchmark.to_frame()
+        returns = pd.Series([0.0, 0.03, 0.04], index=period, name="Strategy")
+        original_returns = returns.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+        # Derive the statistics from the independently aligned return vector.
+        expected_benchmark = np.array([0.0, 0.02, 0.03])
+        strategy_values = np.array([0.0, 0.03, 0.04])
+        active = strategy_values - expected_benchmark
+        covariance = np.cov(strategy_values, expected_benchmark)
+        beta = covariance[0, 1] / covariance[1, 1]
+        alpha = strategy_values.mean() - beta * expected_benchmark.mean()
+
+        if metric == "information_ratio":
+            assert stats.information_ratio(returns, benchmark) == pytest.approx(
+                active.mean() / active.std(ddof=1)
+            )
+        elif metric == "r_squared":
+            assert stats.r_squared(returns, benchmark) == pytest.approx(
+                covariance[0, 1] ** 2 / (covariance[0, 0] * covariance[1, 1])
+            )
+        elif metric == "greeks":
+            result = stats.greeks(returns, benchmark)
+            assert result["beta"] == pytest.approx(beta)
+            assert result["alpha"] == pytest.approx(alpha * 252)
+        else:
+            result = stats.rolling_greeks(returns, benchmark, periods=3)
+            pd.testing.assert_index_equal(
+                result.index, period.tz_convert("UTC").tz_localize(None)
+            )
+            assert result["beta"].iloc[-1] == pytest.approx(beta)
+            assert result["alpha"].iloc[-1] == pytest.approx(alpha)
+        pd.testing.assert_series_equal(returns, original_returns)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original_benchmark)
+        else:
+            pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    def test_report_metrics_use_the_causal_cross_timezone_benchmark(self):
+        period, benchmark = self._cross_timezone_case()
+        returns = pd.Series([0.0, 0.03, 0.04], index=period, name="Strategy")
+        original_returns = returns.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+
+        result = reports.metrics(returns, benchmark, display=False)
+
+        # The native table rounds fractional returns to two decimals.
+        assert result.loc["Cumulative Return", "Benchmark"] == pytest.approx(
+            round(1.02 * 1.03 - 1, 2)
+        )
+        pd.testing.assert_series_equal(returns, original_returns)
+        pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    @pytest.mark.parametrize("calendar", ["utc_boundary", "local_calendar"])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("mode", ["basic", "full"])
+    @pytest.mark.parametrize("match_dates", [False, True])
+    def test_report_metrics_preserve_original_calendar_at_utc_boundary(
+        self, calendar, as_frame, mode, match_dates
+    ):
+        if calendar == "utc_boundary":
+            period = pd.date_range("2024-07-01 23:00", periods=4, tz="America/New_York")
+            # New York 23:00 falls on the following UTC date; Tokyo 15:00 does not.
+            utc_index = pd.date_range("2024-07-02 03:00", periods=4)
+            expected_values = [0.0, 0.03, 0.04, 0.0]
+        else:
+            period = pd.date_range("2024-07-01", periods=4, tz="Asia/Tokyo")
+            # Tokyo midnight crosses UTC midnight, but its original local days
+            # still match the benchmark's calendar and retain all daily gains.
+            utc_index = pd.date_range("2024-06-30 15:00", periods=4)
+            expected_values = [0.0, 0.02, 0.03, 0.04]
+        returns = pd.Series([0.01, -0.02, 0.03, 0.04], index=period, name="Strategy")
+        benchmark = pd.Series(
+            [0.0, 0.02, 0.03, 0.04],
+            index=pd.date_range("2024-07-01 15:00", periods=4, tz="Asia/Tokyo"),
+            name="Benchmark",
+        )
+        reference_returns = pd.Series(
+            [0.01, -0.02, 0.03, 0.04], index=utc_index, name="Strategy"
+        )
+        reference_benchmark = pd.Series(
+            expected_values, index=utc_index, name="Benchmark"
+        )
+        if as_frame:
+            returns, benchmark = returns.to_frame(), benchmark.to_frame()
+            reference_returns = reference_returns.to_frame()
+            reference_benchmark = reference_benchmark.to_frame()
+        original_returns = returns.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+
+        # The control is independently pre-aligned, so it bypasses calendar
+        # reconstruction while exercising the complete public report table.
+        reference = reports.metrics(
+            reference_returns,
+            reference_benchmark,
+            display=False,
+            mode=mode,
+            match_dates=match_dates,
+        )
+        result = reports.metrics(
+            returns, benchmark, display=False, mode=mode, match_dates=match_dates
+        )
+
+        expected_cumulative = np.prod(1 + np.array(expected_values)) - 1
+        assert result.loc["Cumulative Return", "Benchmark"] == pytest.approx(
+            round(expected_cumulative, 2)
+        )
+        pd.testing.assert_frame_equal(result, reference)
+        check = (
+            pd.testing.assert_frame_equal
+            if as_frame
+            else pd.testing.assert_series_equal
+        )
+        check(returns, original_returns)
+        check(benchmark, original_benchmark)
+
+    @staticmethod
+    def _mixed_clock_case(shared_calendar=False):
+        strategy_tz = "Europe/London" if shared_calendar else "America/New_York"
+        benchmark_tz = "Europe/London" if shared_calendar else "Asia/Tokyo"
+        strategy_hour = "16:30" if shared_calendar else "16:00"
+        seed_day = "2024-06-28" if shared_calendar else "2024-06-27"
+        benchmark_seed = "2024-06-28 15:00" if shared_calendar else "2024-06-28 00:00"
+        benchmark_hour = "00:00" if shared_calendar else "15:00"
+        period = pd.to_datetime(
+            [
+                seed_day + " " + strategy_hour,
+                "2024-07-01 " + strategy_hour,
+                "2024-07-02 " + strategy_hour,
+                "2024-07-03 " + strategy_hour,
+            ]
+        ).tz_localize(strategy_tz)
+        benchmark = pd.Series(
+            [0.0, 0.01, 0.02, 0.03],
+            index=pd.to_datetime(
+                [
+                    benchmark_seed,
+                    "2024-07-01 " + benchmark_hour,
+                    "2024-07-02 " + benchmark_hour,
+                    "2024-07-03 " + benchmark_hour,
+                ]
+            ).tz_localize(benchmark_tz),
+            name="Benchmark",
+        )
+        return period, benchmark
+
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("prepared", [False, True])
+    @pytest.mark.parametrize("shared_calendar", [False, True])
+    def test_mixed_clock_seed_preserves_causal_daily_alignment(
+        self, as_frame, prepared, shared_calendar
+    ):
+        period, benchmark = self._mixed_clock_case(shared_calendar)
+        if as_frame:
+            benchmark = benchmark.to_frame()
+        original = benchmark.copy(deep=True)
+        output_index = period.tz_convert("UTC").tz_localize(None)
+        context = {"strategy_tz": period.tz} if prepared else {}
+        if prepared:
+            period = output_index
+        expected = pd.Series(
+            [0.0, 0.01, 0.02, 0.03], index=output_index, name="Benchmark"
+        )
+
+        result = utils._prepare_benchmark(
+            benchmark, period, prepare_returns=False, **context
+        )
+        # Both zero seeds precede the first strategy observation. Moving only
+        # that historical label must not change the later calendar alignment.
+        seed_shifted = benchmark.copy(deep=True)
+        seed_shifted.index = pd.DatetimeIndex(
+            [pd.Timestamp("2024-06-27 15:00", tz=benchmark.index.tz)]
+            + list(benchmark.index[1:])
+        )
+        shifted_result = utils._prepare_benchmark(
+            seed_shifted, period, prepare_returns=False, **context
+        )
+        future_changed = benchmark.copy(deep=True)
+        future_changed.iloc[-1] = 0.05
+        future_result = utils._prepare_benchmark(
+            future_changed, period, prepare_returns=False, **context
+        )
+
+        pd.testing.assert_series_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_series_equal(shifted_result, expected, rtol=1e-12, atol=1e-12)
+        # The last benchmark bar follows the preceding strategy observation;
+        # another label crossing UTC midnight cannot make it available sooner.
+        pd.testing.assert_series_equal(
+            future_result.iloc[:-1], expected.iloc[:-1], rtol=1e-12, atol=1e-12
+        )
+        assert future_result.iloc[-1] == pytest.approx(0.05)
+        if as_frame:
+            pd.testing.assert_frame_equal(benchmark, original)
+        else:
+            pd.testing.assert_series_equal(benchmark, original)
+
+    def test_information_ratio_uses_the_causal_mixed_clock_benchmark(self):
+        period, benchmark = self._mixed_clock_case()
+        returns = pd.Series([0.0, 0.02, 0.03, 0.04], index=period)
+        original_returns = returns.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+        # Independently aligned active returns [0, .01, .01, .01] have
+        # mean .0075 and sample standard deviation .005, giving IR 1.5.
+        assert stats.information_ratio(returns, benchmark) == pytest.approx(1.5)
+        pd.testing.assert_series_equal(returns, original_returns)
+        pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+    def test_future_mixed_clock_return_preserves_an_earlier_rolling_window(self):
+        period, benchmark = self._mixed_clock_case()
+        returns = pd.Series([0.0, 0.02, 0.03, 0.04], index=period)
+        original_returns = returns.copy(deep=True)
+        original_benchmark = benchmark.copy(deep=True)
+        future_changed = benchmark.copy(deep=True)
+        future_changed.iloc[-1] = 0.05
+        result = stats.rolling_greeks(returns, benchmark, periods=3)
+        future_result = stats.rolling_greeks(returns, future_changed, periods=3)
+        # The window ending July 2 excludes Tokyo's July 3 observation.
+        # Derive its regression from the three independently aligned returns.
+        strategy_values = np.array([0.0, 0.02, 0.03])
+        benchmark_values = np.array([0.0, 0.01, 0.02])
+        covariance = np.cov(strategy_values, benchmark_values)
+        beta = covariance[0, 1] / covariance[1, 1]
+        alpha = strategy_values.mean() - beta * benchmark_values.mean()
+
+        assert result["beta"].iloc[2] == pytest.approx(beta)
+        assert result["alpha"].iloc[2] == pytest.approx(alpha)
+        pd.testing.assert_series_equal(result.iloc[2], future_result.iloc[2])
+        pd.testing.assert_index_equal(
+            result.index, period.tz_convert("UTC").tz_localize(None)
+        )
+        pd.testing.assert_series_equal(returns, original_returns)
+        pd.testing.assert_series_equal(benchmark, original_benchmark)
+
+
 class TestRiskFreeDeannualization:
     """An annual rf must never be charged once per period (#552).
 

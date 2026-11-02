@@ -2847,11 +2847,16 @@ def r_squared(returns, benchmark, prepare_returns=True):
         >>> r_sq = r_squared(returns, benchmark)
         >>> print(f"R-squared: {r_sq:.4f}")
     """
+    # Preparation converts the index to UTC and removes its timezone.
+    # Retain the original timezone for benchmark daily-label alignment.
+    strategy_tz = getattr(returns.index, "tz", None)
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
     # Prepare benchmark to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    benchmark = _utils._prepare_benchmark(
+        benchmark, returns.index, strategy_tz=strategy_tz
+    )
 
     # Estimate over the dates on which both series were observed; linregress
     # returns NaN for the whole fit if either input contains a gap.
@@ -2904,11 +2909,14 @@ def information_ratio(returns, benchmark, prepare_returns=True):
         >>> info_ratio = information_ratio(returns, benchmark)
         >>> print(f"Information Ratio: {info_ratio:.4f}")
     """
+    strategy_tz = getattr(returns.index, "tz", None)
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
     # Prepare benchmark to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    benchmark = _utils._prepare_benchmark(
+        benchmark, returns.index, strategy_tz=strategy_tz
+    )
 
     # Calculate active returns (returns - benchmark). The already-prepared
     # benchmark is used directly; preparing it a second time here re-ran the
@@ -2949,9 +2957,12 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
         >>> print(f"Beta: {portfolio_greeks['beta']:.4f}")
     """
     # Data preparation
+    strategy_tz = getattr(returns.index, "tz", None)
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    benchmark = _utils._prepare_benchmark(
+        benchmark, returns.index, strategy_tz=strategy_tz
+    )
     # ----------------------------
 
     # Estimate over the dates on which both series were observed. np.cov
@@ -3008,6 +3019,7 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
         >>> rolling_greeks_df = rolling_greeks(returns, benchmark, periods=3)
         >>> print(rolling_greeks_df)
     """
+    strategy_tz = getattr(returns.index, "tz", None)
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
@@ -3015,7 +3027,9 @@ def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):
     df = _pd.DataFrame(
         data={
             "returns": returns,
-            "benchmark": _utils._prepare_benchmark(benchmark, returns.index),
+            "benchmark": _utils._prepare_benchmark(
+                benchmark, returns.index, strategy_tz=strategy_tz
+            ),
         }
     )
 
