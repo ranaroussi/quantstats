@@ -2565,7 +2565,14 @@ def recovery_factor(returns, rf=0.0, prepare_returns=True):
 
     This function measures how fast the strategy recovers from drawdowns
     by comparing total returns to the maximum drawdown experienced.
-    Higher values indicate better recovery characteristics.
+    Higher values indicate better recovery characteristics. Negative excess
+    total returns produce a negative recovery factor.
+
+    The numerator is the arithmetic sum of the returns minus ``rf``
+    (``returns.sum() - rf``), not the compounded total return, and ``rf``
+    is subtracted once from that sum rather than per period. The
+    denominator is the magnitude of the maximum drawdown, which is measured
+    on compounded equity.
 
     Args:
         returns (pd.Series): Return series to analyze
@@ -2592,12 +2599,12 @@ def recovery_factor(returns, rf=0.0, prepare_returns=True):
     # Handle both Series (DataFrame input) and scalar (Series input) cases
     if isinstance(max_dd, _pd.Series):
         # DataFrame input - element-wise division with zero protection
-        return abs(total_returns) / abs(max_dd).replace(0, _np.nan)
+        return total_returns / abs(max_dd).replace(0, _np.nan)
     else:
         # Series input - scalar division
         if max_dd == 0:
             return _np.nan
-        return abs(total_returns) / abs(max_dd)
+        return total_returns / abs(max_dd)
 
 
 def risk_return_ratio(returns, prepare_returns=True):

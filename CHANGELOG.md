@@ -1,6 +1,20 @@
 Changelog
 ===========
 
+Unreleased
+----------
+
+**Statistical corrections** - these change reported numbers.
+
+- Fixed `recovery_factor()` reporting a positive value for a losing
+  strategy (#578). It took the absolute value of the excess total return as
+  well as of the maximum drawdown, so a -8% total return with a 9.75%
+  drawdown read +0.82 instead of -0.82. The sign of the numerator is now
+  kept, for both Series and DataFrame input; the "Recovery Factor" row of
+  `reports.metrics()` turns negative for strategies with a negative excess
+  total return. The numerator is still the sum of returns minus `rf` (not
+  compounded) and a zero drawdown still gives `NaN`.
+
 0.0.86
 ------
 
