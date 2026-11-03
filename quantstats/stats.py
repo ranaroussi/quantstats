@@ -2825,7 +2825,14 @@ def kelly_criterion(returns, prepare_returns=True):
 # ==== VS. BENCHMARK ====
 
 
-def r_squared(returns, benchmark, prepare_returns=True):
+def r_squared(
+    returns,
+    benchmark,
+    prepare_returns=True,
+    *,
+    frequency=None,
+    holidays=None,
+):
     """
     Calculate the R-squared (coefficient of determination) versus benchmark.
 
@@ -2833,10 +2840,28 @@ def r_squared(returns, benchmark, prepare_returns=True):
     with the benchmark. Values closer to 1 indicate higher correlation with
     the benchmark, while values closer to 0 indicate more independent movement.
 
+    See docs/return-period-matching.md in the repository for matching rules
+    and examples.
+
     Args:
         returns (pd.Series): Return series to analyze
-        benchmark (pd.Series): Benchmark return series for comparison
-        prepare_returns (bool): Whether to prepare returns first (default: True)
+        benchmark (pd.Series, pd.DataFrame, or str): Benchmark return series
+            or prices. If you provide a DataFrame, its index supplies the dates
+            and its first column supplies the benchmark returns or prices.
+            Additional columns are ignored. A ticker symbol can be used when
+            frequency is omitted.
+        prepare_returns (bool): Convert prices to returns when needed
+            (default: True). Set False when both inputs already contain returns.
+        frequency (str, optional): Combine portfolio and benchmark returns into
+            periods of the same frequency before calculating the statistic.
+            Accepted values are "daily", "weekly", "monthly", "quarterly" and
+            "yearly". For example, use "weekly" to compare weekly portfolio
+            returns with daily benchmark returns. Omit this parameter to keep
+            the function's existing behavior.
+        holidays (sequence, optional): Dates when trading does not take place.
+            The list applies to both the portfolio and benchmark. Any returns that
+            you do provide on those dates, however, will still be used.
+            This parameter requires frequency to be provided.
 
     Returns:
         float: R-squared value (0-1 scale)
@@ -2847,15 +2872,26 @@ def r_squared(returns, benchmark, prepare_returns=True):
         >>> r_sq = r_squared(returns, benchmark)
         >>> print(f"R-squared: {r_sq:.4f}")
     """
-    if prepare_returns:
-        returns = _utils._prepare_returns(returns)
-
-    # Prepare benchmark to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    returns, benchmark = _utils._prepare_benchmark_pair(
+        returns,
+        benchmark,
+        prepare_returns,
+        frequency=frequency,
+        holidays=holidays,
+    )
 
     # Estimate over the dates on which both series were observed; linregress
     # returns NaN for the whole fit if either input contains a gap.
     paired_returns, paired_benchmark = _paired_observations(returns, benchmark)
+
+    # R-squared is undefined with fewer than two paired returns or when
+    # either series is constant.
+    if frequency is not None and (
+        len(paired_returns) < 2
+        or paired_returns.nunique() < 2
+        or paired_benchmark.nunique() < 2
+    ):
+        return _np.nan
 
     # Perform linear regression and extract correlation coefficient
     _, _, r_val, _, _ = _linregress(paired_returns, paired_benchmark)
@@ -2864,24 +2900,59 @@ def r_squared(returns, benchmark, prepare_returns=True):
     return r_val**2
 
 
-def r2(returns, benchmark):
+def r2(
+    returns,
+    benchmark,
+    *,
+    prepare_returns=True,
+    frequency=None,
+    holidays=None,
+):
     """
     Calculate the R-squared (coefficient of determination) versus benchmark.
 
-    This is a shorthand function for r_squared() with the same parameters
-    and functionality.
+    This is a shorthand for r_squared(), including optional period matching.
+    See r_squared() for how to supply data and choose matching options.
 
     Args:
         returns (pd.Series): Return series to analyze
-        benchmark (pd.Series): Benchmark return series for comparison
+        benchmark (pd.Series, pd.DataFrame, or str): Benchmark return series
+            or prices. If you provide a DataFrame, its index supplies the dates
+            and its first column supplies the benchmark returns or prices.
+            Additional columns are ignored. A ticker symbol can be used when
+            frequency is omitted.
+        prepare_returns (bool): Allow price-to-return conversion (default: True)
+        frequency (str, optional): Combine portfolio and benchmark returns into
+            periods of the same frequency before calculating the statistic.
+            Accepted values are "daily", "weekly", "monthly", "quarterly" and
+            "yearly". For example, use "weekly" to compare weekly portfolio
+            returns with daily benchmark returns. Omit this parameter to keep
+            the function's existing behavior.
+        holidays (sequence, optional): Dates when trading does not take place.
+            The list applies to both the portfolio and benchmark. Any returns that
+            you do provide on those dates, however, will still be used.
+            This parameter requires frequency to be provided.
 
     Returns:
         float: R-squared value (0-1 scale)
     """
-    return r_squared(returns, benchmark)
+    return r_squared(
+        returns,
+        benchmark,
+        prepare_returns,
+        frequency=frequency,
+        holidays=holidays,
+    )
 
 
-def information_ratio(returns, benchmark, prepare_returns=True):
+def information_ratio(
+    returns,
+    benchmark,
+    prepare_returns=True,
+    *,
+    frequency=None,
+    holidays=None,
+):
     """
     Calculate the Information Ratio.
 
@@ -2892,8 +2963,23 @@ def information_ratio(returns, benchmark, prepare_returns=True):
 
     Args:
         returns (pd.Series): Return series to analyze
-        benchmark (pd.Series): Benchmark return series for comparison
-        prepare_returns (bool): Whether to prepare returns first (default: True)
+        benchmark (pd.Series, pd.DataFrame, or str): Benchmark return series
+            or prices. If you provide a DataFrame, its index supplies the dates
+            and its first column supplies the benchmark returns or prices.
+            Additional columns are ignored. A ticker symbol can be used when
+            frequency is omitted.
+        prepare_returns (bool): Convert prices to returns when needed
+            (default: True). Set False when both inputs already contain returns.
+        frequency (str, optional): Combine portfolio and benchmark returns into
+            periods of the same frequency before calculating the statistic.
+            Accepted values are "daily", "weekly", "monthly", "quarterly" and
+            "yearly". For example, use "weekly" to compare weekly portfolio
+            returns with daily benchmark returns. Omit this parameter to keep
+            the function's existing behavior.
+        holidays (sequence, optional): Dates when trading does not take place.
+            The list applies to both the portfolio and benchmark. Any returns that
+            you do provide on those dates, however, will still be used.
+            This parameter requires frequency to be provided.
 
     Returns:
         float: Information Ratio
@@ -2904,11 +2990,13 @@ def information_ratio(returns, benchmark, prepare_returns=True):
         >>> info_ratio = information_ratio(returns, benchmark)
         >>> print(f"Information Ratio: {info_ratio:.4f}")
     """
-    if prepare_returns:
-        returns = _utils._prepare_returns(returns)
-
-    # Prepare benchmark to match returns index
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+    returns, benchmark = _utils._prepare_benchmark_pair(
+        returns,
+        benchmark,
+        prepare_returns,
+        frequency=frequency,
+        holidays=holidays,
+    )
 
     # Calculate active returns (returns - benchmark). The already-prepared
     # benchmark is used directly; preparing it a second time here re-ran the
@@ -2924,7 +3012,15 @@ def information_ratio(returns, benchmark, prepare_returns=True):
     return 0
 
 
-def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
+def greeks(
+    returns,
+    benchmark,
+    periods=None,
+    prepare_returns=True,
+    *,
+    frequency=None,
+    holidays=None,
+):
     """
     Calculate portfolio Greeks (alpha and beta) relative to benchmark.
 
@@ -2934,9 +3030,29 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
 
     Args:
         returns (pd.Series): Return series to analyze
-        benchmark (pd.Series): Benchmark return series for comparison
-        periods (float): Periods per year for alpha annualization (default: 252.0)
-        prepare_returns (bool): Whether to prepare returns first (default: True)
+        benchmark (pd.Series, pd.DataFrame, or str): Benchmark return series
+            or prices. If you provide a DataFrame, its index supplies the dates
+            and its first column supplies the benchmark returns or prices.
+            Additional columns are ignored. A ticker symbol can be used when
+            frequency is omitted.
+        periods (float, optional): Number of periods per year used to annualize
+            alpha. For example, use 252 for 252 periods per year. Use 1 to leave
+            alpha unannualized.
+            If omitted, daily frequency calculates this number from the dates
+            and returns provided. Weekly, monthly, quarterly and yearly use
+            52, 12, 4 and 1, respectively.
+        prepare_returns (bool): Convert prices to returns when needed
+            (default: True). Set False when both inputs already contain returns.
+        frequency (str, optional): Combine portfolio and benchmark returns into
+            periods of the same frequency before calculating the statistic.
+            Accepted values are "daily", "weekly", "monthly", "quarterly" and
+            "yearly". For example, use "weekly" to compare weekly portfolio
+            returns with daily benchmark returns. Omit this parameter to keep
+            the function's existing behavior.
+        holidays (sequence, optional): Dates when trading does not take place.
+            The list applies to both the portfolio and benchmark. Any returns that
+            you do provide on those dates, however, will still be used.
+            This parameter requires frequency to be provided.
 
     Returns:
         pd.Series: Series containing 'alpha' and 'beta' values
@@ -2948,17 +3064,50 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
         >>> print(f"Alpha: {portfolio_greeks['alpha']:.4f}")
         >>> print(f"Beta: {portfolio_greeks['beta']:.4f}")
     """
-    # Data preparation
-    if prepare_returns:
-        returns = _utils._prepare_returns(returns)
-    benchmark = _utils._prepare_benchmark(benchmark, returns.index)
-    # ----------------------------
+    # Validate the new frequency-based option without changing which values
+    # existing calls accept when frequency is omitted.
+    # Python integers are finite even when they exceed NumPy's integer range.
+    if (
+        frequency is not None
+        and periods is not None
+        and (
+            isinstance(periods, (bool, _np.bool_))
+            or not isinstance(periods, (int, float, _np.integer, _np.floating))
+            or (not isinstance(periods, int) and not _np.isfinite(periods))
+            or periods <= 0
+        )
+    ):
+        raise ValueError("Matched periods must be a finite positive alpha factor")
+    returns, benchmark = _utils._prepare_benchmark_pair(
+        returns,
+        benchmark,
+        prepare_returns,
+        frequency=frequency,
+        holidays=holidays,
+    )
+
+    # An explicit annualization factor takes precedence over frequency defaults.
+    # Calls without a requested frequency keep the established factor of 252.
+    if periods is None:
+        periods = returns.attrs["periods_per_year"] if frequency is not None else 252.0
+
+    matching_details = (
+        dict(returns.attrs, alpha_periods=periods, observations=len(returns))
+        if frequency is not None
+        else {}
+    )
 
     # Estimate over the dates on which both series were observed. np.cov
     # propagates NaN, so a single gap on either side would otherwise reduce
     # beta and alpha to NaN, which the .fillna(0) below turns into a
     # confident-looking zero.
     returns, benchmark = _paired_observations(returns, benchmark)
+
+    # A single return cannot establish the covariance needed for beta and alpha.
+    if frequency is not None and len(returns) < 2:
+        result = _pd.Series({"beta": _np.nan, "alpha": _np.nan})
+        result.attrs.update(matching_details)
+        return result
 
     # Calculate covariance matrix between returns and benchmark
     matrix = _np.cov(returns, benchmark)
@@ -2972,17 +3121,21 @@ def greeks(returns, benchmark, periods=252.0, prepare_returns=True):
     # Calculate alpha (excess return after adjusting for beta)
     alpha = returns.mean() - beta * benchmark.mean()
 
-    # Annualize alpha
-    alpha = alpha * periods
+    # An undefined fit remains NaN. Scaling must not silently turn an
+    # otherwise valid matched alpha into infinity, even with a finite factor.
+    if frequency is not None:
+        with _np.errstate(over="ignore"):
+            alpha = alpha * periods
+        if _np.isinf(alpha):
+            raise ValueError("Scaled alpha must remain finite")
+    else:
+        alpha = alpha * periods
 
-    # Return results as Series
-    return _pd.Series(
-        {
-            "beta": beta,
-            "alpha": alpha,
-            # "vol": _np.sqrt(matrix[0, 0]) * _np.sqrt(periods)
-        }
-    ).fillna(0)
+    result = _pd.Series({"beta": beta, "alpha": alpha})
+    if frequency is not None:
+        result.attrs.update(matching_details)
+        return result
+    return result.fillna(0)
 
 
 def rolling_greeks(returns, benchmark, periods=252, prepare_returns=True):

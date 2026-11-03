@@ -673,7 +673,7 @@ def _rf_is_nonzero(rf):
     return rf > 0
 
 
-def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
+def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True, *, use_cache=True):
     """
     Convert price data into returns and perform cleanup
 
@@ -693,6 +693,9 @@ def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
         calling function's name through inspect.stack(), which meant the
         result depended on who called rather than on what was asked for,
         and could not be overridden.
+    use_cache : bool, default True
+        Whether to reuse previously calculated returns and save new results
+        for reuse.
 
     Returns
     -------
@@ -700,7 +703,7 @@ def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
         Cleaned returns data
     """
     # Try to get from cache first
-    cache_key = _generate_cache_key(data, rf, nperiods, apply_rf)
+    cache_key = _generate_cache_key(data, rf, nperiods, apply_rf) if use_cache else None
     if cache_key:
         with _cache_lock:
             if cache_key in _PREPARE_RETURNS_CACHE:
@@ -838,6 +841,226 @@ def _prepare_benchmark(benchmark=None, period="max", rf=0.0, prepare_returns=Tru
     if prepare_returns:
         return _prepare_returns(benchmark.dropna(), rf=rf, apply_rf=False)
     return benchmark.dropna()
+
+
+def _matching_boundaries(keys, frequency, holidays):
+    """Find complete boundaries at the requested comparison frequency."""
+    offsets = {
+        "weekly": _pd.offsets.Week(weekday=6),
+        "monthly": _pd.offsets.MonthEnd(),
+        "quarterly": _pd.offsets.QuarterEnd(),
+        "yearly": _pd.offsets.YearEnd(),
+    }
+    factor = {"weekly": 52, "monthly": 12, "quarterly": 4, "yearly": 1}.get(
+        frequency, _np.nan
+    )
+    if not all(len(key) for key in keys):
+        return _pd.DatetimeIndex([]), [[], []], factor
+    holiday_days = holidays.to_numpy(dtype="datetime64[D]")
+    calendar = _pd.offsets.CustomBusinessDay(holidays=holidays)
+    start = max(key[0] for key in keys)
+    # Missing weekends/holidays can extend either input to a boundary. Actual
+    # supplied observations take precedence, regardless of which input it is.
+    end = min(key[-1] + calendar - _pd.Timedelta(days=1) for key in keys)
+    error = f"Cannot construct complete {frequency} comparison periods without splitting a return"
+    if frequency == "daily":
+        boundaries = keys[0].intersection(keys[1], sort=False)
+        if len(boundaries) < 2:
+            # Preserve the short-sample allowance. Once overlapping coverage
+            # spans a complete calendar week, one shared anchor cannot qualify
+            # an incompatible long history as an empty daily comparison.
+            week_end = offsets["weekly"].rollforward(start)
+            if len(boundaries) == 1 and week_end + _pd.Timedelta(days=7) > end:
+                return boundaries, [key.get_indexer(boundaries) for key in keys], factor
+            raise ValueError(error)
+        left = boundaries[:-1].to_numpy(dtype="datetime64[D]") + 1
+        right = boundaries[1:].to_numpy(dtype="datetime64[D]")
+        if _np.any(_np.busday_count(left, right, holidays=holiday_days)):
+            raise ValueError(error)
+        # Count completed comparisons over their actual calendar coverage.
+        # Split at January 1 so leap years use 366 days; the starting anchor
+        # supplies time coverage but is not itself a return.
+        cursor, last = boundaries[0], boundaries[-1]
+        years = 0.0
+        while cursor < last:
+            year_end = _pd.Timestamp(cursor.year + 1, 1, 1)
+            stop = min(year_end, last)
+            years += (stop - cursor).days / (366 if cursor.is_leap_year else 365)
+            cursor = stop
+        factor = (len(boundaries) - 1) / years
+    else:
+        boundaries = _pd.date_range(start, end, freq=offsets[frequency])
+        if len(boundaries) < 2:
+            raise ValueError(error)
+    positions = [key.searchsorted(boundaries, side="right") - 1 for key in keys]
+    for key, pos in zip(keys, positions, strict=True):
+        if (pos < 0).any():
+            raise ValueError(error)
+        left = key[pos].to_numpy(dtype="datetime64[D]") + 1
+        right = boundaries.to_numpy(dtype="datetime64[D]") + 1
+        if _np.any(_np.busday_count(left, right, holidays=holiday_days)):
+            raise ValueError(error)
+    return boundaries, positions, factor
+
+
+def _prepare_benchmark_pair(
+    returns,
+    benchmark,
+    prepare_returns=True,
+    *,
+    frequency=None,
+    holidays=None,
+):
+    """Prepare strategy and benchmark returns over the requested periods.
+
+    For a seven-day strategy and a weekday benchmark, frequency="daily"
+    combines Saturday, Sunday and Monday into the Friday-to-Monday comparison.
+    Weekly, monthly, quarterly and yearly compare complete calendar periods.
+    Omit frequency to keep native preparation without period matching.
+
+    Each supplied return covers its preceding observation. The first boundary
+    is a starting anchor; unknown history inside comparisons raises an error.
+    Missing weekends/shared holidays permit carrying either input's valuation
+    to period end, while supplied observations always take precedence.
+
+    Return owned Series with UTC-naive labels, frequency and periods_per_year
+    attributes. Set prepare_returns=False for supplied returns. See the guide
+    at docs/return-period-matching.md for examples and assumptions.
+    """
+    if frequency is None:
+        if holidays is not None:
+            raise ValueError("holidays require an explicit frequency")
+        if prepare_returns:
+            returns = _prepare_returns(returns)
+        return returns, _prepare_benchmark(benchmark, returns.index)
+    frequencies = ("daily", "weekly", "monthly", "quarterly", "yearly")
+    if not isinstance(frequency, str) or frequency not in frequencies:
+        raise ValueError(
+            "frequency must be daily, weekly, monthly, quarterly or yearly"
+        )
+    try:
+        if isinstance(holidays, (str, bytes)):
+            raise ValueError("Supply a list of holiday dates")
+        holiday_values = [] if holidays is None else list(holidays)
+        if any(isinstance(value, (int, float, _np.number)) for value in holiday_values):
+            raise ValueError("Holiday dates must not be numeric")
+        closed_dates = _pd.DatetimeIndex(holiday_values)
+        if closed_dates.hasnans:
+            raise ValueError("Holiday dates must not contain NaT")
+        closed_dates = closed_dates.tz_localize(None).normalize().unique()
+    except (ValueError, TypeError) as exc:
+        raise ValueError("holidays must be a list of valid dates") from exc
+    if isinstance(benchmark, str):
+        # The downloader replaces missing returns with zero. Reject tickers
+        # here so unknown performance is not mistaken for a known flat return.
+        raise ValueError("Matching requires supplied benchmark data, not a ticker")
+    if isinstance(benchmark, _pd.DataFrame):
+        if benchmark.shape[1] == 0:
+            raise ValueError("Matching requires a supplied benchmark column")
+        benchmark = benchmark.iloc[:, 0]
+
+    keys = []
+    for series in (returns, benchmark):
+        if not isinstance(series, _pd.Series):
+            raise ValueError(
+                "Matching requires a strategy Series and supplied benchmark"
+            )
+        index = series.index
+        if (
+            not isinstance(index, _pd.DatetimeIndex)
+            or index.hasnans
+            or not index.is_monotonic_increasing
+        ):
+            raise ValueError(
+                "Matching requires ordered DatetimeIndex labels without NaT"
+            )
+        # Use dates as written, even across timezones. Equal calendar labels
+        # do not establish comparable market closes; the caller supplies those.
+        key = index.tz_localize(None).normalize()
+        if not key.is_unique:
+            raise ValueError("Matching requires one observation per date")
+        if not _pd.api.types.is_numeric_dtype(
+            series.dtype
+        ) or _pd.api.types.is_complex_dtype(series.dtype):
+            raise ValueError("Matching requires real numeric prices or returns")
+        keys.append(key)
+
+    boundaries, positions, factor = _matching_boundaries(keys, frequency, closed_dates)
+
+    values = []
+    for series in (returns, benchmark):
+        index = series.index
+        # Convert integers to floats before multiplying to avoid integer
+        # overflow. Copy the dates too: pandas copies can share index storage.
+        working = _pd.Series(
+            series.to_numpy(dtype=float, na_value=_np.nan, copy=True),
+            index=index.copy(deep=True),
+            name=series.name,
+        )
+        # Treat infinities as missing before deciding whether the data
+        # contains prices or returns.
+        working = working.replace([_np.inf, -_np.inf], _np.nan)
+        if prepare_returns:
+            # An earlier call on reordered data may have cached different
+            # returns. Recalculate rather than reusing that result.
+            working = _prepare_returns(working, apply_rf=False, use_cache=False)
+        values.append(working.to_numpy(dtype=float, na_value=_np.nan, copy=True))
+
+    paired = [[], []]
+    # Compound each period separately so a total loss in one period does not
+    # prevent later periods from being compared.
+    for i in range(1, len(boundaries)):
+        # The left endpoint's return belongs to the preceding interval.
+        # Include returns ending after it and through the right endpoint.
+        chunks = [
+            data[pos[i - 1] + 1 : pos[i] + 1]
+            for data, pos in zip(values, positions, strict=True)
+        ]
+        if not all(_np.isfinite(chunk).all() for chunk in chunks):
+            raise ValueError("Cannot compare periods containing unknown returns")
+        try:
+            products = []
+            for chunk in chunks:
+                # Keep supplied returns exact while combining growth factors.
+                # Round only the final result: float arithmetic in 1+r can
+                # otherwise erase a small return after larger moves cancel.
+                numerator = denominator = 1
+                for value in chunk:
+                    value_numerator, value_denominator = float(value).as_integer_ratio()
+                    numerator *= value_denominator + value_numerator
+                    denominator *= value_denominator
+                products.append((numerator - denominator) / denominator)
+        except OverflowError as exc:
+            raise ValueError("Compounded returns must remain finite") from exc
+        if not all(_np.isfinite(product) for product in products):
+            raise ValueError("Compounded returns must remain finite")
+        for output, product in zip(paired, products, strict=True):
+            output.append(product)
+
+    labels = returns.index.take(positions[0][1:]).copy(deep=True)
+    if frequency != "daily" and len(labels):
+        # A closed-date boundary keeps the strategy's local observation time;
+        # actual daily endpoints need no shifted or reconstructed timestamps.
+        labels = _pd.DatetimeIndex(
+            [
+                label + _pd.DateOffset(days=int((boundary - key).days))
+                for label, boundary, key in zip(
+                    labels, boundaries[1:], keys[0][positions[0][1:]], strict=True
+                )
+            ],
+            name=returns.index.name,
+        )
+    if labels.tz is not None:
+        labels = labels.tz_convert("UTC").tz_localize(None)
+    labels = labels.copy(deep=True)
+    labels.freq = None
+    outputs = tuple(
+        _pd.Series(data, index=labels.copy(deep=True), name=series.name, dtype=float)
+        for data, series in zip(paired, (returns, benchmark), strict=True)
+    )
+    for output in outputs:
+        output.attrs.update(frequency=frequency, periods_per_year=factor)
+    return outputs
 
 
 def _round_to_closest(val, res, decimals=None):

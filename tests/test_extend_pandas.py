@@ -87,3 +87,55 @@ class TestExtendPandasWithParams:
         # May or may not be different depending on returns
         assert np.isfinite(result_comp)
         assert np.isfinite(result_simple)
+
+
+@pytest.mark.parametrize("metric", ["greeks", "r_squared", "r2", "information_ratio"])
+def test_matched_statistics_through_pandas(metric):
+    qs.extend_pandas()
+    dates = pd.date_range("2026-09-01", periods=5)
+    # The first returns have no known starting date and must not be compared.
+    # Later returns satisfy strategy = 2 * benchmark + 0.01: beta=2,
+    # R-squared=1 and alpha=0.01 per period (0.52 with periods=52).
+    strategy = pd.Series([9, 0.03, -0.03, 0.07, 0.04], index=dates, name="Strategy")
+    benchmark = pd.Series([7, 0.01, -0.02, 0.03, 0.015], index=dates)
+    original = strategy.copy(deep=True)
+    kwargs = {"frequency": "daily", "prepare_returns": False}
+    if metric == "greeks":
+        kwargs["periods"] = 52
+    actual = getattr(strategy, metric)(benchmark, **kwargs)
+    if metric == "greeks":
+        assert actual["beta"] == pytest.approx(2)
+        assert actual["alpha"] == pytest.approx(0.52)
+    elif metric in ("r_squared", "r2"):
+        assert actual == pytest.approx(1)
+    elif metric == "information_ratio":
+        active = np.array([0.02, -0.01, 0.04, 0.025])
+        assert actual == pytest.approx(active.mean() / active.std(ddof=1))
+    pd.testing.assert_series_equal(strategy, original)
+
+
+@pytest.mark.parametrize("metric", ["greeks", "r_squared", "r2", "information_ratio"])
+def test_calendar_options_through_pandas(metric):
+    qs.extend_pandas()
+    # Monday's observation is supplied on a declared holiday, so it remains
+    # part of the weekly product rather than being discarded as a closure.
+    dates = pd.to_datetime(
+        ["2026-08-30", "2026-09-06", "2026-09-07", "2026-09-13", "2026-09-20"]
+    )
+    strategy = pd.Series([0, 0.03, 0, -0.03, 0.07], index=dates)
+    benchmark = pd.Series([0, 0.01, 0, -0.02, 0.03], index=dates)
+    result = getattr(strategy, metric)(
+        benchmark,
+        prepare_returns=False,
+        frequency="weekly",
+        holidays=["2026-09-07"],
+    )
+    if metric == "greeks":
+        assert result["beta"] == pytest.approx(2)
+        assert result["alpha"] == pytest.approx(0.52)
+        assert result.attrs["frequency"] == "weekly"
+    elif metric in ("r_squared", "r2"):
+        assert result == pytest.approx(1)
+    else:
+        active = np.array([0.02, -0.01, 0.04])
+        assert result == pytest.approx(active.mean() / active.std(ddof=1))
