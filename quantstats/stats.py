@@ -875,7 +875,7 @@ def implied_volatility(
 def autocorr_penalty(
     returns: Returns,
     prepare_returns: bool = False,
-) -> float:
+) -> float | _pd.Series:
     """
     Calculate autocorrelation penalty for risk-adjusted metrics.
 
@@ -884,11 +884,12 @@ def autocorr_penalty(
     Sharpe and Sortino ratios for more realistic risk assessment.
 
     Args:
-        returns (pd.Series): Return series to analyze
+        returns (pd.Series or pd.DataFrame): Return series or columns to analyze
         prepare_returns (bool): Whether to prepare returns first (default: False)
 
     Returns:
-        float: Autocorrelation penalty factor (>= 1)
+        float or pd.Series: Autocorrelation penalty factor (>= 1), per column for
+            DataFrame input
 
     Example:
         >>> returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
@@ -898,9 +899,13 @@ def autocorr_penalty(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    # Handle DataFrame input by selecting first column
+    # Keep each strategy's autocorrelation penalty independent of its neighbors.
     if isinstance(returns, _pd.DataFrame):
-        returns = returns[returns.columns[0]]
+        return _pd.Series(
+            [autocorr_penalty(returns.iloc[:, i]) for i in range(returns.shape[1])],
+            index=returns.columns,
+            dtype=float,
+        )
 
     # Gaps carry no autocorrelation information, and corrcoef propagates
     # any NaN straight through.

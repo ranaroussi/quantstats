@@ -546,6 +546,13 @@ class TestRollingGreeksAlpha:
 class TestAutocorrPenalty:
     """corrcoef is undefined for <2 points or constant input."""
 
+    @pytest.fixture
+    def strategies(self):
+        rng = np.random.default_rng(42)
+        white_noise = rng.normal(0.0002, 0.01, 500)
+        smooth = np.sin(np.linspace(0, 20 * np.pi, 500)) * 0.01 + 0.0001
+        return pd.DataFrame({"white_noise": white_noise, "smooth": smooth})
+
     def test_single_observation(self):
         assert stats.autocorr_penalty(pd.Series([0.01])) == 1.0
 
@@ -556,6 +563,52 @@ class TestAutocorrPenalty:
 
     def test_empty_series(self):
         assert stats.autocorr_penalty(pd.Series([], dtype=float)) == 1.0
+
+    def test_dataframe_short_and_constant_columns_get_neutral_penalty(self):
+        returns = pd.DataFrame(
+            {"short": [0.01] + [np.nan] * 9, "constant": [0.01] * 10}
+        )
+
+        expected = pd.Series({"short": 1.0, "constant": 1.0})
+
+        pd.testing.assert_series_equal(stats.autocorr_penalty(returns), expected)
+
+    def test_dataframe_penalty_is_columnwise_and_order_independent(self, strategies):
+        expected = pd.Series(
+            {
+                column: stats.autocorr_penalty(strategies[column])
+                for column in strategies.columns
+            }
+        )
+
+        result = stats.autocorr_penalty(strategies)
+        reversed_result = stats.autocorr_penalty(strategies[strategies.columns[::-1]])
+
+        assert isinstance(result, pd.Series)
+        assert isinstance(reversed_result, pd.Series)
+        pd.testing.assert_series_equal(result, expected)
+        pd.testing.assert_series_equal(
+            reversed_result.reindex(expected.index), expected
+        )
+
+    @pytest.mark.parametrize("metric", [stats.smart_sharpe, stats.smart_sortino])
+    def test_smart_ratios_match_individual_strategies(self, strategies, metric):
+        expected = pd.Series(
+            {
+                column: metric(strategies[column], annualize=False)
+                for column in strategies.columns
+            }
+        )
+
+        result = metric(strategies, annualize=False)
+        reversed_result = metric(strategies[strategies.columns[::-1]], annualize=False)
+
+        assert isinstance(result, pd.Series)
+        assert isinstance(reversed_result, pd.Series)
+        pd.testing.assert_series_equal(result, expected)
+        pd.testing.assert_series_equal(
+            reversed_result.reindex(expected.index), expected
+        )
 
 
 class TestCompoundedFlag:
