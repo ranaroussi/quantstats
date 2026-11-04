@@ -2,8 +2,11 @@
 Tests for quantstats.reports module
 """
 
+import base64
 import os
+import re
 import tempfile
+from io import BytesIO
 
 import numpy as np
 import pandas as pd
@@ -254,3 +257,111 @@ class TestEdgeCases:
             sample_returns, benchmark=benchmark_no_name, display=False
         )
         assert isinstance(result, pd.DataFrame)
+
+
+class TestEmbedFigure:
+    """Multi-column reports pass a list of figure buffers into the HTML."""
+
+    def test_single_svg_is_embedded_unchanged(self):
+        html = reports._embed_figure(BytesIO(b"<svg>one</svg>"), "svg")
+
+        assert html == "<svg>one</svg>"
+
+    def test_list_keeps_every_svg(self):
+        html = reports._embed_figure(
+            [BytesIO(b"<svg>one</svg>"), BytesIO(b"<svg>two</svg>")],
+            "svg",
+        )
+
+        assert "<svg>one</svg>" in html
+        assert "<svg>two</svg>" in html
+
+    def test_joined_svgs_do_not_share_ids(self):
+        svg = (
+            b'<svg><clipPath id="figure_1"><path id="figure_10"/></clipPath>'
+            b'<use href="#figure_1" clip-path="url(#figure_10)"/></svg>'
+        )
+        html = reports._embed_figure([BytesIO(svg), BytesIO(svg)], "svg")
+
+        ids = re.findall(r'\bid="([^"]+)"', html)
+        assert len(ids) == len(set(ids)) == 4
+        for ref in re.findall(r'href="#([^"]+)"', html):
+            assert ref in ids
+        for ref in re.findall(r"url\(#([^)]+)\)", html):
+            assert ref in ids
+        bare = [re.sub(r"^qs\d+-", "", ident) for ident in ids]
+        assert bare.count("figure_1") == 2
+        assert bare.count("figure_10") == 2
+
+    def test_hyphenated_data_attributes_are_not_svg_ids(self):
+        untouched = (
+            b'<svg data-id="figure_10">'
+            b'<use data-href="#figure_10" clip-path="url(#figure_10)"/></svg>'
+        )
+        assert reports._embed_figure(BytesIO(untouched), "svg") == untouched.decode()
+
+        svg = (
+            b'<svg id="figure_1" data-id="figure_1">'
+            b'<use xlink:href="#figure_1" href="#figure_1" data-href="#figure_1" '
+            b'clip-path="url(#figure_1)"/></svg>'
+        )
+        html = reports._embed_figure(BytesIO(svg), "svg")
+
+        assert 'data-id="figure_1"' in html
+        assert 'data-href="#figure_1"' in html
+        assert html.count('href="#qs') == 2
+        assert re.search(r'(?<![\w-])id="qs\d+-figure_1"', html)
+        assert re.search(r"url\(#qs\d+-figure_1\)", html)
+
+    def test_shorter_undeclared_ref_does_not_rewrite_longer_id(self):
+        svg = (
+            b'<svg id="figure_10">'
+            b'<use href="#figure_1" clip-path="url(#figure_10)"/></svg>'
+        )
+        html = reports._embed_figure(BytesIO(svg), "svg")
+
+        assert re.search(r'href="#figure_1"', html)
+        assert not re.search(r'href="#qs\d+-figure_1"', html)
+        assert re.search(r'id="qs\d+-figure_10"', html)
+        assert re.search(r"url\(#qs\d+-figure_10\)", html)
+
+    def test_list_keeps_every_png(self):
+        html = reports._embed_figure(
+            [BytesIO(b"png-one"), BytesIO(b"png-two")],
+            "png",
+        )
+
+        assert html.count("<img ") == 2
+        assert base64.b64encode(b"png-one").decode() in html
+        assert base64.b64encode(b"png-two").decode() in html
+
+    def test_html_dataframe_writes_one_figure_per_column(self):
+        dates = pd.date_range("2020-01-01", periods=120, freq="B")
+        rng = np.random.default_rng(0)
+        frame = pd.DataFrame(
+            rng.normal(0, 0.01, size=(len(dates), 2)),
+            index=dates,
+            columns=["Alpha", "Beta"],
+        )
+        one = frame[["Alpha"]].squeeze()
+        one.name = "Alpha"
+
+        def write(returns):
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as handle:
+                path = handle.name
+            reports.html(returns, output=path, figfmt="svg", title="Two")
+            with open(path, encoding="utf-8") as handle:
+                html = handle.read()
+            os.remove(path)
+            return html
+
+        single = write(one)
+        double = write(frame)
+
+        # Drawdown periods, the monthly heatmap, and the distribution each
+        # add one figure per column. The shared buffer used to keep only the first.
+        assert double.count("<svg") == single.count("<svg") + 3
+        assert "Alpha" in double and "Beta" in double
+        ids = re.findall(r'\bid="([^"]+)"', double)
+        assert ids
+        assert len(ids) == len(set(ids))

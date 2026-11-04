@@ -714,6 +714,7 @@ def html(
                 prepare_returns=False,
             )
             embed.append(figfile)
+            figfile = _get_utils()._file_stream()
         tpl = tpl.replace("{{dd_periods}}", _embed_figure(embed, figfmt))
 
     # Underwater (drawdown) plot
@@ -764,6 +765,7 @@ def html(
                 active=active,
             )
             embed.append(figfile)
+            figfile = _get_utils()._file_stream()
         tpl = tpl.replace("{{monthly_heatmap}}", _embed_figure(embed, figfmt))
 
     # Returns distribution analysis
@@ -800,6 +802,7 @@ def html(
                 prepare_returns=False,
             )
             embed.append(figfile)
+            figfile = _get_utils()._file_stream()
         tpl = tpl.replace("{{returns_dist}}", _embed_figure(embed, figfmt))
 
     # Clean up any remaining template placeholders
@@ -2572,6 +2575,42 @@ def _open_html(html):
         iDisplay(iHTML(jscode))
 
 
+# Matplotlib writes double-quoted id="...", href="#...", and url(#...).
+# (?<![\w-]) rejects hyphenated names such as data-id and data-href; \b
+# would match those because "-" is a word boundary. The closing delimiter
+# stays in the match, so figure_1 does not match inside figure_10.
+_SVG_LOCAL_REF = _regex.compile(
+    r'(?<![\w-])(?:id="([^"]+)"|href="#([^"]+)"|url\(#([^)]+)\))'
+)
+
+
+def _namespace_svg(svg):
+    """Give one SVG its own id prefix so several charts can share a document."""
+    idents = {
+        match.group(1)
+        for match in _SVG_LOCAL_REF.finditer(svg)
+        if match.group(1) is not None
+    }
+    if not idents:
+        return svg
+    serial = getattr(_namespace_svg, "serial", 0) + 1
+    _namespace_svg.serial = serial
+    prefix = f"qs{serial}-"
+
+    def rewrite(match):
+        ident = next(group for group in match.groups() if group is not None)
+        if ident not in idents:
+            return match.group(0)
+        renamed = prefix + ident
+        if match.group(1) is not None:
+            return f'id="{renamed}"'
+        if match.group(2) is not None:
+            return f'href="#{renamed}"'
+        return f"url(#{renamed})"
+
+    return _SVG_LOCAL_REF.sub(rewrite, svg)
+
+
 def _embed_figure(figfiles, figfmt):
     """
     Embed matplotlib figures in HTML format for reports.
@@ -2598,25 +2637,19 @@ def _embed_figure(figfiles, figfmt):
     >>> embed_str = _embed_figure(figfile, 'svg')
     >>> embed_str = _embed_figure([fig1, fig2], 'png')
     """
-    # Handle multiple figures
-    if isinstance(figfiles, list):
-        embed_string = "\n"
-        for figfile in figfiles:
-            figbytes = figfile.getvalue()
-            if figfmt == "svg":
-                # SVG can be embedded directly as text
-                return figbytes.decode()
-            # For other formats, encode as base64 data URI
-            data_uri = _b64encode(figbytes).decode()
-            embed_string.join(f'<img src="data:image/{figfmt};base64,{data_uri}" />')
-    else:
-        # Handle single figure
-        figbytes = figfiles.getvalue()
-        if figfmt == "svg":
-            # SVG can be embedded directly as text
-            return figbytes.decode()
-        # For other formats, encode as base64 data URI
-        data_uri = _b64encode(figbytes).decode()
-        embed_string = f'<img src="data:image/{figfmt};base64,{data_uri}" />'
+    # A list used to share one buffer and then discard the join, so every
+    # image after the first was absent from the HTML. Keep a single figure
+    # on the same path so its markup does not change.
+    if not isinstance(figfiles, list):
+        figfiles = [figfiles]
 
-    return embed_string
+    parts = []
+    for figfile in figfiles:
+        figbytes = figfile.getvalue()
+        if figfmt == "svg":
+            parts.append(_namespace_svg(figbytes.decode()))
+        else:
+            data_uri = _b64encode(figbytes).decode()
+            parts.append(f'<img src="data:image/{figfmt};base64,{data_uri}" />')
+
+    return "\n".join(parts)
