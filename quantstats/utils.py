@@ -1053,15 +1053,14 @@ def make_portfolio(returns, start_balance=1e5, mode="comp", round_to=None):
         p1 = start_balance + comp_rev.cumsum()
 
     # Add day before with starting balance
-    p0 = _pd.Series(data=start_balance, index=p1.index + _pd.Timedelta(days=-1))[:1]
+    start_index = p1.index[:1] - _pd.Timedelta(days=1)
+    if isinstance(p1, _pd.DataFrame):
+        p0 = _pd.DataFrame(start_balance, index=start_index, columns=p1.columns)
+    else:
+        p0 = _pd.Series(data=start_balance, index=start_index)
 
     # Combine starting balance with portfolio values
     portfolio = safe_concat([p0, p1])
-
-    # Handle DataFrame case
-    if isinstance(returns, _pd.DataFrame):
-        portfolio.iloc[:1, :] = start_balance
-        portfolio.drop(columns=[0], inplace=True)
 
     # Round if requested
     if round_to:

@@ -137,6 +137,39 @@ class TestMakePortfolio:
         # Should start near the initial balance
         assert abs(result.iloc[0] - 10000) < 1000
 
+    @pytest.mark.parametrize("columns", [[0, 1], ["a", "b"]])
+    @pytest.mark.parametrize("mode", ["comp", "sum", "fixed"])
+    def test_dataframe_matches_individual_series(self, columns, mode):
+        returns = pd.DataFrame(
+            [[0.1, -0.1], [0.2, 0.05]],
+            index=pd.date_range("2024-01-02", periods=2),
+            columns=columns,
+        )
+
+        result = utils.make_portfolio(returns, start_balance=100, mode=mode)
+        expected = pd.concat(
+            [
+                utils.make_portfolio(returns[col], start_balance=100, mode=mode)
+                for col in columns
+            ],
+            axis=1,
+        )
+        expected.columns = columns
+
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_dataframe_preserves_column_zero(self):
+        returns = pd.DataFrame(
+            [[0.1, -0.1], [0.2, 0.05]],
+            index=pd.date_range("2024-01-02", periods=2),
+        )
+
+        result = utils.make_portfolio(returns, start_balance=100)
+
+        assert result.columns.tolist() == [0, 1]
+        assert result.index.tolist() == list(pd.date_range("2024-01-01", periods=3))
+        np.testing.assert_allclose(result.values, [[100, 100], [110, 90], [132, 94.5]])
+
 
 class TestValidation:
     """Test input validation."""
