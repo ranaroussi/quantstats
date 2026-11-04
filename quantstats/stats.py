@@ -2404,9 +2404,9 @@ def profit_factor(returns, prepare_returns=True):
     # Handle both Series and scalar cases
     if isinstance(losses_sum, _pd.Series):
         result = wins_sum / losses_sum
-        # Replace infinite values with 0
-        result = result.replace([_np.inf, -_np.inf], 0)
-        return result
+        # Match the scalar convention: gains without losses are infinite,
+        # while no gains and no losses give zero.
+        return result.mask((wins_sum == 0) & (losses_sum == 0), 0.0)
     else:
         # Handle division by zero case
         if losses_sum == 0:

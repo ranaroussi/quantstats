@@ -84,6 +84,35 @@ class TestBasicStats:
         assert result == 0.0
 
 
+class TestProfitFactor:
+    @pytest.mark.parametrize("prepare_returns", [True, False])
+    def test_dataframe_matches_individual_series(self, prepare_returns):
+        returns = pd.DataFrame(
+            {
+                "winning": [0.01, 0.02, 0.0],
+                "flat": [0.0, 0.0, 0.0],
+                "losing": [-0.01, -0.02, 0.0],
+                "mixed": [0.02, -0.01, 0.01],
+                "missing": [np.nan, np.nan, np.nan],
+            },
+            index=pd.date_range("2024-01-01", periods=3),
+        )
+
+        result = stats.profit_factor(returns, prepare_returns=prepare_returns)
+        expected = pd.Series(
+            {
+                col: stats.profit_factor(returns[col], prepare_returns=prepare_returns)
+                for col in returns.columns
+            }
+        )
+
+        pd.testing.assert_series_equal(result, expected)
+        assert np.isinf(result["winning"])
+        assert result["flat"] == 0
+        assert result["losing"] == 0
+        assert result["mixed"] == pytest.approx(3)
+
+
 class TestRiskMetrics:
     """Test risk-related metrics."""
 
