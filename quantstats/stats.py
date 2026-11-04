@@ -1352,18 +1352,208 @@ def probabilistic_ratio(
     skew_no = skew(series, prepare_returns=False)
     kurtosis_no = kurtosis(series, prepare_returns=False) + 3
 
-    n = len(series)
-
-    # Standard error of the ratio (Bailey & Lopez de Prado, 2012). Reduces to
-    # Lo's (1 + SR^2 / 2) / (n - 1) for normally distributed returns.
-    sigma_sr = _np.sqrt(
-        (1 - (skew_no * base) + (((kurtosis_no - 1) / 4) * base**2)) / (n - 1)
-    )
+    # Observations actually used. The ratio and the moments skip missing
+    # values, so the sample size must too; len() would count them and
+    # overstate the confidence.
+    n = series.count()
 
     # Probability that the true ratio is greater than zero
-    psr = _norm.cdf(base / sigma_sr)
+    return _psr(base, 0.0, skew_no, kurtosis_no, n)
 
-    return psr
+
+def _sharpe_std_error(sr, skew_value, raw_kurtosis, n):
+    """
+    Standard error of a per-period Sharpe ratio under non-normal returns
+    (Mertens, 2002; Bailey & Lopez de Prado, 2012). ``raw_kurtosis`` is 3
+    under normality. Reduces to Lo's (1 + SR^2 / 2) / (n - 1) for normal
+    returns.
+    """
+    return _np.sqrt((1 - skew_value * sr + ((raw_kurtosis - 1) / 4) * sr**2) / (n - 1))
+
+
+def _psr(sr, benchmark_sr, skew_value, raw_kurtosis, n):
+    """
+    Probability that the true per-period Sharpe ratio exceeds
+    ``benchmark_sr``, given the observed ``sr`` (Bailey & Lopez de Prado,
+    2012, eq. 11).
+    """
+    return _norm.cdf(
+        (sr - benchmark_sr) / _sharpe_std_error(sr, skew_value, raw_kurtosis, n)
+    )
+
+
+def _moments_for_psr(returns, rf, periods):
+    """Per-period Sharpe, skewness, raw kurtosis and sample size of one series."""
+    returns = _utils._prepare_returns(returns, rf, periods)
+    if isinstance(returns, _pd.DataFrame):
+        if returns.shape[1] != 1:
+            raise ValueError("Pass a single return series, not a DataFrame")
+        returns = returns.iloc[:, 0]
+    returns = returns.dropna()
+    sr = returns.mean() / returns.std(ddof=1)
+    return sr, returns.skew(), returns.kurtosis() + 3, returns.count()
+
+
+def expected_maximum_sharpe(trials, sharpe_variance, periods=252):
+    """
+    Expected maximum Sharpe ratio among ``trials`` strategies whose true
+    Sharpe ratio is zero.
+
+    This is the "false strategy theorem" of Bailey and Lopez de Prado (2014):
+    the best of many skill-less backtests still shows a positive Sharpe ratio,
+    and it grows with the number of strategies tried. It is the hurdle the
+    deflated Sharpe ratio tests against.
+
+    Args:
+        trials (int): Number of independent strategies tried
+        sharpe_variance (float): Variance of the **annualized** Sharpe ratios
+            across those trials
+        periods (int): Periods per year (default: 252)
+
+    Returns:
+        float: Expected maximum Sharpe ratio, annualized
+
+    Example:
+        >>> # 100 trials whose annualized Sharpe ratios have variance 0.5
+        >>> expected_maximum_sharpe(100, 0.5, periods=250)  # about 1.79
+
+    Reference:
+        Bailey, D. H. and Lopez de Prado, M. (2014). The Deflated Sharpe
+        Ratio. Journal of Portfolio Management, 40(5), 94-107.
+    """
+    trials = int(trials)
+    if trials < 1:
+        raise ValueError("trials must be at least 1")
+    if sharpe_variance < 0:
+        raise ValueError("sharpe_variance cannot be negative")
+    if trials == 1:
+        # One strategy was tried, so nothing was selected and there is no
+        # selection bias to remove.
+        return 0.0
+    gamma = _np.euler_gamma
+    z = (1 - gamma) * _norm.ppf(1 - 1.0 / trials) + gamma * _norm.ppf(
+        1 - 1.0 / (trials * _np.e)
+    )
+    # The expectation is taken over per-period Sharpe ratios; scaling the
+    # annualized standard deviation back and forth by sqrt(periods) cancels,
+    # so the annualized result is sqrt(V) * z in annualized units.
+    return float(_np.sqrt(sharpe_variance) * z)
+
+
+def deflated_sharpe_ratio(returns, trials, sharpe_variance=None, rf=0.0, periods=252):
+    """
+    Calculate the Deflated Sharpe Ratio (DSR).
+
+    The probability that a strategy's true Sharpe ratio is above zero, after
+    correcting for the fact that it was the best of ``trials`` strategies
+    that were tried, and for non-normal returns. A Sharpe ratio of 2 found
+    after testing one idea and the same Sharpe ratio found after testing a
+    thousand are different pieces of evidence; the probabilistic Sharpe
+    ratio treats them the same and the deflated one does not.
+
+    This matters most where strategies are searched for at scale, by grid
+    search, genetic programming or automated and AI-driven research loops,
+    because the number of trials is exactly what such a search inflates.
+
+    Args:
+        returns (pd.Series): Returns of the selected strategy
+        trials (int or pd.DataFrame): Either the number of independent
+            strategies tried, or a DataFrame holding the returns of every
+            strategy tried (one column each). With a DataFrame, the number
+            of trials and the variance of their Sharpe ratios are taken from
+            it.
+        sharpe_variance (float): Variance of the **annualized** Sharpe ratios
+            across the trials. Required when ``trials`` is a number, ignored
+            when it is a DataFrame.
+        rf (float): Risk-free rate (annualized, default: 0.0)
+        periods (int): Periods per year (default: 252)
+
+    Returns:
+        float: Deflated Sharpe ratio (0-1 scale). With one trial it equals
+        the probabilistic Sharpe ratio.
+
+    Example:
+        >>> # the selected strategy, and the returns of all 40 that were tried
+        >>> dsr = deflated_sharpe_ratio(best, trials=all_trials)
+        >>> # or, when only the count and dispersion are known
+        >>> dsr = deflated_sharpe_ratio(best, trials=40, sharpe_variance=0.3)
+
+    Note:
+        ``trials`` should count *independent* trials. Many correlated
+        variations of one idea are closer to one trial than to many, so
+        passing the raw count of highly correlated variants overstates the
+        correction.
+
+    Reference:
+        Bailey, D. H. and Lopez de Prado, M. (2014). The Deflated Sharpe
+        Ratio. Journal of Portfolio Management, 40(5), 94-107.
+    """
+    if isinstance(trials, _pd.DataFrame):
+        trial_returns = _utils._prepare_returns(trials, rf, periods)
+        trial_sharpes = trial_returns.mean() / trial_returns.std(ddof=1)
+        trial_sharpes = trial_sharpes.dropna()
+        n_trials = len(trial_sharpes)
+        if n_trials == 0:
+            raise ValueError("trials has no column with a defined Sharpe ratio")
+        annual_variance = (
+            float(trial_sharpes.var(ddof=1)) * periods if n_trials > 1 else 0.0
+        )
+    else:
+        n_trials = int(trials)
+        if n_trials > 1 and sharpe_variance is None:
+            raise ValueError(
+                "sharpe_variance is required when trials is a number; "
+                "or pass the trials' returns as a DataFrame"
+            )
+        annual_variance = 0.0 if sharpe_variance is None else sharpe_variance
+
+    sr, skew_value, raw_kurtosis, n = _moments_for_psr(returns, rf, periods)
+    benchmark = expected_maximum_sharpe(n_trials, annual_variance, periods)
+    return float(_psr(sr, benchmark / _np.sqrt(periods), skew_value, raw_kurtosis, n))
+
+
+def minimum_track_record_length(
+    returns, benchmark_sharpe=0.0, confidence=0.95, rf=0.0, periods=252
+):
+    """
+    Calculate the Minimum Track Record Length (MinTRL).
+
+    The number of observations needed before the observed Sharpe ratio is
+    significantly above ``benchmark_sharpe`` at the given confidence, given
+    the skewness and kurtosis of the returns. If the track record is shorter
+    than this, the Sharpe ratio is not yet evidence of skill.
+
+    Args:
+        returns (pd.Series): Return series to analyze
+        benchmark_sharpe (float): Annualized Sharpe ratio to beat (default: 0).
+            Pass ``expected_maximum_sharpe(...)`` to account for the number of
+            strategies tried.
+        confidence (float): Confidence level (default: 0.95)
+        rf (float): Risk-free rate (annualized, default: 0.0)
+        periods (int): Periods per year (default: 252)
+
+    Returns:
+        float: Minimum number of return observations. ``inf`` when the
+        observed Sharpe ratio does not exceed the benchmark, because no track
+        record length would then be enough.
+
+    Example:
+        >>> n_needed = minimum_track_record_length(returns)
+        >>> enough = returns.count() >= n_needed
+
+    Reference:
+        Bailey, D. H. and Lopez de Prado, M. (2012). The Sharpe Ratio
+        Efficient Frontier. Journal of Risk, 15(2), 3-44.
+    """
+    sr, skew_value, raw_kurtosis, _ = _moments_for_psr(returns, rf, periods)
+    benchmark = benchmark_sharpe / _np.sqrt(periods)
+    if sr <= benchmark:
+        return float("inf")
+    return float(
+        1
+        + (1 - skew_value * sr + ((raw_kurtosis - 1) / 4) * sr**2)
+        * (_norm.ppf(confidence) / (sr - benchmark)) ** 2
+    )
 
 
 def probabilistic_sharpe_ratio(
