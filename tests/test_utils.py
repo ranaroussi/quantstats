@@ -2,6 +2,9 @@
 Tests for quantstats.utils module
 """
 
+import datetime as dt
+from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -50,6 +53,60 @@ class TestPrepareReturns:
         result = utils._prepare_returns(df)
         assert isinstance(result, pd.DataFrame)
         assert len(result.columns) == 2
+
+
+class TestQuarterToDate:
+    @pytest.mark.parametrize(
+        "month, start_month",
+        [
+            (1, 1),
+            (2, 1),
+            (3, 1),
+            (4, 4),
+            (5, 4),
+            (6, 4),
+            (7, 7),
+            (8, 7),
+            (9, 7),
+            (10, 10),
+            (11, 10),
+            (12, 10),
+        ],
+    )
+    def test_starts_at_current_quarter(self, monkeypatch, month, start_month):
+        now = dt.datetime(2024, month, 15)
+        returns = pd.Series(
+            0.01, index=pd.date_range("2023-10-01", now), name="returns"
+        )
+        expected = returns.loc[f"2024-{start_month:02d}-01" :]
+
+        class FixedDateTime(dt.datetime):
+            @classmethod
+            def now(cls):
+                return now
+
+        monkeypatch.setattr(utils, "_dt", SimpleNamespace(datetime=FixedDateTime))
+
+        pd.testing.assert_series_equal(utils._qtd(returns), expected)
+
+    def test_dataframe_via_pandas_extension(self, monkeypatch):
+        import quantstats as qs
+
+        now = dt.datetime(2024, 11, 15)
+        returns = pd.DataFrame(
+            {"a": 0.01, "b": -0.01}, index=pd.date_range("2024-09-01", now)
+        )
+        expected = returns.loc["2024-10-01":]
+
+        class FixedDateTime(dt.datetime):
+            @classmethod
+            def now(cls):
+                return now
+
+        monkeypatch.setattr(utils, "_dt", SimpleNamespace(datetime=FixedDateTime))
+        qs.extend_pandas()
+
+        pd.testing.assert_frame_equal(returns.qtd(), expected)
 
 
 class TestToReturns:

@@ -218,12 +218,8 @@ def _qtd(df):
         Filtered data from start of current quarter
     """
     date = _dt.datetime.now()
-    # Check which quarter we're in (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec)
-    for q in [1, 4, 7, 10]:  # First month of each quarter
-        if date.month <= q:
-            return df[df.index >= _dt.datetime(date.year, q, 1).strftime("%Y-%m-01")]
-    # Default to current month if no quarter match
-    return df[df.index >= date.strftime("%Y-%m-01")]
+    start_month = ((date.month - 1) // 3) * 3 + 1
+    return df[df.index >= f"{date.year}-{start_month:02d}-01"]
 
 
 def _ytd(df):
