@@ -175,6 +175,29 @@ class TestRatios:
         result = stats.cagr(sample_returns)
         assert np.isfinite(result)
 
+    @pytest.mark.parametrize("as_dataframe", [False, True])
+    @pytest.mark.parametrize("rf", [0.0, 0.12])
+    def test_rar_uses_periods_for_cagr_and_risk_free_rate(self, as_dataframe, rf):
+        """RAR should annualize monthly returns and risk-free rate monthly."""
+        returns = pd.Series(
+            [0.02] * 12,
+            index=pd.date_range("2024-01-01", periods=12, freq="MS"),
+            name="Strategy",
+        )
+        if as_dataframe:
+            returns = pd.concat([returns, returns.rename("Benchmark")], axis=1)
+
+        result = stats.rar(returns, rf=rf, periods=12)
+        monthly_rf = (1 + rf) ** (1 / 12) - 1
+        monthly_excess = 0.02 - monthly_rf
+        expected = (1 + monthly_excess) ** 12 - 1
+
+        if as_dataframe:
+            assert isinstance(result, pd.Series)
+            np.testing.assert_allclose(result.to_numpy(), [expected, expected])
+        else:
+            np.testing.assert_allclose(result, expected)
+
 
 class TestBenchmarkComparison:
     """Test benchmark comparison functions."""
