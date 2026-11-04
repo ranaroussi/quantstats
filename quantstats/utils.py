@@ -132,11 +132,13 @@ def _generate_cache_key(data, rf, nperiods, apply_rf=True):
         # one-column DataFrame holding the same numbers collide. Fold the
         # container type, column names and dtypes into the key as well, or a
         # cached DataFrame gets handed back to a caller that passed a Series.
+        # Summing row hashes loses their order, but adjacent-price returns
+        # depend on that order. Hash the complete ordered byte sequence instead.
         if isinstance(data, _pd.Series):
-            data_hash = _pd.util.hash_pandas_object(data).sum()
+            data_hash = hash(_pd.util.hash_pandas_object(data).to_numpy().tobytes())
             metadata = ("Series", repr(data.name), str(data.dtype))
         elif isinstance(data, _pd.DataFrame):
-            data_hash = _pd.util.hash_pandas_object(data).sum()
+            data_hash = hash(_pd.util.hash_pandas_object(data).to_numpy().tobytes())
             metadata = (
                 "DataFrame",
                 tuple(repr(col) for col in data.columns),

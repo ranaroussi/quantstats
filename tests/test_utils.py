@@ -52,6 +52,150 @@ class TestPrepareReturns:
         assert len(result.columns) == 2
 
 
+class TestReturnCacheOrder:
+    """A previous preparation must not supply another row sequence's returns."""
+
+    @pytest.fixture(autouse=True)
+    def isolated_cache(self, monkeypatch):
+        monkeypatch.setattr(utils, "_PREPARE_RETURNS_CACHE", {})
+
+    @pytest.mark.parametrize("container", ["series", "frame", "mixed_frame"])
+    @pytest.mark.parametrize("order", [(3, 2, 1, 0), (2, 0, 3, 1)])
+    @pytest.mark.parametrize("reordered_first", [False, True])
+    def test_preparation_uses_requested_row_order(
+        self, container, order, reordered_first
+    ):
+        utc = pd.DatetimeIndex(
+            [
+                "2024-03-09 05:00",
+                "2024-03-10 05:00",
+                "2024-03-11 04:00",
+                "2024-03-12 04:00",
+            ],
+            name="observed",
+        )
+        index = utc.tz_localize("UTC").tz_convert("America/New_York")
+        prices = pd.Series([100.0, 110.0, 99.0, 118.8], index=index, name="prices")
+        if container != "series":
+            prices = prices.to_frame()
+        if container == "mixed_frame":
+            prices[17] = [0.01, -0.02, 0.03, 0.005]
+        reordered = prices.iloc[list(order)]
+        cases = [reordered, prices] if reordered_first else [prices, reordered]
+
+        for data in cases:
+            original = data.copy(deep=True)
+            # The return formula uses adjacent prices in the requested order,
+            # even when dates are descending or shuffled. Sorting is not a fix.
+            values = (
+                data.to_numpy() if container == "series" else data["prices"].to_numpy()
+            )
+            expected_values = np.r_[np.nan, values[1:] / values[:-1] - 1]
+            expected_index = utc.take([index.get_loc(label) for label in data.index])
+            expected = pd.Series(expected_values, index=expected_index, name="prices")
+            if container != "series":
+                expected = expected.to_frame()
+                if container == "mixed_frame":
+                    expected[17] = data[17].to_numpy()
+
+            result = utils._prepare_returns(data)
+
+            check = (
+                pd.testing.assert_series_equal
+                if container == "series"
+                else pd.testing.assert_frame_equal
+            )
+            check(result, expected)
+            check(data, original)
+
+    @pytest.mark.parametrize("apply_rf", [False, True])
+    def test_reordered_nullable_prices_with_time_varying_rf(self, apply_rf):
+        index = pd.date_range("2024-01-01", periods=4, name="observed")
+        prices = pd.DataFrame(
+            {"asset": pd.array([100, 110, 99, 118.8], dtype="Float64")}, index=index
+        )
+        rates = pd.Series([0.01, 0.02, 0.03, 0.04], index=index)
+        utils._prepare_returns(prices, rates, 252, apply_rf=apply_rf)
+        reversed_prices = prices.iloc[::-1]
+        original_prices = reversed_prices.copy(deep=True)
+        original_rates = rates.copy(deep=True)
+        # Rates follow their labels, while returns follow adjacent prices.
+        expected_values = [np.nan, 99 / 118.8 - 1, 110 / 99 - 1, 100 / 110 - 1]
+        if apply_rf:
+            expected_values = [
+                value - ((1 + rate) ** (1 / 252) - 1)
+                for value, rate in zip(
+                    expected_values, [0.04, 0.03, 0.02, 0.01], strict=True
+                )
+            ]
+        expected = pd.DataFrame(
+            {"asset": pd.array(expected_values, dtype="Float64")}, index=index[::-1]
+        )
+
+        result = utils._prepare_returns(reversed_prices, rates, 252, apply_rf=apply_rf)
+
+        pd.testing.assert_frame_equal(result, expected)
+        pd.testing.assert_frame_equal(reversed_prices, original_prices)
+        pd.testing.assert_series_equal(rates, original_rates)
+
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_repeated_input_still_hits_and_returns_owned_copies(
+        self, monkeypatch, as_frame
+    ):
+        prices = pd.Series([100.0, 110.0, 99.0], name="asset")
+        if as_frame:
+            prices = prices.to_frame()
+        original = prices.copy(deep=True)
+        expected = pd.Series([np.nan, 0.1, -0.1], name="asset")
+        if as_frame:
+            expected = expected.to_frame()
+        calls = []
+        pct_change = pd.Series.pct_change
+
+        def counted(data, *args, **kwargs):
+            calls.append(1)
+            return pct_change(data, *args, **kwargs)
+
+        monkeypatch.setattr(pd.Series, "pct_change", counted)
+        check = (
+            pd.testing.assert_frame_equal
+            if as_frame
+            else pd.testing.assert_series_equal
+        )
+        for _ in range(2):
+            result = utils._prepare_returns(prices.copy(deep=True))
+            check(result, expected)
+            # Challenge both the initial stored copy and a subsequent cache hit.
+            result.iloc[1] = 7
+            result.index = pd.Index([9, 8, 7], name="changed")
+            if as_frame:
+                result.columns = ["changed"]
+            else:
+                result.name = "changed"
+        check(prices, original)
+        check(utils._prepare_returns(prices), expected)
+        assert len(calls) == 1
+
+        prices.iloc[1] = 120
+        changed = pd.Series([np.nan, 0.2, 99 / 120 - 1], name="asset")
+        if as_frame:
+            changed = changed.to_frame()
+        check(utils._prepare_returns(prices), changed)
+        utils._PREPARE_RETURNS_CACHE.clear()
+        check(utils._prepare_returns(prices.copy()), changed)
+        assert len(calls) == 3
+
+    def test_hash_failure_keeps_uncached_preparation(self, monkeypatch):
+        def unavailable(*args, **kwargs):
+            raise MemoryError("hash allocation unavailable")
+
+        monkeypatch.setattr(pd.util, "hash_pandas_object", unavailable)
+        prices = pd.Series([100.0, 110.0, 99.0])
+        expected = pd.Series([np.nan, 0.1, -0.1])
+        pd.testing.assert_series_equal(utils._prepare_returns(prices), expected)
+        assert not utils._PREPARE_RETURNS_CACHE
+
+
 class TestToReturns:
     """Test to_returns function."""
 

@@ -192,6 +192,45 @@ class TestPrepareReturnsCache:
         assert isinstance(prepared_frame, pd.DataFrame)
         assert isinstance(prepared_series, pd.Series)
 
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("pandas_method", [False, True])
+    def test_public_conversion_after_resorting_prices(
+        self, monkeypatch, as_frame, pandas_method
+    ):
+        monkeypatch.setattr(utils, "_PREPARE_RETURNS_CACHE", {})
+        index = pd.date_range("2024-01-01", periods=4)
+        prices = pd.Series([100.0, 110.0, 99.0, 118.8], index=index, name="asset")
+        expected = pd.Series([np.nan, 0.1, -0.1, 0.2], index=index, name="asset")
+        if as_frame:
+            prices, expected = prices.to_frame(), expected.to_frame()
+        original = prices.copy(deep=True)
+        qs.extend_pandas()
+
+        # An export may arrive newest-first and then be sorted for analysis.
+        utils.to_returns(prices.iloc[::-1])
+        result = prices.to_returns() if pandas_method else utils.to_returns(prices)
+
+        check = (
+            pd.testing.assert_frame_equal
+            if as_frame
+            else pd.testing.assert_series_equal
+        )
+        check(result, expected)
+        check(prices, original)
+
+    def test_sharpe_uses_current_price_order(self, monkeypatch):
+        monkeypatch.setattr(utils, "_PREPARE_RETURNS_CACHE", {})
+        prices = pd.Series(
+            [100.0, 110.0, 99.0, 118.8], index=pd.date_range("2024-01-01", periods=4)
+        )
+        stats.sharpe(prices.iloc[::-1])
+        observed = np.array([0.1, -0.1, 0.2])
+        # Derive the statistic from the requested adjacent-price returns,
+        # independently of either a cold or warm production preparation.
+        expected = observed.mean() / observed.std(ddof=1) * np.sqrt(252)
+
+        assert stats.sharpe(prices) == pytest.approx(expected)
+
     def test_apply_rf_is_part_of_the_cache_key(self):
         idx = pd.date_range("2024-01-01", periods=10)
         series = pd.Series(np.linspace(0.001, 0.01, 10), index=idx, name="S")
