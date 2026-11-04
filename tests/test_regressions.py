@@ -62,6 +62,15 @@ class TestWeeklyAggregation:
         np.testing.assert_allclose(stats.best(returns, aggregate="W"), weekly.max())
         np.testing.assert_allclose(stats.worst(returns, aggregate="W"), weekly.min())
 
+    def test_stats_best_worst_weekly_across_year_boundary(self):
+        returns = pd.Series(
+            [0.05, 0.1, 0.2],
+            index=pd.to_datetime(["2018-01-01", "2018-12-31", "2019-01-01"]),
+        )
+
+        assert stats.best(returns, aggregate="W") == pytest.approx(0.32)
+        assert stats.worst(returns, aggregate="W") == pytest.approx(0.05)
+
 
 class TestPreparePricesGaps:
     """A missing price used to be filled with 0, i.e. a -100% drawdown."""

@@ -485,6 +485,8 @@ def aggregate_returns(
         Returns data
     period : str, optional
         Time period for aggregation ('month', 'quarter', 'year', etc.)
+        'eow' and 'W' group by ISO year and week, keeping a week that spans
+        calendar years together.
     compounded : bool, default True
         Whether to compound returns
 
@@ -524,9 +526,10 @@ def aggregate_returns(
 
     # End of week grouping
     if "eow" in period or period == "W":
+        iso = index.isocalendar()
         return group_returns(
             returns,
-            [index.year, index.isocalendar().week],
+            [iso.year, iso.week],
             compounded=compounded,
         )
 

@@ -117,6 +117,42 @@ class TestAggregateReturns:
         result = utils.aggregate_returns(returns, "year")
         assert len(result) <= len(returns)
 
+    @pytest.mark.parametrize("period", ["W", "eow"])
+    @pytest.mark.parametrize("compounded", [True, False])
+    def test_weekly_keeps_cross_year_week_together(self, period, compounded):
+        returns = pd.Series(
+            [0.1, 0.2], index=pd.to_datetime(["2020-12-31", "2021-01-01"])
+        )
+
+        result = utils.aggregate_returns(returns, period, compounded=compounded)
+
+        assert result.index.tolist() == [(2020, 53)]
+        assert result.iloc[0] == pytest.approx(0.32 if compounded else 0.3)
+
+    @pytest.mark.parametrize("period", ["W", "eow"])
+    @pytest.mark.parametrize("compounded", [True, False])
+    def test_weekly_separates_distinct_iso_years(self, period, compounded):
+        returns = pd.Series(
+            [0.1, 0.2], index=pd.to_datetime(["2018-01-01", "2018-12-31"])
+        )
+
+        result = utils.aggregate_returns(returns, period, compounded=compounded)
+
+        assert result.index.tolist() == [(2018, 1), (2019, 1)]
+        np.testing.assert_allclose(result.values, [0.1, 0.2])
+
+    def test_weekly_cross_year_dataframe(self):
+        returns = pd.DataFrame(
+            {"a": [0.1, 0.2], "b": [-0.1, 0.05]},
+            index=pd.to_datetime(["2020-12-31", "2021-01-01"]),
+        )
+
+        result = utils.aggregate_returns(returns, "W")
+
+        assert result.index.tolist() == [(2020, 53)]
+        assert result.columns.tolist() == ["a", "b"]
+        np.testing.assert_allclose(result.values, [[0.32, -0.055]])
+
 
 class TestRebase:
     """Test rebase function."""
