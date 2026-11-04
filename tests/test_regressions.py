@@ -18,6 +18,141 @@ from quantstats import reports, stats, utils
 from quantstats._compat import get_frequency_alias, safe_resample
 
 
+class TestCompareTimezoneBenchmark:
+    """Benchmark index conversion must not align values onto the caller's old index."""
+
+    utc_dates = (
+        "2024-01-31 23:30",
+        "2024-02-01 00:30",
+        "2024-02-28 23:30",
+        "2024-02-29 00:30",
+        "2024-02-29 23:30",
+        "2024-03-01 00:30",
+        "2024-03-02 00:30",
+        "2024-03-03 00:30",
+    )
+    strategy_values = (0.01, -0.02, 0.03, -0.01, 0.005, 0.02, -0.005, 0.01)
+    benchmark_values = (0.005, -0.01, 0.02, -0.005, 0.01, 0.015, -0.002, 0.008)
+
+    def _inputs(self, zones, as_frame=False):
+        utc = pd.DatetimeIndex(self.utc_dates, tz="UTC", name="observed")
+        indexes = [
+            utc.tz_convert(zone) if zone is not None else utc.tz_localize(None)
+            for zone in zones
+        ]
+        returns = pd.Series(self.strategy_values, index=indexes[0], name="strategy")
+        if as_frame:
+            returns = pd.DataFrame({"strategy": returns, 17: returns * 0.5})
+        benchmark = pd.DataFrame({"market": self.benchmark_values}, index=indexes[1])
+        benchmark.columns.name = "asset"
+        return returns, benchmark
+
+    @staticmethod
+    def _expected(index, strategy, benchmark, as_frame):
+        data = {"Benchmark": np.asarray(benchmark) * 100}
+        if as_frame:
+            data.update({"Returns_0": np.asarray(strategy) * 100})
+            data["Returns_1"] = np.asarray(strategy) * 50
+        else:
+            data["Returns"] = np.asarray(strategy) * 100
+            data["Multiplier"] = np.asarray(strategy) / np.asarray(benchmark)
+            data["Won"] = [
+                "+" if r >= b else "-" for r, b in zip(strategy, benchmark, strict=True)
+            ]
+        return pd.DataFrame(data, index=index)
+
+    @pytest.mark.parametrize(
+        "zones",
+        [
+            ("UTC", "UTC"),
+            ("America/New_York", "Asia/Tokyo"),
+            ("Asia/Tokyo", "America/New_York"),
+            (None, None),
+        ],
+    )
+    @pytest.mark.parametrize("as_frame", [False, True])
+    @pytest.mark.parametrize("prepare_returns", [False, True])
+    def test_frame_matches_independent_returns_and_series(
+        self, zones, as_frame, prepare_returns
+    ):
+        returns, benchmark = self._inputs(zones, as_frame)
+        original_returns, original_benchmark = (
+            returns.copy(deep=True),
+            benchmark.copy(deep=True),
+        )
+        expected = self._expected(
+            pd.DatetimeIndex(self.utc_dates, name="observed"),
+            self.strategy_values,
+            self.benchmark_values,
+            as_frame,
+        )
+
+        result = stats.compare(returns, benchmark, prepare_returns=prepare_returns)
+        control = stats.compare(
+            returns, benchmark["market"], prepare_returns=prepare_returns
+        )
+
+        pd.testing.assert_frame_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_frame_equal(result, control)
+        pd.testing.assert_frame_equal(benchmark, original_benchmark)
+        if as_frame:
+            pd.testing.assert_frame_equal(returns, original_returns)
+        else:
+            pd.testing.assert_series_equal(returns, original_returns)
+
+    @pytest.mark.parametrize("compounded", [False, True])
+    @pytest.mark.parametrize("as_frame", [False, True])
+    def test_monthly_aggregation_keeps_first_column_and_benchmark_only_dates(
+        self, compounded, as_frame
+    ):
+        returns, benchmark = self._inputs(("America/New_York", "Asia/Tokyo"), as_frame)
+        returns = returns.drop(returns.index[[2, 3]])
+        benchmark["unused"] = "not a return"
+        original_benchmark = benchmark.copy(deep=True)
+
+        # These groups are UTC months, not Tokyo/New York calendar labels. The
+        # benchmark still owns its two February observations absent from strategy.
+        def aggregate(values, positions):
+            selected = [values[i] for i in positions]
+            return (
+                float(np.prod(1 + np.asarray(selected)) - 1)
+                if compounded
+                else sum(selected)
+            )
+
+        benchmark_groups = [(0,), (1, 2, 3, 4), (5, 6, 7)]
+        strategy_groups = [(0,), (1, 4), (5, 6, 7)]
+        b = [aggregate(self.benchmark_values, group) for group in benchmark_groups]
+        r = [aggregate(self.strategy_values, group) for group in strategy_groups]
+        index = pd.Index([1, 2, 3], dtype=returns.index.month.dtype, name="observed")
+        expected = self._expected(index, r, b, as_frame)
+        if as_frame:
+            # Halving each period's return does not halve the compounded total.
+            half = [v * 0.5 for v in self.strategy_values]
+            expected["Returns_1"] = [
+                aggregate(half, group) * 100 for group in strategy_groups
+            ]
+
+        result = stats.compare(
+            returns, benchmark, aggregate="month", compounded=compounded
+        )
+
+        pd.testing.assert_frame_equal(result, expected, rtol=1e-12, atol=1e-12)
+        pd.testing.assert_frame_equal(benchmark, original_benchmark)
+
+    def test_rejected_values_do_not_mutate_timezone_aware_benchmark(self):
+        returns, benchmark = self._inputs(("UTC", "UTC"))
+        benchmark["market"] = "not a return"
+        original = benchmark.copy(deep=True)
+
+        # Failure must occur after the normalization boundary to challenge its
+        # ownership guarantee; invalid strategy data would fail too early.
+        with pytest.raises(TypeError):
+            stats.compare(returns, benchmark)
+
+        pd.testing.assert_frame_equal(benchmark, original)
+
+
 @pytest.fixture
 def daily_returns():
     """A well-behaved daily return series."""

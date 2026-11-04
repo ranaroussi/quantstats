@@ -39,6 +39,7 @@ from scipy.stats import linregress as _linregress
 from scipy.stats import norm as _norm
 
 from . import utils as _utils
+from ._compat import normalize_timezone as _normalize_timezone
 from ._compat import safe_concat, safe_resample
 from .utils import validate_input
 
@@ -3059,7 +3060,8 @@ def compare(
 
     Args:
         returns (pd.Series or pd.DataFrame): Return series to analyze
-        benchmark (pd.Series): Benchmark return series for comparison
+        benchmark (pd.Series or pd.DataFrame): Benchmark returns for comparison;
+            a DataFrame uses its first column.
         aggregate (str): Aggregation period ('D', 'W', 'M', 'Q', 'Y')
         compounded (bool): Whether to compound returns (default: True)
         round_vals (int): Number of decimal places to round (default: None)
@@ -3087,22 +3089,10 @@ def compare(
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
-    # Normalize benchmark timezone first if it's not a string
+    # Normalize the frame's index as a whole. Assigning converted columns back
+    # would align them with the caller's still-timezone-aware index.
     if benchmark is not None and not isinstance(benchmark, str):
-        if hasattr(
-            benchmark.index
-            if isinstance(benchmark, _pd.Series)
-            else benchmark[benchmark.columns[0]].index,
-            "tz",
-        ):
-            if isinstance(benchmark, _pd.Series) and benchmark.index.tz is not None:
-                benchmark = benchmark.tz_convert("UTC").tz_localize(None)
-            elif (
-                isinstance(benchmark, _pd.DataFrame)
-                and benchmark[benchmark.columns[0]].index.tz is not None
-            ):
-                for col in benchmark.columns:
-                    benchmark[col] = benchmark[col].tz_convert("UTC").tz_localize(None)
+        benchmark = _normalize_timezone(benchmark)
 
     # Store original benchmark for proper aggregation
     # This preserves returns that may fall on non-trading days
