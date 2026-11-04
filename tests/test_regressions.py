@@ -623,11 +623,48 @@ class TestInformationRatio:
         )
 
         result = stats.information_ratio(
-            daily_returns, benchmark, prepare_returns=False
+            daily_returns,
+            benchmark,
+            annualize=False,
+            compounded=False,
+            prepare_returns=False,
         )
 
         diff = daily_returns - benchmark
         assert result == pytest.approx(diff.mean() / diff.std())
+
+    def test_prepared_large_returns_are_not_detected_as_prices(self):
+        dates = pd.date_range("2020-01-01", periods=3)
+        returns = pd.Series([1.2, 0.2, 0.4], index=dates)
+        benchmark = pd.Series([0.2, 0.1, 0.3], index=dates)
+        # Wealth: 2.2 * 1.2 * 1.4 = 3.696 and 1.2 * 1.1 * 1.3 = 1.716.
+        # Active returns [1, 0.1, 0.1] have sample variance 0.27.
+        # (3.696 - 1.716) / sqrt(0.27 * 3) = 2.2.
+        expected = 2.2
+        result = stats.information_ratio(
+            returns, benchmark, periods=3, prepare_returns=False
+        )
+        assert result == pytest.approx(expected)
+
+    @pytest.mark.parametrize("multiple", [False, True])
+    @pytest.mark.parametrize("compounded, expected", [(True, 0.76), (False, 0.77)])
+    def test_report_uses_periods_and_compounding(self, multiple, compounded, expected):
+        dates = pd.date_range("2020-01-01", periods=4)
+        returns = pd.Series([0.02, -0.01, 0.03, -0.02], index=dates)
+        benchmark = pd.Series([0.01, 0.00, 0.01, -0.02], index=dates)
+        if multiple:
+            returns = pd.DataFrame({"first": returns, "second": returns})
+        result = reports.metrics(
+            returns,
+            benchmark,
+            display=False,
+            mode="full",
+            periods_per_year=4,
+            compounded=compounded,
+            prepare_returns=False,
+        )
+        values = result.loc["Information Ratio"].drop(labels="Benchmark")
+        assert all(float(value) == pytest.approx(expected) for value in values)
 
 
 class TestSeriesRiskFreeRate:

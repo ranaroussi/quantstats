@@ -30,6 +30,12 @@ Changelog
   entry and the second caller was handed the first one's excess returns.
   The result depended on call order. A Series `rf` is now hashed like the
   data.
+- `information_ratio()` is now annualised by default (#514). The active
+  return is the difference of the strategy and benchmark CAGRs and the
+  tracking error is scaled to a year, so at daily frequency the reported
+  value is about 15.9x larger than before. Pass `annualize=False` for the
+  old per-period figure, and `compounded=False` for the arithmetic-mean
+  version of the active return.
 
 0.0.85
 ------
