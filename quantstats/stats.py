@@ -2048,7 +2048,17 @@ def value_at_risk(
     if confidence > 1:
         confidence = confidence / 100
 
-    # Calculate VaR using normal distribution inverse CDF
+    # A zero-scale normal distribution is a point mass at its mean.
+    if 0 < confidence < 1:
+        if isinstance(sigma, _pd.Series):
+            zero_volatility = sigma == 0
+            safe_sigma = sigma.mask(zero_volatility, 1)
+            var = _norm.ppf(1 - confidence, mu, safe_sigma)
+            return _np.where(zero_volatility, mu, var)
+        if sigma == 0:
+            return mu
+
+    # Calculate VaR using normal distribution inverse CDF.
     return _norm.ppf(1 - confidence, mu, sigma)
 
 

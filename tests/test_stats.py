@@ -113,6 +113,47 @@ class TestRiskMetrics:
         result = stats.var(sample_returns)
         assert result < 0  # VaR is typically negative (loss)
 
+    @pytest.mark.parametrize(
+        "returns, expected",
+        [
+            (pd.Series([0.0] * 10), 0.0),
+            (pd.Series([0.01] * 10), 0.01),
+        ],
+    )
+    def test_value_at_risk_zero_volatility_returns_mean(self, returns, expected):
+        """A degenerate return distribution has its mean as every quantile."""
+        result = stats.value_at_risk(returns, prepare_returns=False)
+
+        assert result == pytest.approx(expected)
+
+    def test_value_at_risk_zero_volatility_dataframe_and_alias(self):
+        """DataFrame columns and the var alias preserve degenerate VaR values."""
+        frame = pd.DataFrame({"zero": [0.0] * 10, "constant": [0.01] * 10})
+
+        frame_result = stats.value_at_risk(frame, prepare_returns=False)
+        alias_result = stats.var(frame, prepare_returns=False)
+
+        np.testing.assert_allclose(frame_result, [0.0, 0.01])
+        np.testing.assert_allclose(alias_result, frame_result)
+
+    def test_value_at_risk_zero_volatility_preserves_confidence_units(self):
+        """Fraction and percentage confidence agree for a point-mass return."""
+        returns = pd.Series([0.01] * 10)
+
+        fractional = stats.value_at_risk(
+            returns, confidence=0.95, prepare_returns=False
+        )
+        percentage = stats.value_at_risk(returns, confidence=95, prepare_returns=False)
+
+        assert fractional == pytest.approx(0.01)
+        assert percentage == pytest.approx(fractional)
+
+    def test_value_at_risk_preserves_insufficient_observation_result(self):
+        """One observation still has undefined sample volatility and VaR."""
+        result = stats.value_at_risk(pd.Series([0.01]), prepare_returns=False)
+
+        assert np.isnan(result)
+
     def test_cvar(self, sample_returns):
         """Test Conditional Value at Risk (Expected Shortfall)."""
         var = stats.var(sample_returns)
