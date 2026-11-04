@@ -3336,7 +3336,9 @@ def drawdown_details(drawdown):
         no_dd = drawdown == 0
 
         # Extract drawdown start dates (first date of each drawdown period)
-        starts = ~no_dd & no_dd.shift(1)
+        # The first observation can already be underwater. Treat its missing
+        # predecessor as a point with no drawdown so that the period is kept.
+        starts = ~no_dd & no_dd.shift(1, fill_value=True)
         starts = list(starts[starts.values].index)
 
         # Extract drawdown end dates (last date of each drawdown period)
