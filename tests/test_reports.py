@@ -293,6 +293,26 @@ class TestEmbedFigure:
         assert bare.count("figure_1") == 2
         assert bare.count("figure_10") == 2
 
+    def test_hyphenated_data_attributes_are_not_svg_ids(self):
+        untouched = (
+            b'<svg data-id="figure_10">'
+            b'<use data-href="#figure_10" clip-path="url(#figure_10)"/></svg>'
+        )
+        assert reports._embed_figure(BytesIO(untouched), "svg") == untouched.decode()
+
+        svg = (
+            b'<svg id="figure_1" data-id="figure_1">'
+            b'<use xlink:href="#figure_1" href="#figure_1" data-href="#figure_1" '
+            b'clip-path="url(#figure_1)"/></svg>'
+        )
+        html = reports._embed_figure(BytesIO(svg), "svg")
+
+        assert 'data-id="figure_1"' in html
+        assert 'data-href="#figure_1"' in html
+        assert html.count('href="#qs') == 2
+        assert re.search(r'(?<![\w-])id="qs\d+-figure_1"', html)
+        assert re.search(r"url\(#qs\d+-figure_1\)", html)
+
     def test_shorter_undeclared_ref_does_not_rewrite_longer_id(self):
         svg = (
             b'<svg id="figure_10">'

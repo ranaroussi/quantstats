@@ -2576,9 +2576,12 @@ def _open_html(html):
 
 
 # Matplotlib writes double-quoted id="...", href="#...", and url(#...).
-# The closing delimiter is part of the match, so figure_1 does not match
-# inside figure_10 and the rewrite does not depend on replacement order.
-_SVG_LOCAL_REF = _regex.compile(r'\bid="([^"]+)"|href="#([^"]+)"|url\(#([^)]+)\)')
+# (?<![\w-]) rejects hyphenated names such as data-id and data-href; \b
+# would match those because "-" is a word boundary. The closing delimiter
+# stays in the match, so figure_1 does not match inside figure_10.
+_SVG_LOCAL_REF = _regex.compile(
+    r'(?<![\w-])(?:id="([^"]+)"|href="#([^"]+)"|url\(#([^)]+)\))'
+)
 
 
 def _namespace_svg(svg):
