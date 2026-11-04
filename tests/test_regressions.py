@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 
 import quantstats as qs
-from quantstats import reports, stats, utils
+from quantstats import plots, reports, stats, utils
 from quantstats._compat import get_frequency_alias, safe_resample
 
 
@@ -930,3 +930,63 @@ class TestConditionalValueAtRisk:
 
         assert list(result.index) == ["a", "b"]
         assert result["b"] == pytest.approx(result["a"] * 2, rel=1e-9)
+
+
+class TestEoyChartTickAlignment:
+    """EOY chart year labels detached from the bars on long series."""
+
+    @pytest.fixture
+    def long_series(self):
+        rng = np.random.RandomState(7)
+        dates = pd.date_range("1996-01-01", "2026-06-30", freq="B")
+        returns = pd.Series(
+            rng.normal(0.0004, 0.01, len(dates)), index=dates, name="Strategy"
+        )
+        benchmark = pd.Series(
+            rng.normal(0.0003, 0.008, len(dates)), index=dates, name="Benchmark"
+        )
+        return returns, benchmark
+
+    @staticmethod
+    def _bar_spans(ax):
+        return [
+            (p.get_x(), p.get_x() + p.get_width())
+            for c in ax.containers
+            for p in c.patches
+        ]
+
+    def test_ticks_sit_on_bar_edges_with_a_benchmark(self, long_series):
+        returns, benchmark = long_series
+        fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+
+        spans = self._bar_spans(fig.axes[0])
+        for tick in fig.axes[0].get_xticks():
+            assert any(x0 <= tick <= x1 for x0, x1 in spans)
+
+    def test_ticks_sit_on_bar_edges_without_a_benchmark(self, long_series):
+        returns, _ = long_series
+        fig = plots.yearly_returns(returns, show=False)
+
+        spans = self._bar_spans(fig.axes[0])
+        for tick in fig.axes[0].get_xticks():
+            assert any(x0 <= tick <= x1 for x0, x1 in spans)
+
+    def test_labels_are_thinned_but_first_and_last_year_shown(self, long_series):
+        returns, benchmark = long_series
+        fig = plots.yearly_returns(returns, benchmark=benchmark, show=False)
+
+        labels = [t.get_text() for t in fig.axes[0].get_xticklabels()]
+        visible = [lab for lab in labels if lab]
+        assert len(visible) < len(labels)
+        assert visible[0] == "1996"
+        assert visible[-1] == "2026"
+
+    def test_short_series_keeps_every_year_label(self, long_series):
+        returns, benchmark = long_series
+        fig = plots.yearly_returns(
+            returns["2020":], benchmark=benchmark["2020":], show=False
+        )
+
+        labels = [t.get_text() for t in fig.axes[0].get_xticklabels()]
+        visible = [lab for lab in labels if lab]
+        assert visible == [str(y) for y in sorted(set(returns["2020":].index.year))]
