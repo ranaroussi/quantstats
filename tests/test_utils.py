@@ -51,6 +51,65 @@ class TestPrepareReturns:
         assert isinstance(result, pd.DataFrame)
         assert len(result.columns) == 2
 
+    def test_warns_for_ambiguous_sub_one_prices(self):
+        dates = pd.date_range("2026-01-01", periods=5, freq="D")
+        prices = pd.Series(
+            [0.50, 0.55, 0.52, 0.61, 0.60],
+            index=dates,
+            name="price",
+        )
+
+        with pytest.warns(UserWarning, match="ambiguous"):
+            result = utils._prepare_returns(prices)
+
+        # A warning does not convert the input.
+        pd.testing.assert_series_equal(result, prices)
+
+    def test_warns_for_ambiguous_dataframe_column(self):
+        dates = pd.date_range("2026-02-01", periods=5, freq="D")
+        data = pd.DataFrame(
+            {
+                "sub_dollar": [0.50, 0.55, 0.52, 0.61, 0.60],
+                "ordinary_prices": [10.0, 11.0, 10.5, 12.0, 11.5],
+            },
+            index=dates,
+        )
+
+        with pytest.warns(UserWarning, match="ambiguous") as recorded:
+            result = utils._prepare_returns(data)
+
+        assert len(recorded) == 1
+
+        pd.testing.assert_series_equal(
+            result["sub_dollar"],
+            data["sub_dollar"],
+        )
+
+        expected = data["ordinary_prices"].pct_change(fill_method=None)
+        pd.testing.assert_series_equal(
+            result["ordinary_prices"],
+            expected,
+        )
+
+    def test_does_not_warn_for_unambiguous_inputs(self, recwarn):
+        dates = pd.date_range("2026-03-01", periods=5, freq="D")
+
+        prices = pd.Series(
+            [10.0, 11.0, 10.5, 12.0, 11.5],
+            index=dates,
+            name="price",
+        )
+        returns = pd.Series(
+            [0.02, -0.01, 0.03, -0.02, 0.01],
+            index=dates,
+            name="returns",
+        )
+
+        utils._prepare_returns(prices)
+        utils._prepare_returns(returns)
+
+        assert len(recwarn) == 0
+
 
 class TestToReturns:
     """Test to_returns function."""

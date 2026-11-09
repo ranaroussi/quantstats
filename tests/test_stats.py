@@ -175,6 +175,27 @@ class TestRatios:
         result = stats.cagr(sample_returns)
         assert np.isfinite(result)
 
+    def test_warns_for_all_positive_returns_through_public_metrics(self):
+        """Cover ambiguous-input warnings through public metrics."""
+        rng = np.random.default_rng(0)
+        returns = pd.Series(
+            np.abs(rng.normal(0, 0.01, 250)),
+            index=pd.date_range("2026-01-01", periods=250, freq="D"),
+            name="all_positive_returns",
+        )
+
+        with pytest.warns(
+            UserWarning,
+            match=r"Series 'all_positive_returns'.*ambiguous",
+        ):
+            stats.sharpe(returns)
+
+        with pytest.warns(
+            UserWarning,
+            match=r"Series 'all_positive_returns'.*ambiguous",
+        ):
+            stats.volatility(returns)
+
 
 class TestBenchmarkComparison:
     """Test benchmark comparison functions."""

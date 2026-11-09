@@ -19,6 +19,7 @@
 import datetime as _dt
 import io as _io
 import threading
+import warnings as _warnings
 
 import numpy as _np
 import pandas as _pd
@@ -711,14 +712,41 @@ def _prepare_returns(data, rf=0.0, nperiods=None, apply_rf=True):
     # Process DataFrame columns
     if isinstance(data, _pd.DataFrame):
         for col in data.columns:
-            # Cache dropna operation to avoid repeated computation
             col_clean = data[col].dropna()
-            # Check if data looks like prices (positive values > 1)
-            if col_clean.min() >= 0 and col_clean.max() > 1:
+
+            if col_clean.empty:
+                continue
+
+            min_value = col_clean.min()
+            max_value = col_clean.max()
+
+            if min_value >= 0 and max_value > 1:
                 data[col] = data[col].pct_change(fill_method=None)
+
+            elif min_value >= 0 and max_value <= 1:
+                _warnings.warn(
+                    f"Column {col!r} has nonnegative values bounded by 1; "
+                    "prices and returns are ambiguous. Treating this "
+                    "column as returns without pct_change(). If these "
+                    "are prices, convert them to returns explicitly "
+                    "before analysis.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
     # Process Series data
     elif data.min() >= 0 and data.max() > 1:
         data = data.pct_change(fill_method=None)
+
+    elif data.min() >= 0 and data.max() <= 1:
+        _warnings.warn(
+            f"Series {repr(data.name)} has nonnegative values bounded by 1; "
+            "prices and returns are ambiguous. Treating this series as "
+            "returns without pct_change(). If these are prices, "
+            "convert them to returns explicitly before analysis.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     # cleanup data - replace infinite values with NaN
     #
