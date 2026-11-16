@@ -1,6 +1,25 @@
 Changelog
 ===========
 
+Unreleased
+----------
+
+**Performance** - no change to any reported number.
+
+- `reports.metrics()` is about 3x faster on 25 years of daily data (0.70s
+  to 0.22s; 2.1x on a 10-strategy DataFrame), and the gain grows with
+  history length. Three hot paths no longer call a Python function per
+  group or per window:
+  - `utils.group_returns(compounded=True)` uses pandas' grouped `prod()`
+    instead of `groupby().apply(stats.comp)`. This was ~60% of
+    `metrics()` runtime.
+  - `stats.drawdown_details()` computes each period's valley, max drawdown
+    and 99% max drawdown on NumPy arrays instead of slicing a Series and
+    calling `Series.quantile()` per drawdown (7.6x faster at 25 years).
+    Unsorted indexes keep the original code path.
+  - `stats.rolling_sortino()` uses one rolling sum of `min(r, 0)**2`
+    instead of `rolling().apply()` (~10x faster).
+
 0.0.86
 ------
 

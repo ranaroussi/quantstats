@@ -465,10 +465,12 @@ def group_returns(returns: Returns, groupby, compounded: bool = False) -> Return
     group_returns(df, [df.index.year, df.index.month])
     """
     if compounded:
-        from . import stats as _stats  # deferred import to avoid circular dependency
-
-        # Use compounded returns calculation
-        return returns.groupby(groupby).apply(_stats.comp)
+        # Compound with pandas' built-in grouped product instead of calling
+        # stats.comp once per group through groupby().apply(). The result is
+        # identical ((1 + r).prod() - 1 per group, NaNs skipped) but runs in
+        # compiled code, which matters because metrics() and the reports
+        # call this for every month, quarter and year in the series.
+        return returns.add(1).groupby(groupby).prod() - 1
     # Use simple sum for non-compounded returns
     return returns.groupby(groupby).sum()
 
