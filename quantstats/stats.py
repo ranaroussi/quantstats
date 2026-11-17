@@ -29,6 +29,7 @@ The module is designed to work with pandas Series and DataFrames containing
 return data, price data, or performance metrics.
 """
 
+import warnings as _warnings
 from math import ceil as _ceil
 from math import sqrt as _sqrt
 from warnings import warn
@@ -1229,21 +1230,11 @@ def rolling_sortino(
         # which at the defaults overcharged rf by exactly 2x.
         returns = _utils._prepare_returns(returns, rf, periods_per_year)
 
-    # Optimized downside calculation using vectorized operations
-    def calc_downside(x):
-        """
-        Calculate downside variance more efficiently.
-
-        This function computes the sum of squared negative returns,
-        which is used to calculate downside deviation.
-        """
-        negative_returns = x[x < 0]
-        return (negative_returns**2).sum() if len(negative_returns) > 0 else 0
-
-    # Calculate rolling downside deviation
-    downside = (
-        returns.rolling(rolling_period).apply(calc_downside, raw=True) / rolling_period
-    )
+    # Rolling downside variance: sum of squared negative returns per window.
+    # Squaring min(r, 0) gives the same terms, so one compiled rolling sum
+    # replaces a Python callback per window (rolling().apply()).
+    downside_sq = returns.clip(upper=0) ** 2
+    downside = downside_sq.rolling(rolling_period).sum() / rolling_period
 
     # Calculate rolling Sortino ratio
     res = returns.rolling(rolling_period).mean() / _np.sqrt(downside)
@@ -3368,24 +3359,55 @@ def drawdown_details(drawdown):
 
         # Build detailed statistics for each drawdown period
         data = []
-        for i, _ in enumerate(starts):
-            # Extract drawdown for this period
-            dd = drawdown[starts[i] : ends[i]]
-
-            # Calculate 99% drawdown (excluding outliers)
-            clean_dd = -remove_outliers(-dd, 0.99)
-
-            # Compile statistics for this drawdown period
-            data.append(
-                (
-                    starts[i],  # Start date
-                    dd.idxmin(),  # Valley date (max drawdown)
-                    ends[i],  # End date
-                    (ends[i] - starts[i]).days + 1,  # Duration in days
-                    dd.min() * 100,  # Max drawdown %
-                    clean_dd.min() * 100,  # 99% max drawdown %
+        index = drawdown.index
+        if index.is_monotonic_increasing:
+            # Fast path: work on the underlying NumPy array. Slicing a pandas
+            # Series and calling Series.quantile once per drawdown dominated
+            # the runtime of metrics() and the HTML report; this computes the
+            # same values (label slices are inclusive, linear-interpolated
+            # 99% quantile, first-occurrence valley) without that overhead.
+            values = drawdown.to_numpy(dtype=float)
+            lo = index.searchsorted(starts, side="left")
+            hi = index.searchsorted(ends, side="right")
+            for start, end, a, b in zip(starts, ends, lo, hi, strict=False):
+                dd = values[a:b]
+                valley = index[a + _np.nanargmin(dd)]
+                # Same as -remove_outliers(-dd, 0.99).min(): keep the depths
+                # strictly below their 99th percentile, take the deepest one.
+                depth = -dd
+                with _warnings.catch_warnings():
+                    _warnings.simplefilter("ignore", RuntimeWarning)
+                    kept = depth[depth < _np.nanquantile(depth, 0.99)]
+                clean_min = -kept.max() if kept.size else _np.nan
+                data.append(
+                    (
+                        start,  # Start date
+                        valley,  # Valley date (max drawdown)
+                        end,  # End date
+                        (end - start).days + 1,  # Duration in days
+                        _np.nanmin(dd) * 100,  # Max drawdown %
+                        clean_min * 100,  # 99% max drawdown %
+                    )
                 )
-            )
+        else:
+            for i, _ in enumerate(starts):
+                # Extract drawdown for this period
+                dd = drawdown[starts[i] : ends[i]]
+
+                # Calculate 99% drawdown (excluding outliers)
+                clean_dd = -remove_outliers(-dd, 0.99)
+
+                # Compile statistics for this drawdown period
+                data.append(
+                    (
+                        starts[i],  # Start date
+                        dd.idxmin(),  # Valley date (max drawdown)
+                        ends[i],  # End date
+                        (ends[i] - starts[i]).days + 1,  # Duration in days
+                        dd.min() * 100,  # Max drawdown %
+                        clean_dd.min() * 100,  # 99% max drawdown %
+                    )
+                )
 
         # Create DataFrame with results
         df = _pd.DataFrame(
