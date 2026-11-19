@@ -571,7 +571,13 @@ def to_excess_returns(
     # filtering) means every return date carries a rate; gaps take the last
     # published rate, which is how a rate series behaves between prints.
     if isinstance(rf, (_pd.Series, _pd.DataFrame)):
-        rf = rf.reindex(returns.index).ffill().bfill().fillna(0.0)  # type: ignore
+        rf = (
+            rf.sort_index()
+            .ffill()
+            .reindex(returns.index, method="ffill")
+            .bfill()
+            .fillna(0.0)
+        )  # type: ignore
 
     # Deannualize rf if nperiods is provided
     if nperiods is not None:

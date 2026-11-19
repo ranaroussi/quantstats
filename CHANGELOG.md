@@ -6,6 +6,9 @@ Changelog
 
 **Statistical corrections** - these change reported numbers.
 
+- Fixed off-grid observations in a time-varying `rf` being dropped while aligning
+  to return dates. Rates are now carried forward by date before matching the
+  return index; leading gaps and zero fill for missing values are unchanged.
 - Fixed trade statistics on a DataFrame depending on the *other* columns in
   the frame (#556). `avg_return()`, `avg_win()` and `avg_loss()` masked the
   unselected cells to `NaN` and then called `.dropna()`, which drops whole
