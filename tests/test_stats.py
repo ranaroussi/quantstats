@@ -46,6 +46,31 @@ def negative_returns():
 class TestBasicStats:
     """Test basic statistical functions."""
 
+    def test_expected_return_with_no_observations_returns_nan(self):
+        """Empty and all-missing series have no geometric mean."""
+        empty = pd.Series([], dtype=float)
+        missing = pd.Series([np.nan, np.nan], dtype=float)
+
+        assert np.isnan(
+            stats.expected_return(empty, prepare_returns=False)
+        )
+        assert np.isnan(
+            stats.expected_return(missing, prepare_returns=False)
+        )
+
+    def test_expected_return_dataframe_empty_column_returns_nan(self):
+        """An all-missing DataFrame column has no geometric mean."""
+        returns = pd.DataFrame(
+            {
+                "observed": [0.01, -0.02],
+                "missing": [np.nan, np.nan],
+            }
+        )
+
+        result = stats.expected_return(returns, prepare_returns=False)
+        assert np.isfinite(result["observed"])
+        assert np.isnan(result["missing"])
+
     def test_comp(self, sample_returns):
         """Test compound returns calculation."""
         result = stats.comp(sample_returns)
