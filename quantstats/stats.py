@@ -260,6 +260,11 @@ def expected_return(
     # np.prod would return NaN for the whole series, and len() would stretch
     # the exponent over periods that were never observed.
     observed = returns.count()
+    if isinstance(observed, _pd.Series):
+        # A DataFrame column with no valid observations has no geometric mean.
+        observed = observed.where(observed > 0)
+    elif observed == 0:
+        return _np.nan
     return _np.nanprod(1 + returns, axis=0) ** (1 / observed) - 1
 
 
